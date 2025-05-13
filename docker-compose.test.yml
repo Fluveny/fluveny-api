@@ -1,0 +1,16 @@
+services:
+
+  mongo_test:
+    image: mongo:latest
+    container_name: mongo_test
+    restart: always
+    volumes:
+      - bd-mongodb-test:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: myfluveny
+    ports:
+      - 27018:27017
+
+volumes:
+  bd-mongodb-test:

@@ -1,0 +1,16 @@
+services:
+
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    restart: always
+    volumes:
+      - bd-mongodb:/data/db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: myfluveny
+    ports:
+      - 27017:27017
+
+volumes:
+  bd-mongodb:
