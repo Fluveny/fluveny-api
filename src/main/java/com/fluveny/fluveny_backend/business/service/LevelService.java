@@ -10,8 +10,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class LevelService {
 
-        @Autowired
         private LevelRepository levelRepository;
+
+        @Autowired
+        public void setLevelRepository(LevelRepository levelRepository) {
+            this.levelRepository = levelRepository;
+        }
 
         public List<LevelEntity> getAllLevels() {
             return levelRepository.findAll();
