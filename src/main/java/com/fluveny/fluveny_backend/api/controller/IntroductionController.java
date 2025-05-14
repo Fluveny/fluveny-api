@@ -36,7 +36,7 @@ public class IntroductionController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<IntroductionEntity>> creatingIntroduction(@RequestBody IntroductionEntity introductionEntity){
+    public ResponseEntity<ApiResponseFormat<IntroductionEntity>> creatingIntroduction(@Valid @RequestBody IntroductionEntity introductionEntity){
         IntroductionEntity introduction = introductionService.creatingIntroduction(introductionEntity);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponseFormat<>("Introduction was created", introduction));
