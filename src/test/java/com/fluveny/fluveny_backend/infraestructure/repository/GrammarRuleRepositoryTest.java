@@ -8,6 +8,8 @@ import org.springframework.boot.test.autoconfigure.data.mongo.DataMongoTest;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import static org.assertj.core.api.Assertions.*;
+
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -47,16 +49,35 @@ class GrammarRuleRepositoryTest {
     @Test
     @DisplayName("Should not find grammar rule by its title when it not exists")
     void findByTitleFailure() {
-        String title = "NonExistant Grammar Rule";
+        String title = "Non-existant Grammar Rule";
 
         Optional<GrammarRuleEntity> result = this.grammarRuleRepository.findByTitle(title);
 
         assertThat(result.isEmpty()).isTrue();
     }
 
+    @Test
+    @DisplayName("Should find grammar rule besides the non-matching cases")
+    void findByTitleContainingIgnoreCase() {
 
+        String title = "Case Insensitive Grammar Rule";
+        String titleCase = "case insensitive grammar rule";
+
+        GrammarRuleEntity rule = new GrammarRuleEntity();
+        rule.setTitle(title);
+        this.createGrammarRule(rule);
+
+        List<GrammarRuleEntity> result = this.grammarRuleRepository.findByTitleContainingIgnoreCase(title);
+
+        assertThat(!result.isEmpty()).isTrue();
+
+    }
+    @Test
+    
     private void createGrammarRule(GrammarRuleEntity grammarRule) {
 
         mongoTemplate.save(grammarRule);
     }
+
+
 }
