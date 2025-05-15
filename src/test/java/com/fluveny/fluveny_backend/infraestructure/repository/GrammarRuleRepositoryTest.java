@@ -72,8 +72,8 @@ class GrammarRuleRepositoryTest {
         assertThat(!result.isEmpty()).isTrue();
 
     }
-    @Test
     
+
     private void createGrammarRule(GrammarRuleEntity grammarRule) {
 
         mongoTemplate.save(grammarRule);
