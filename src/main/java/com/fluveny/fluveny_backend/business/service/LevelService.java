@@ -19,7 +19,7 @@ public class LevelService {
             this.levelRepository = levelRepository;
         }
 
-        public List<LevelEntity> getAllLevels() {
+        public List<LevelEntity> findAll() {
             List<LevelEntity> levels =  levelRepository.findAll();
             if(levels.isEmpty()) {
                 throw new BusinessException("No levels found", HttpStatus.NOT_FOUND);
