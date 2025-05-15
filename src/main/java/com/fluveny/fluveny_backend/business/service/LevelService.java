@@ -39,7 +39,7 @@ public class LevelService {
 
         public LevelEntity save(LevelEntity level) {
             Optional<LevelEntity> existingLevel = levelRepository.findByTitle(level.getTitle());
-            if(existingLevel.isPresent() && (level.getId() == null || !level.getId().equals(existingLevel.get().getId())) {
+            if(existingLevel.isPresent() && (level.getId() == null || !level.getId().equals(existingLevel.get().getId()))) {
                 throw new BusinessException("There is already a level with that title", HttpStatus.CONFLICT);
             }
             return levelRepository.save(level);
