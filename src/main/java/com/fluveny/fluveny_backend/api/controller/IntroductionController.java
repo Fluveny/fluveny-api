@@ -5,12 +5,20 @@ import com.fluveny.fluveny_backend.business.service.IntroductionService;
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.dto.IntroductionDTO;
 import com.fluveny.fluveny_backend.infraestructure.entity.IntroductionEntity;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import jakarta.validation.Valid;
+
+
 
 import java.util.List;
 
@@ -21,6 +29,23 @@ public class IntroductionController {
 
     private final IntroductionService introductionService;
 
+    //Precisa padronizar as saídas para DTO. Descomentar depois
+
+    @Operation(summary = "Show all introductions", description = "This endpoint is responsible for list all the introductions created")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "All introduction were listed",
+                    content = @Content(
+                        mediaType = "application/json"
+                        //schema = @Schema(implementation = ) Precisa padronizar uma lista de introduções para serem passadas.
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Failed to show all introductions",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<IntroductionEntity>>> getAllIntroduction(){
         List <IntroductionEntity> introductions = introductionService.getAllIntroduction();
@@ -28,6 +53,21 @@ public class IntroductionController {
                 .body(new ApiResponseFormat<>("Introductions were found", introductions));
     }
 
+    @Operation(summary = "Show one introduction by ID", description = "This endpoint is responsible to show one introduction got by id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Showing the introduction by ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = IntroductionEntity.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Failed to show the introduction by ID",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<IntroductionEntity>> getIntroductionById(@PathVariable String id){
         IntroductionEntity introduction = introductionService.getIntroductionById(id);
@@ -35,6 +75,21 @@ public class IntroductionController {
                 .body(new ApiResponseFormat<>("Introduction was found", introduction));
     }
 
+    @Operation(summary = "Create one introduction", description = "This endpoint is responsible to create one introduction")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "One introduction was created",
+                    content =  @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = IntroductionEntity.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Failed to create one introduction",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
     @PostMapping
     public ResponseEntity<ApiResponseFormat<IntroductionEntity>> creatingIntroduction(@Valid @RequestBody IntroductionEntity introductionEntity){
         IntroductionEntity introduction = introductionService.creatingIntroduction(introductionEntity);
@@ -42,6 +97,21 @@ public class IntroductionController {
                 .body(new ApiResponseFormat<>("Introduction was created", introduction));
     }
 
+    @Operation(summary = "Delete one introduction", description = "This endpoint is responsible to delete one introduction")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "One introduction was deleted",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = IntroductionEntity.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Failed to delete one introduction",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<IntroductionEntity>> deleteIntroduction(@PathVariable String id){
         introductionService.deleteIntroductionById(id);
