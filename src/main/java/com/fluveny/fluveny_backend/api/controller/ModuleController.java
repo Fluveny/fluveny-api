@@ -39,7 +39,7 @@ public class ModuleController {
             @ApiResponse(responseCode = "201", description = "Module created successfully",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ModuleResponseDTO.class)
+                            schema = @Schema(implementation = ModuleResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "409", description = "A module with the given name already exists",
@@ -60,7 +60,7 @@ public class ModuleController {
             @Parameter(description = "Object containing module data", required = true)
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
         ModuleEntity module = moduleService.saveModule(moduleMapper.toEntity(moduleRequestDTO));
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created sucessfully", moduleMapper.toDTO(module)));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created successfully", moduleMapper.toDTO(module)));
     }
 
     @Operation(summary = "Update a module", description = "This endpoint is responsible for update a existing module on the Fluveny. The fields must be filled in with all the information, even if they are not modified.")
