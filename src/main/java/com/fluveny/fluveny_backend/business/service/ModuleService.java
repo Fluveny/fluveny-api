@@ -22,17 +22,39 @@ public class ModuleService {
 
     public ModuleEntity saveModule(ModuleEntity moduleEntity) {
 
-        Optional<ModuleEntity> moduleFind = moduleRepository.findByTitle(moduleEntity.getTitle());
+        Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
 
-        if (moduleFind.isPresent()) {
-            throw new BusinessException("There is already a module with that name", HttpStatus.CONFLICT);
+        if (titleConflict.isPresent()) {
+            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
         }
 
-        if(moduleEntity.getGrammarRule().size() > 5){
-            throw new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST);
-        }
+        validateGrammarRules(moduleEntity);
 
         return moduleRepository.save(moduleEntity);
+    }
+
+    public ModuleEntity updateModule(ModuleEntity moduleEntity, String id) {
+
+        moduleEntity.setId(id);
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+        }
+
+        Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
+        if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
+            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
+        }
+
+        validateGrammarRules(moduleEntity);
+
+        return moduleRepository.save(moduleEntity);
+
+    }
+
+    public List<ModuleEntity> getAllModules() {
+        return moduleRepository.findAll();
     }
 
     public ModuleEntity getModuleEntity(String id) {
@@ -46,5 +68,13 @@ public class ModuleService {
         return moduleFind.get();
 
     }
+
+    public void validateGrammarRules(ModuleEntity moduleEntity){
+        if(moduleEntity.getGrammarRule().size() > 5){
+            throw new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+
 
 }
