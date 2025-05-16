@@ -59,7 +59,7 @@ public class ModuleService {
 
     public ModuleEntity getModuleEntity(String id) {
 
-        Optional<ModuleEntity> moduleFind = moduleRepository.findByTitle(id);
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
 
         if(moduleFind.isEmpty()){
             throw new BusinessException("Module with that id not found", HttpStatus.NOT_FOUND);
@@ -74,7 +74,5 @@ public class ModuleService {
             throw new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST);
         }
     }
-
-
 
 }
