@@ -20,15 +20,17 @@ public class RunOnStatup implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        if (levelRepository.count() == 0) {
+            LevelEntity levelEntity = new LevelEntity();
+            levelEntity.setTitle("A1");
+            levelEntity.setExperienceValue(100);
+            levelRepository.save(levelEntity);
+        }
 
-        LevelEntity levelEntity = new LevelEntity();
-        levelEntity.setTitle("A1");
-        levelEntity.setExperienceValue(100);
-        levelRepository.save(levelEntity);
-
-        GrammarRuleEntity grammarRuleEntity = new GrammarRuleEntity();
-        grammarRuleEntity.setTitle("Past Simple");
-        grammarRuleRepository.save(grammarRuleEntity);
-
+        if (grammarRuleRepository.count() == 0) {
+            GrammarRuleEntity grammarRuleEntity = new GrammarRuleEntity();
+            grammarRuleEntity.setTitle("Past Simple");
+            grammarRuleRepository.save(grammarRuleEntity);
+        }
     }
 }
