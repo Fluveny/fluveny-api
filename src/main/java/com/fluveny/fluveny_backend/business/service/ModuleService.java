@@ -25,7 +25,7 @@ public class ModuleService {
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
 
         if (titleConflict.isPresent()) {
-            throw new BusinessException("There is already a module with that name", HttpStatus.CONFLICT);
+            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
         }
 
         validateGrammarRules(moduleEntity);
