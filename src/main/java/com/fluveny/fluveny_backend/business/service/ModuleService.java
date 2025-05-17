@@ -59,7 +59,7 @@ public class ModuleService {
 
     public ModuleEntity getModuleEntity(String id) {
 
-        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+        Optional<ModuleEntity> moduleFind = moduleRepository.findByTitle(id);
 
         if(moduleFind.isEmpty()){
             throw new BusinessException("Module with that id not found", HttpStatus.NOT_FOUND);
@@ -70,9 +70,8 @@ public class ModuleService {
     }
 
     public void validateGrammarRules(ModuleEntity moduleEntity){
-        if(moduleEntity.getGrammarRule().size() > 5){
+        if(moduleEntity.getGrammarRules().size() > 5){
             throw new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST);
         }
     }
-
 }
