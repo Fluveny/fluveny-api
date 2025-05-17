@@ -16,4 +16,5 @@ public class GrammarRuleEntity {
     @Id
     private String id;
     private String title;
+    private String slug;
 }

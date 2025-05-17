@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/module")
+@RequestMapping("/api/v1/modules")
 public class ModuleController {
 
     private final ModuleService moduleService;
