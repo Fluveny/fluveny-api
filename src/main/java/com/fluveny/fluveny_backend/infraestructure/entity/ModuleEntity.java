@@ -20,5 +20,5 @@ public class ModuleEntity {
     private String title;
     private String description;
     private LevelEntity level;
-    private List<GrammarRuleEntity> grammarRule;
+    private List<GrammarRuleEntity> grammarRules;
 }

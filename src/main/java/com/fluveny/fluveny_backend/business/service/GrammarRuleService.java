@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.business.service;
 
+import com.fluveny.fluveny_backend.api.dto.GrammarRuleRequestDTO;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleRepository;
@@ -46,20 +47,47 @@ public class GrammarRuleService {
         return rules;
     }
 
-    public GrammarRuleEntity save(GrammarRuleEntity grammarRule) {
-        Optional<GrammarRuleEntity> existingRule = grammarRuleRepository.findByTitle(grammarRule.getTitle());
-
-        if (existingRule.isPresent() && (grammarRule.getId() == null || !grammarRule.getId().equals(existingRule.get().getId()))) {
-            throw new BusinessException("There is already a grammar rule with that title", HttpStatus.CONFLICT);
+    public GrammarRuleEntity create(GrammarRuleRequestDTO dto) {
+        Optional<GrammarRuleEntity> existing = grammarRuleRepository.findByTitle(dto.getTitle());
+        if (existing.isPresent()) {
+            throw new BusinessException("A grammar rule with this title already exists", HttpStatus.CONFLICT);
         }
 
-        return grammarRuleRepository.save(grammarRule);
+        GrammarRuleEntity entity = new GrammarRuleEntity();
+        entity.setTitle(dto.getTitle());
+        entity.setSlug(generateSlug(dto.getTitle()));
+
+        return grammarRuleRepository.save(entity);
     }
+
+    public GrammarRuleEntity update(String id, GrammarRuleRequestDTO dto) {
+        GrammarRuleEntity existing = grammarRuleRepository.findById(id)
+                .orElseThrow(() -> new BusinessException("Grammar rule not found: " + id, HttpStatus.NOT_FOUND));
+
+        grammarRuleRepository.findByTitle(dto.getTitle())
+                .filter(rule -> !rule.getId().equals(id))
+                .ifPresent(rule -> {
+                    throw new BusinessException("Another grammar rule with this title already exists", HttpStatus.CONFLICT);
+                });
+
+        existing.setTitle(dto.getTitle());
+        existing.setSlug(generateSlug(dto.getTitle()));
+
+        return grammarRuleRepository.save(existing);
+    }
+
 
     public void deleteById(String id) {
         if (!grammarRuleRepository.existsById(id)) {
             throw new BusinessException("Grammar rule not found: " + id, HttpStatus.NOT_FOUND);
         }
         grammarRuleRepository.deleteById(id);
+    }
+
+    private String generateSlug(String title) {
+        if (title == null) return null;
+        return title.trim().toLowerCase()
+                .replaceAll("[^a-z0-9\\s]", "")   // remove símbolos
+                .replaceAll("\\s+", "-");         // espaços viram hífens
     }
 }

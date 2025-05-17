@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
+import com.fluveny.fluveny_backend.api.dto.GrammarRuleRequestDTO;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import lombok.RequiredArgsConstructor;
@@ -39,8 +40,10 @@ public class GrammarRuleController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<GrammarRuleEntity>> createGrammarRule(@RequestBody GrammarRuleEntity grammarRule) {
-        GrammarRuleEntity createdRule = grammarRuleService.save(grammarRule);
+    public ResponseEntity<ApiResponseFormat<GrammarRuleEntity>> createGrammarRule(
+            @RequestBody GrammarRuleRequestDTO grammarRuleDTO) {
+
+        GrammarRuleEntity createdRule = grammarRuleService.create(grammarRuleDTO);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new ApiResponseFormat<>("Grammar rule was created", createdRule));
     }
@@ -48,10 +51,9 @@ public class GrammarRuleController {
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<GrammarRuleEntity>> updateGrammarRule(
             @PathVariable String id,
-            @RequestBody GrammarRuleEntity grammarRule) {
+            @RequestBody GrammarRuleRequestDTO grammarRuleDTO) {
 
-        grammarRule.setId(id);
-        GrammarRuleEntity updatedRule = grammarRuleService.save(grammarRule);
+        GrammarRuleEntity updatedRule = grammarRuleService.update(id, grammarRuleDTO);
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponseFormat<>("Grammar rule was updated", updatedRule));
     }

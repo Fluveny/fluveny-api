@@ -4,13 +4,10 @@ import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleResponseDTO;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
 import com.fluveny.fluveny_backend.business.service.LevelService;
-import com.fluveny.fluveny_backend.business.service.ModuleService;
-import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -42,7 +39,7 @@ public class ModuleMapper {
             grammarRules.add(grammarRuleService.findById(grammarId));
         }
 
-        moduleEntity.setGrammarRule(grammarRules);
+        moduleEntity.setGrammarRules(grammarRules);
 
         return moduleEntity;
     }
@@ -53,10 +50,9 @@ public class ModuleMapper {
         moduleResponseDTO.setTitle(moduleEntity.getTitle());
         moduleResponseDTO.setDescription(moduleEntity.getDescription());
         moduleResponseDTO.setLevel(moduleEntity.getLevel());
-        moduleResponseDTO.setGrammarRule(moduleEntity.getGrammarRule());
+        moduleResponseDTO.setGrammarRules(moduleEntity.getGrammarRules());
         moduleResponseDTO.setId(moduleEntity.getId());
 
         return moduleResponseDTO;
     }
-
 }
