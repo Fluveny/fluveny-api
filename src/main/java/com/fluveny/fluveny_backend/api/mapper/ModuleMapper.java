@@ -42,7 +42,7 @@ public class ModuleMapper {
             grammarRules.add(grammarRuleService.findById(grammarId));
         }
 
-        moduleEntity.setGrammarRule(grammarRules);
+        moduleEntity.setGrammarRules(grammarRules);
 
         return moduleEntity;
     }
@@ -53,7 +53,7 @@ public class ModuleMapper {
         moduleResponseDTO.setTitle(moduleEntity.getTitle());
         moduleResponseDTO.setDescription(moduleEntity.getDescription());
         moduleResponseDTO.setLevel(moduleEntity.getLevel());
-        moduleResponseDTO.setGrammarRule(moduleEntity.getGrammarRule());
+        moduleResponseDTO.setGrammarRules(moduleEntity.getGrammarRules());
         moduleResponseDTO.setId(moduleEntity.getId());
 
         return moduleResponseDTO;
