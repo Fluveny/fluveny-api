@@ -1,8 +1,11 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
+import com.fluveny.fluveny_backend.api.dto.GrammarRuleRequestDTO;
+import com.fluveny.fluveny_backend.api.mapper.GrammarRuleMapper;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import java.util.List;
 public class GrammarRuleController {
 
     private final GrammarRuleService grammarRuleService;
+    private final GrammarRuleMapper grammarRuleMapper;
 
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<GrammarRuleEntity>>> getAllGrammarRules() {
@@ -39,21 +43,24 @@ public class GrammarRuleController {
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<GrammarRuleEntity>> createGrammarRule(@RequestBody GrammarRuleEntity grammarRule) {
-        GrammarRuleEntity createdRule = grammarRuleService.save(grammarRule);
+    public ResponseEntity<ApiResponseFormat<GrammarRuleEntity>> createGrammarRule(
+            @RequestBody GrammarRuleRequestDTO dto) {
+
+        GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
+        GrammarRuleEntity saved = grammarRuleService.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseFormat<>("Grammar rule was created", createdRule));
+                .body(new ApiResponseFormat<>("Grammar rule was created", saved));
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<GrammarRuleEntity>> updateGrammarRule(
             @PathVariable String id,
-            @RequestBody GrammarRuleEntity grammarRule) {
+            @RequestBody @Valid GrammarRuleRequestDTO dto) {
 
-        grammarRule.setId(id);
-        GrammarRuleEntity updatedRule = grammarRuleService.save(grammarRule);
+        GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
+        GrammarRuleEntity updated = grammarRuleService.update(id, entity);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponseFormat<>("Grammar rule was updated", updatedRule));
+                .body(new ApiResponseFormat<>("Grammar rule was updated", updated));
     }
 
     @DeleteMapping("/{id}")

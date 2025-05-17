@@ -70,9 +70,8 @@ public class ModuleService {
     }
 
     public void validateGrammarRules(ModuleEntity moduleEntity){
-        if(moduleEntity.getGrammarRule().size() > 5){
+        if(moduleEntity.getGrammarRules().size() > 5){
             throw new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST);
         }
     }
-
 }
