@@ -87,7 +87,7 @@ public class GrammarRuleService {
     private String generateSlug(String title) {
         if (title == null) return null;
         return title.trim().toLowerCase()
-                .replaceAll("[^a-z0-9\\s]", "")   // remove símbolos
-                .replaceAll("\\s+", "-");         // espaços viram hífens
+                .replaceAll("[^a-z0-9\\s]", "")
+                .replaceAll("\\s+", "-");
     }
 }

@@ -49,7 +49,7 @@ public class GrammarRuleController {
         GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
         GrammarRuleEntity saved = grammarRuleService.save(entity);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseFormat<>("Grammar rule was deleted", saved));
+                .body(new ApiResponseFormat<>("Grammar rule was created", saved));
     }
 
     @PutMapping("/{id}")
@@ -60,7 +60,7 @@ public class GrammarRuleController {
         GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
         GrammarRuleEntity updated = grammarRuleService.update(id, entity);
         return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponseFormat<>("Grammar rule was deleted", updated));
+                .body(new ApiResponseFormat<>("Grammar rule was updated", updated));
     }
 
     @DeleteMapping("/{id}")
