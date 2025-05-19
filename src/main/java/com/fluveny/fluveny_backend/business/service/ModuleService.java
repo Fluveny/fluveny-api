@@ -58,7 +58,7 @@ public class ModuleService {
         Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
 
         if(moduleFind.isEmpty()){
-            throw new BusinessException("Module with that id not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
         }
 
         return moduleFind.get();
