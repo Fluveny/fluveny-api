@@ -15,7 +15,7 @@ import lombok.Setter;
 
 public class IntroductionDTO {
     @NotNull(message= "module can not be empty")
-    private String moduleId;
+    private String id;
     @NotNull(message= "textblock can not be empty")
     private TextBlockEntity textBlock;
 }
