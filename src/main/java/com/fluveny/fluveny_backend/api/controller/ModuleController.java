@@ -141,8 +141,30 @@ public class ModuleController {
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules find with successfully", modulesDTO));
     }
+
+    @Operation(summary = "Get a single module", description = "This endpoint is responsible for get a single module based on its id.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Module retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesReponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "204", description = "The module wasn't found, but the request was successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(@PathVariable String id){
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
 
             ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
 
