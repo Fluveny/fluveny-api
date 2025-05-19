@@ -141,19 +141,17 @@ public class ModuleController {
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules find with successfully", modulesDTO));
     }
-    @GetMapping("{id}")
-    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(String id){
-        try{
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(@PathVariable String id){
 
             ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
 
+            if (moduleDTO == null) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponseFormat<>("A module with that id was not found", null));
+            }
+
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
 
-        }catch (BusinessException e){
-
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponseFormat<>(e.getMessage(), null));
-
-        }
     }
 
 }
