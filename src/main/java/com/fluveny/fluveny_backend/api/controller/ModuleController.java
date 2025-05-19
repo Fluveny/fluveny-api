@@ -7,6 +7,7 @@ import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
 import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
 import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
+import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -138,6 +140,20 @@ public class ModuleController {
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules find with successfully", modulesDTO));
+    }
+    @GetMapping("{id}")
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(String id){
+        try{
+
+            ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
+
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
+
+        }catch (BusinessException e){
+
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponseFormat<>(e.getMessage(), null));
+
+        }
     }
 
 }
