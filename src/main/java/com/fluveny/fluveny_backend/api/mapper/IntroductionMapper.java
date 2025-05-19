@@ -27,3 +27,5 @@ public class IntroductionMapper {
         return introductionEntity;
     }
 }
+
+//Precisa refatorar o Mapper, implementando as funcionalidade de modulo. Descomentar depois
