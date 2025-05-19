@@ -7,6 +7,7 @@ import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
 import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
 import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
+import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +24,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -138,6 +140,40 @@ public class ModuleController {
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules find with successfully", modulesDTO));
+    }
+
+    @Operation(summary = "Get a single module", description = "This endpoint is responsible for get a single module based on its id.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Module retrieved successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesReponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "204", description = "The module wasn't found, but the request was successful",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
+
+            ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
+
+            if (moduleDTO == null) {
+                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponseFormat<>("A module with that id was not found", null));
+            }
+
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
+
     }
 
 }
