@@ -115,7 +115,7 @@ public class ModuleController {
                             schema = @Schema(implementation = ModulesReponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "204", description = "No modules found, but the request was successful",
+            @ApiResponse(responseCode = "200", description = "No modules found, but the request was successful",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -136,7 +136,7 @@ public class ModuleController {
                 .toList();
 
         if (modulesDTO.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponseFormat<>("No modules find", null));
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No modules find", null));
         }
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules find with successfully", modulesDTO));
@@ -150,7 +150,7 @@ public class ModuleController {
                             schema = @Schema(implementation = ModulesReponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "204", description = "The module wasn't found, but the request was successful",
+            @ApiResponse(responseCode = "200", description = "The module wasn't found, but the request was successful",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -169,7 +169,7 @@ public class ModuleController {
             ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
 
             if (moduleDTO == null) {
-                return ResponseEntity.status(HttpStatus.NO_CONTENT).body(new ApiResponseFormat<>("A module with that id was not found", null));
+                return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module with that id was not found", null));
             }
 
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
