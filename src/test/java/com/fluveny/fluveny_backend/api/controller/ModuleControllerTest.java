@@ -12,6 +12,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -23,11 +24,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -39,6 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @ExtendWith(MockitoExtension.class)
 @Import(GlobalExceptionHandler.class)
+@ActiveProfiles("test")
 class ModuleControllerTest {
 
     @InjectMocks
@@ -78,8 +79,8 @@ class ModuleControllerTest {
     }
 
     @Test
-    @DisplayName("Should accept request and add module successfully")
-    void shouldAcceptRequestAndAddModuleSuccessfully() throws Exception {
+    @DisplayName("Should accept create request and add module successfully")
+    void shouldAcceptRequestToAddModuleAndAddModuleSuccessfully() throws Exception {
 
         restartRequestDTO();
 
@@ -97,8 +98,8 @@ class ModuleControllerTest {
         when(moduleService.saveModule(moduleEntity)).thenReturn(moduleEntity);
 
         mockMvc.perform(post("/api/v1/modules")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
                 .andExpect(status().isCreated())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.message").value("Module created successfully"))
@@ -111,8 +112,8 @@ class ModuleControllerTest {
     }
 
     @Test
-    @DisplayName("Should reject request when required field is missing")
-    void shouldRejectRequestWhenRequiredFieldIsMissing() throws Exception {
+    @DisplayName("Should reject create request when required field is missing")
+    void shouldRejectRequestToAddModuleWhenRequiredFieldIsMissing() throws Exception {
 
         restartRequestDTO();
         requestDTO.setTitle(null);
@@ -131,10 +132,9 @@ class ModuleControllerTest {
     }
 
 
-
     @Test
-    @DisplayName("Should reject request when grammar rule id does not exist")
-    void shouldRejectRequestWhenGrammarRuleIdDoesNotExist() throws Exception {
+    @DisplayName("Should reject create request when grammar rule id does not exist")
+    void shouldRejectRequestToAddModuleWhenGrammarRuleIdDoesNotExist() throws Exception {
 
         restartRequestDTO();
         requestDTO.setId_grammarRules(Arrays.asList("1234", rule2.getId()));
@@ -154,8 +154,8 @@ class ModuleControllerTest {
     }
 
     @Test
-    @DisplayName("Should reject request when level id does not exist")
-    void shouldRejectRequestWhenLevelIdDoesNotExist() throws Exception {
+    @DisplayName("Should reject create request when level id does not exist")
+    void shouldRejectRequestToAddModuleWhenLevelIdDoesNotExist() throws Exception {
 
         restartRequestDTO();
         requestDTO.setId_level("1234");
@@ -175,8 +175,8 @@ class ModuleControllerTest {
     }
 
     @Test
-    @DisplayName("Should reject request when module has more than 5 grammar rules")
-    void shouldRejectRequestWhenModuleHasMoreThan5GrammarRules() throws Exception {
+    @DisplayName("Should reject create request when module has more than 5 grammar rules")
+    void shouldRejectRequestToAddModuleWhenModuleHasMoreThan5GrammarRules() throws Exception {
 
         restartRequestDTO();
         requestDTO.setId_grammarRules(Arrays.asList(rule1.getId(), rule2.getId(), "12345", "123456", "1234567", "123345678"));
@@ -200,8 +200,8 @@ class ModuleControllerTest {
     }
 
     @Test
-    @DisplayName("Should reject request when module has the same Title")
-    void shouldRejectRequestWhenModuleHasTheSameTitle() throws Exception {
+    @DisplayName("Should reject create request when module has the same Title")
+    void shouldRejectRequestToAddModuleWhenModuleHasTheSameTitle() throws Exception {
 
         restartRequestDTO();
 
@@ -223,7 +223,178 @@ class ModuleControllerTest {
         verify(moduleService, times(1)).saveModule(any());
     }
 
-    void restartRequestDTO (){
+    @Test
+    @DisplayName("Should accept update request and update module successfully")
+    void shouldAcceptRequestToUpdateModuleAndAddModuleSuccessfully() throws Exception {
+        restartRequestDTO();
+
+        ModuleResponseDTO responseDTO = new ModuleResponseDTO();
+
+        responseDTO.setTitle("Test - The day in the office");
+        responseDTO.setDescription("The module of test");
+        responseDTO.setLevel(level);
+        responseDTO.setGrammarRules(Arrays.asList(rule1, rule2));
+
+        ModuleEntity moduleEntity = new ModuleEntity();
+        moduleEntity.setId("moduleTest");
+
+        when(moduleMapper.toDTO(moduleEntity)).thenReturn(responseDTO);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleService.updateModule(moduleEntity, moduleEntity.getId())).thenReturn(moduleEntity);
+
+        mockMvc.perform(put("/api/v1/modules/{id}", moduleEntity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Module updated successfully"))
+                .andExpect(jsonPath("$.data.title").value("Test - The day in the office"))
+                .andReturn();
+
+        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toDTO(any());
+        verify(moduleService, times(1)).updateModule(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should Reject update request module when id of module is not found")
+    void shouldRejectRequestToUpdateModuleWhenTheIDOdModuleIsNotFound() throws Exception {
+
+        restartRequestDTO();
+
+        ModuleEntity moduleEntity = new ModuleEntity();
+        moduleEntity.setId("moduleTest");
+
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleService.updateModule(moduleEntity, moduleEntity.getId())).thenThrow(new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/modules/{id}", moduleEntity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Module with this id not found"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleService, times(1)).updateModule(any(), any());
+
+    }
+
+    @Test
+    @DisplayName("Should reject update request when required field is missing")
+    void shouldRejectRequestToUpdateModuleWhenRequiredFieldIsMissing() throws Exception {
+
+        restartRequestDTO();
+        requestDTO.setTitle(null);
+
+        mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("title: Title is required"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleMapper, times(0)).toEntity(any());
+        verify(moduleService, times(0)).updateModule(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should reject update request when grammar rule id does not exist")
+    void shouldRejectUpdateWhenGrammarRuleIdDoesNotExist() throws Exception {
+
+        restartRequestDTO();
+        requestDTO.setId_grammarRules(Arrays.asList("1234", rule2.getId()));
+
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenThrow(new BusinessException("Grammar rule not found: 1234", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Grammar rule not found: 1234"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleMapper, times(1)).toEntity(any());
+    }
+
+    @Test
+    @DisplayName("Should reject update request when level id does not exist")
+    void shouldRejectUpdateWhenLevelIdDoesNotExist() throws Exception {
+
+        restartRequestDTO();
+        requestDTO.setId_level("1234");
+
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenThrow(new BusinessException("Level not found: 1234", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Level not found: 1234"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleMapper, times(1)).toEntity(any());
+    }
+
+    @Test
+    @DisplayName("Should reject update request when module has more than 5 grammar rules")
+    void shouldRejectUpdateWhenMoreThan5GrammarRules() throws Exception {
+
+        restartRequestDTO();
+        requestDTO.setId_grammarRules(Arrays.asList(rule1.getId(), rule2.getId(), "12345", "123456", "1234567", "123345678"));
+
+        ModuleEntity moduleEntity = new ModuleEntity();
+
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleService.updateModule(eq(moduleEntity), eq("moduleTest"))).thenThrow(new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST));
+
+        mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("A module cannot have more than 5 grammar rules"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleService, times(1)).updateModule(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should reject update request when module has the same Title")
+    void shouldRejectUpdateWhenModuleHasTheSameTitle() throws Exception {
+
+        restartRequestDTO();
+
+        ModuleEntity moduleEntity = new ModuleEntity();
+
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleService.updateModule(eq(moduleEntity), eq("moduleTest")))
+                .thenThrow(new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT));
+
+        mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Another module with this title already exists"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleService, times(1)).updateModule(any(), any());
+    }
+
+    private void restartRequestDTO() {
         requestDTO.setTitle("Test - The day in the office");
         requestDTO.setDescription("The module of test");
         requestDTO.setId_level(level.getId());
