@@ -18,7 +18,6 @@ public class IntroductionEntity {
 
     @Id
     private String id;
-    @DBRef
     private ModuleEntity moduloId;
     private TextBlockEntity textBlock;
 }
