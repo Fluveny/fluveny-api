@@ -1,40 +1,41 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
+import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleResponseDTO;
+import com.fluveny.fluveny_backend.api.mapper.IntroductionMapper;
 import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
 import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
 import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
-import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/modules")
-public class ModuleController {
+public class ModuleController implements IntroductionController {
 
     private final ModuleService moduleService;
 
     private final ModuleMapper moduleMapper;
+
+    private final IntroductionMapper introductionMapper;
 
     @Operation(summary = "Creating a new module", description = "This endpoint is responsible for creating a new module on the Fluveny by pressing a DTO with the requested information.")
     @ApiResponses(value = {
@@ -174,6 +175,29 @@ public class ModuleController {
 
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
 
+    }
+
+    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> getIntroductionByEntityId(@PathVariable String id){
+        TextBlockEntity introduction = moduleService.getIntroductionByEntityID(id);
+        if (introduction == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No Introduction find for this module", null));
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<IntroductionResponseDTO>("Introduction was found", introductionMapper.toDTO(introduction, id)));
+    }
+
+    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> updateIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO){
+        TextBlockEntity introduction = moduleService.updateIntroduction(id, introductionMapper.toEntity(introductionRequestDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was updated", introductionMapper.toDTO(introduction, id)));
+    }
+
+    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createModule(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO) {
+        TextBlockEntity introduction = moduleService.createIntroduction(id, introductionMapper.toEntity(introductionRequestDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was created", introductionMapper.toDTO(introduction, id)));
+    }
+
+    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> deleteIntroduction(@PathVariable String id){
+        moduleService.deleteIntroductionById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was deleted", null));
     }
 
 }
