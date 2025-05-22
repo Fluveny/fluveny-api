@@ -2,7 +2,6 @@ package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.IntroductionRepository;
-import com.fluveny.fluveny_backend.api.dto.IntroductionDTO;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.IntroductionEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
@@ -24,8 +23,8 @@ public class IntroductionService {
                 .orElseThrow(() -> new BusinessException("User not found: " + id, HttpStatus.NOT_FOUND));
     }
 
-    public List<IntroductionEntity> getAllIntroduction() {
-        List<IntroductionEntity> introductions = introductionRepository.findAll();
+    public List<IntroductionEntity> getAllIntroduction(String modulo_id) {
+        List<IntroductionEntity> introductions = introductionRepository.findAll(modulo_id);
         if (introductions.isEmpty()) {
             throw new BusinessException("Introduction is empty", HttpStatus.NOT_FOUND);
         }

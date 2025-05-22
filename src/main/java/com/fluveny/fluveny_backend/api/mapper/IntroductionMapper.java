@@ -1,31 +1,37 @@
 package com.fluveny.fluveny_backend.api.mapper;
 
-import com.fluveny.fluveny_backend.api.dto.IntroductionDTO;
-import com.fluveny.fluveny_backend.business.service.IntroductionService;
+import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
+import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.IntroductionEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
 public class IntroductionMapper {
 
-    private IntroductionService introductionService;
+    @Autowired
+    public ModuleService moduleService;
 
-    public static IntroductionDTO toDTO(IntroductionEntity introductionEntity){
-        IntroductionDTO introductionDTO = new IntroductionDTO();
+    public IntroductionResponseDTO toDTO(IntroductionEntity introductionEntity){
 
-        introductionDTO.setId(introductionEntity.getId());
+        IntroductionResponseDTO introductionResponseDTO = new IntroductionResponseDTO();
+        introductionResponseDTO.setId(introductionEntity.getId());
+        introductionResponseDTO.setTextBlock(introductionEntity.getTextBlock());
+        introductionResponseDTO.setId_module(introductionResponseDTO.getId_module());
 
-        return introductionDTO;
+        return introductionResponseDTO;
     }
 
-    public static IntroductionEntity toEntity(IntroductionDTO introductionDTO){
-        IntroductionEntity introductionEntity = new IntroductionEntity();
+    public IntroductionEntity toEntity(IntroductionRequestDTO introductionRequestDTO){
+            IntroductionEntity introductionEntity = new IntroductionEntity();
+            introductionEntity.setTextBlock(introductionRequestDTO.getTextBlock());
 
-        introductionEntity.setId(introductionDTO.getId());
+            ModuleEntity module = moduleService.getModuleById(introductionRequestDTO.getId_module());
+            introductionEntity.setModuloId(module);
 
         return introductionEntity;
     }
 }
 
-//Precisa refatorar o Mapper, implementando as funcionalidade de modulo. Descomentar depois
