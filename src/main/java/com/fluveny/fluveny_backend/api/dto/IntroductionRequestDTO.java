@@ -1,6 +1,5 @@
 package com.fluveny.fluveny_backend.api.dto;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -13,9 +12,9 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 
-public class IntroductionDTO {
-    @NotNull(message= "module can not be empty")
-    private String id;
-    @NotNull(message= "textblock can not be empty")
+public class IntroductionRequestDTO {
+    @NotNull(message= "Module ID can not be empty")
+    private String id_module;
+    @NotNull(message= "Textblock can not be empty")
     private TextBlockEntity textBlock;
 }
