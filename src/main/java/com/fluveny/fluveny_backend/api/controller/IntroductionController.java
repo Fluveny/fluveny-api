@@ -6,6 +6,7 @@ import com.fluveny.fluveny_backend.business.service.IntroductionService;
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.infraestructure.entity.IntroductionEntity;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -26,8 +27,8 @@ import java.util.List;
 public class IntroductionController {
 
     private final IntroductionService introductionService;
-
     private final IntroductionMapper introductionMapper;
+
 
     @Operation(summary = "Show all introductions", description = "This endpoint is responsible for list all the introductions created")
     @ApiResponses(value = {
@@ -110,6 +111,33 @@ public class IntroductionController {
                 .body(new ApiResponseFormat<>("Introduction was created", introduction));
     }
 
+    @Operation(summary = "Update one introduction", description = "This endpoint is responsible to update one introduction by ID and module ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Introduction updated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = IntroductionEntity.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Failed to update introduction",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<IntroductionEntity>> updateIntroduction(
+            @PathVariable String id,
+            @PathVariable("modulo_id") String moduloId,
+            @Valid @RequestBody IntroductionDTO introductionDTO) {
+
+        IntroductionEntity introductionEntity = introductionMapper.toEntity(introductionDTO);
+        IntroductionEntity updatedIntroduction = introductionService.updateIntroduction(introductionEntity, id, moduloId);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponseFormat<>("Introduction was updated successfully", updatedIntroduction));
+    }
+
     @Operation(summary = "Delete one introduction", description = "This endpoint is responsible to delete one introduction")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "One introduction was deleted",
@@ -125,6 +153,7 @@ public class IntroductionController {
                     )
             )
     })
+
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<IntroductionEntity>> deleteIntroduction(@PathVariable String id){
         introductionService.deleteIntroductionById(id);
