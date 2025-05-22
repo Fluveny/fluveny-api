@@ -2,7 +2,9 @@ package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,10 +13,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class ModuleService {
+public class ModuleService implements IntroductionService {
 
     @Autowired
     private ModuleRepository moduleRepository;
+
+    @Autowired
+    private TextBlockRepository textBlockRepository;
 
     public ModuleEntity saveModule(ModuleEntity moduleEntity) {
 
@@ -63,6 +68,70 @@ public class ModuleService {
 
         return moduleFind.get();
 
+    }
+
+    public TextBlockEntity getIntroductionByEntityID(String id){
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+        }
+
+        return existing.get().getIntroduction();
+    }
+
+    public TextBlockEntity createIntroduction(String id, TextBlockEntity textblockEntity) {
+
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+        }
+
+        if(existing.get().getIntroduction() != null){
+            throw new BusinessException("This module already has an introduction", HttpStatus.BAD_REQUEST);
+        }
+
+        existing.get().setIntroduction(textblockEntity);
+        moduleRepository.save(existing.get());
+
+        return textblockEntity;
+    }
+
+    public TextBlockEntity updateIntroduction(String id, TextBlockEntity textblockEntity) {
+
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+        }
+
+        if(existing.get().getIntroduction() == null){
+            throw new BusinessException("This module dont has an introduction", HttpStatus.NOT_FOUND);
+        }
+
+        textblockEntity.setId(existing.get().getIntroduction().getId());
+        existing.get().setIntroduction(textblockEntity);
+        moduleRepository.save(existing.get());
+
+        return textblockEntity;
+    }
+
+    public void deleteIntroductionById(String id) {
+
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+        }
+
+        if (existing.get().getIntroduction() == null) {
+            throw new BusinessException("This module dont has an introduction", HttpStatus.NOT_FOUND);
+        }
+
+        existing.get().setIntroduction(null);
+        moduleRepository.save(existing.get());
+        textBlockRepository.deleteById(id);
     }
 
     public void validateGrammarRules(ModuleEntity moduleEntity){
