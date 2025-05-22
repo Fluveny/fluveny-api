@@ -21,4 +21,13 @@ public class ModuleEntity {
     private String description;
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
+    private TextBlockEntity introduction;
+
+    public ModuleEntity(String id, String title, String description, LevelEntity level, List<GrammarRuleEntity> grammarRules) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.level = level;
+        this.grammarRules = grammarRules;
+    }
 }
