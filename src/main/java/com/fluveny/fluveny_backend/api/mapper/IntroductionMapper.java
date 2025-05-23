@@ -22,7 +22,7 @@ public class IntroductionMapper {
 
     public TextBlockEntity toEntity(IntroductionRequestDTO introductionRequestDTO){
         TextBlockEntity textBlock = new TextBlockEntity();
-        textBlock.setContent(introductionRequestDTO.getTextblock());
+        textBlock.setContent(introductionRequestDTO.getTextBlock());
         textBlockRepository.save(textBlock);
         return textBlock;
     }
