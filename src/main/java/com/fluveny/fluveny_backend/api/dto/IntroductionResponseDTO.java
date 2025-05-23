@@ -13,7 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 
 public class IntroductionResponseDTO {
-    private String id;
-    private String id_module;
+    private String idModule;
     private TextBlockEntity textBlock;
 }

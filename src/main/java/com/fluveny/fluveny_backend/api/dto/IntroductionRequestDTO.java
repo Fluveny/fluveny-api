@@ -13,8 +13,6 @@ import lombok.Setter;
 @AllArgsConstructor
 
 public class IntroductionRequestDTO {
-    @NotNull(message= "Module ID can not be empty")
-    private String id_module;
     @NotNull(message= "Textblock can not be empty")
-    private TextBlockEntity textBlock;
+    private String textblock;
 }
