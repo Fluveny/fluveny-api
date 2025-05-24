@@ -24,6 +24,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -59,7 +60,7 @@ public class ModuleController implements IntroductionController {
             )
     })
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> addModule(
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
         ModuleEntity module = moduleService.saveModule(moduleMapper.toEntity(moduleRequestDTO));
@@ -137,10 +138,10 @@ public class ModuleController implements IntroductionController {
                 .toList();
 
         if (modulesDTO.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No modules find", null));
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No modules found", new ArrayList<>()));
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules find with successfully", modulesDTO));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules found with successfully", modulesDTO));
     }
 
     @Operation(summary = "Get a single module", description = "This endpoint is responsible for get a single module based on its id.")
@@ -190,7 +191,7 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was updated", introductionMapper.toDTO(introduction, id)));
     }
 
-    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createModule(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO) {
+    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO) {
         TextBlockEntity introduction = moduleService.createIntroduction(id, introductionMapper.toEntity(introductionRequestDTO));
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was created", introductionMapper.toDTO(introduction, id)));
     }
