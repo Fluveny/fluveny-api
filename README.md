@@ -52,7 +52,7 @@ Execute o seguinte comando no Poweshell, na raiz do projeto:
 Ambos os comandos irão buildar o jar com maven, subir os conteineres e iniciar a aplicação.
 
 ## Ambiente de Desenvolvimento
-O Ambiente de Execução destina-se a quem deseja rodar a aplicação para poder realizar modificações ou desenvolvimento. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
+O Ambiente de Desenvolvimento destina-se a quem deseja rodar a aplicação para poder realizar modificações ou desenvolvimento. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
 
 ### Dependências
 Para rodar, certifique-se de ter, em sua máquina:
