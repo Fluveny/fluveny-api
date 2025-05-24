@@ -111,16 +111,10 @@ public class ModuleController implements IntroductionController {
 
     @Operation(summary = "Get all modules", description = "This endpoint is responsible for get all module on the Fluveny.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Modules retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "Modules retrieved successfully or no modules found, but the request was successful",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ModulesReponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "200", description = "No modules found, but the request was successful",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "500", description = "Internal server error",
@@ -150,12 +144,6 @@ public class ModuleController implements IntroductionController {
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ModulesReponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "200", description = "The module wasn't found, but the request was successful",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "500", description = "Internal server error",

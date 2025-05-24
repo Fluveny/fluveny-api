@@ -34,16 +34,10 @@ public class LevelController {
 
     @Operation(summary = "Get all levels", description = "This endpoint is responsible for get all levels on the Fluveny.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Levels retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "Levels retrieved successfully (can be an empty list)",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = LevelsResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "200", description = "No levels found, but the request was successful",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "500", description = "Internal server error",

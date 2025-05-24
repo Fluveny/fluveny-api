@@ -32,14 +32,14 @@ public class GrammarRuleController {
 
     @Operation(summary = "Get all grammar rules", description = "This endpoint retrieves all grammar rules.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Grammar rules retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "Grammar rules retrieved successfully or grammar Rules wasn't found, but the request was successful",
                     content = @Content(
                             mediaType = "application/json", schema = @Schema(implementation = GrammarRulesResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "500", description = "Internal server error",
                     content = @Content(
-                            mediaType = "application/json", schema = @Schema(implementation = GrammarRulesResponse.class)
+                            mediaType = "application/json", schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
