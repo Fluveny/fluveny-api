@@ -1,6 +1,5 @@
 package com.fluveny.fluveny_backend.api.dto;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -10,7 +9,8 @@ import lombok.Setter;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class GrammarRuleRequestDTO {
-    @NotBlank(message = "Title is required")
+public class GrammarRuleResponseDTO {
+    private String id;
     private String title;
+    private String slug;
 }
