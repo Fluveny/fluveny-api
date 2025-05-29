@@ -6,6 +6,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,6 +26,10 @@ class ModuleServiceTest {
 
     @Mock
     private ModuleRepository moduleRepository;
+
+    @Mock
+    private TextBlockRepository textBlockRepository;
+
 
     @InjectMocks
     private ModuleService moduleService;
@@ -188,6 +193,50 @@ class ModuleServiceTest {
 
         Assertions.assertEquals("This module already has an introduction.", thrown.getMessage());
     }
+
+    @Test
+    @DisplayName("Should delete module successfully")
+    void shouldDeleteIntroductionSuccesfully() throws Exception {
+
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        moduleService.deleteIntroductionById("12345a");
+
+
+        assertEquals("12345a", module.getId());
+        assertEquals(null, module.getIntroduction());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when deleting introduction on a non-existant module")
+    void shouldThrowExceptionWhenDeletingIntroductionAndModuleDoesntExists() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.deleteIntroductionById("12345a");
+        });
+
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when deleting introduction when it is null on a module")
+    void shouldThrowExceptionWhenDeletingIntroductionAndIntroductionIsNull() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.deleteIntroductionById("12345a");
+        });
+
+        Assertions.assertEquals("This module doesn't have an introduction.", thrown.getMessage());
+    }
+
 
 
 }
