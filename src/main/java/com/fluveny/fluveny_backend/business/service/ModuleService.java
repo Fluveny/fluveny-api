@@ -40,7 +40,7 @@ public class ModuleService implements IntroductionService {
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {
-            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
         }
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
@@ -74,7 +74,7 @@ public class ModuleService implements IntroductionService {
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {
-            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
         }
 
         return existing.get().getIntroduction();
@@ -85,11 +85,11 @@ public class ModuleService implements IntroductionService {
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {
-            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
         }
 
         if(existing.get().getIntroduction() != null){
-            throw new BusinessException("This module already has an introduction", HttpStatus.BAD_REQUEST);
+            throw new BusinessException("This module already has an introduction.", HttpStatus.BAD_REQUEST);
         }
 
         existing.get().setIntroduction(textblockEntity);
@@ -103,11 +103,11 @@ public class ModuleService implements IntroductionService {
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {
-            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
         }
 
         if(existing.get().getIntroduction() == null){
-            throw new BusinessException("This module dont has an introduction", HttpStatus.NOT_FOUND);
+            throw new BusinessException("This module doesn't have an introduction.", HttpStatus.NOT_FOUND);
         }
 
         textblockEntity.setId(existing.get().getIntroduction().getId());
@@ -122,11 +122,11 @@ public class ModuleService implements IntroductionService {
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {
-            throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
         }
 
         if (existing.get().getIntroduction() == null) {
-            throw new BusinessException("This module dont has an introduction", HttpStatus.NOT_FOUND);
+            throw new BusinessException("This module doesn't have an introduction.", HttpStatus.NOT_FOUND);
         }
 
         existing.get().setIntroduction(null);
