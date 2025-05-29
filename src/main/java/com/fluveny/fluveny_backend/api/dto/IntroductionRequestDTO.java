@@ -1,7 +1,9 @@
 package com.fluveny.fluveny_backend.api.dto;
 
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,6 +15,8 @@ import lombok.Setter;
 @AllArgsConstructor
 
 public class IntroductionRequestDTO {
-    @NotNull(message= "Text block can not be empty")
+    @NotNull(message= "Text block can not be null")
+    @NotBlank(message = "Text block is required")
+    @Size(min = 10, max = 7000, message = "The introduction content must be between 10 and 7000 characters")
     private String textBlock;
 }
