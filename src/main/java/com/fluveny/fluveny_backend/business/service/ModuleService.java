@@ -129,9 +129,9 @@ public class ModuleService implements IntroductionService {
             throw new BusinessException("This module doesn't have an introduction.", HttpStatus.NOT_FOUND);
         }
 
+        textBlockRepository.deleteById(existing.get().getIntroduction().getId());
         existing.get().setIntroduction(null);
         moduleRepository.save(existing.get());
-        textBlockRepository.deleteById(id);
     }
 
     public void validateGrammarRules(ModuleEntity moduleEntity){
