@@ -30,11 +30,11 @@ public class LevelService {
 
         public LevelEntity findById(String id) {
             return levelRepository.findById(id)
-                    .orElseThrow(() -> new BusinessException("Level not found: " + id, HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new BusinessException("Level with this id not found", HttpStatus.NOT_FOUND));
         }
         public LevelEntity findByTitle(String title) {
             return levelRepository.findByTitle(title)
-                    .orElseThrow(() -> new BusinessException("Level not found: " + title, HttpStatus.NOT_FOUND));
+                    .orElseThrow(() -> new BusinessException("Level with this title not found", HttpStatus.NOT_FOUND));
         }
 
         public LevelEntity save(LevelEntity level) {
@@ -47,7 +47,7 @@ public class LevelService {
 
         public void deleteById(String id) {
             if (!levelRepository.existsById(id)) {
-                throw new BusinessException("Level not found: " + id, HttpStatus.NOT_FOUND);
+                throw new BusinessException("Level not found with this id", HttpStatus.NOT_FOUND);
             }
             levelRepository.deleteById(id);
         }

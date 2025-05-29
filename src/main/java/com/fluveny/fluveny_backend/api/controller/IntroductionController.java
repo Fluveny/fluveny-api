@@ -56,7 +56,7 @@ public interface IntroductionController {
             )
     })
     @PostMapping("{id}/introduction")
-    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createModule(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO);
+    public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO);
 
     @Operation(summary = "Update one introduction", description = "This endpoint is responsible to update one introduction by ID and module ID")
     @ApiResponses(value = {

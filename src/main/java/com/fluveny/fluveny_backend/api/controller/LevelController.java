@@ -1,9 +1,19 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
+import com.fluveny.fluveny_backend.api.response.level.LevelsResponse;
+import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
 import com.fluveny.fluveny_backend.business.service.LevelService;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
+
+import java.util.ArrayList;
 import java.util.List;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,11 +32,26 @@ public class LevelController {
         this.levelService = levelService;
     }
 
+    @Operation(summary = "Get all levels", description = "This endpoint is responsible for get all levels on the Fluveny.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Levels retrieved successfully (can be an empty list)",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = LevelsResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Internal server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<LevelEntity>>> getAllLevels() {
         List<LevelEntity> levelsResponse = levelService.findAll();
         if(levelsResponse.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<LevelEntity>>("No levels were retrieved", null));
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<LevelEntity>>("No levels were retrieved", new ArrayList<>()));
         }
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<LevelEntity>>("Levels were successfully retrieved", levelsResponse));
     }

@@ -43,6 +43,8 @@ public class ModuleService implements IntroductionService {
             throw new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND);
         }
 
+        moduleEntity.setIntroduction(existing.get().getIntroduction());
+
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
         if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
             throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
