@@ -4,7 +4,9 @@ import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -24,6 +26,10 @@ class ModuleServiceTest {
 
     @Mock
     private ModuleRepository moduleRepository;
+
+    @Mock
+    private TextBlockRepository textBlockRepository;
+
 
     @InjectMocks
     private ModuleService moduleService;
@@ -68,7 +74,7 @@ class ModuleServiceTest {
             moduleService.updateModule(module, "12345a");
         });
 
-        Assertions.assertEquals("Module with this id not found", thrown.getMessage());
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
     }
 
     @Test
@@ -116,6 +122,169 @@ class ModuleServiceTest {
 
         // verify exception
         Assertions.assertEquals("A module cannot have more than 5 grammar rules", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should return the module's introduction when it is not null")
+    void shouldGetIntroductionWhenNotNullSuccessfully() throws Exception {
+
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        TextBlockEntity introduction = moduleService.getIntroductionByEntityID("12345a");
+
+        assertNotNull(introduction);
+    }
+
+    @Test
+    @DisplayName("Should throw exception when module doesn't exists")
+    void shouldThrowExceptionWhenGettingIntroductionAndModuleDoesntExists() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.getIntroductionByEntityID("12345a");
+        });
+
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should create module successfully")
+    void shouldCreateIntroductionSuccessfully() throws Exception {
+
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        TextBlockEntity introduction =  moduleService.createIntroduction("12345a",new TextBlockEntity());
+
+
+        assertEquals("12345a", module.getId());
+        assertEquals(introduction, module.getIntroduction());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when creating introduction on a non-existant module")
+    void shouldThrowExceptionWhenCreatingIntroductionAndModuleDoesntExists() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.createIntroduction("12345a", new TextBlockEntity());
+        });
+
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when creating introduction when it is not null on module")
+    void shouldThrowExceptionWhenCreatingIntroductionAndIntroductionIsNotNull() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.createIntroduction("12345a", new TextBlockEntity());
+        });
+
+        Assertions.assertEquals("This module already has an introduction.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should delete module successfully")
+    void shouldDeleteIntroductionSuccesfully() throws Exception {
+
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        moduleService.deleteIntroductionById("12345a");
+
+
+        assertEquals("12345a", module.getId());
+        assertEquals(null, module.getIntroduction());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when deleting introduction on a non-existant module")
+    void shouldThrowExceptionWhenDeletingIntroductionAndModuleDoesntExists() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.deleteIntroductionById("12345a");
+        });
+
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when deleting introduction when it is null on a module")
+    void shouldThrowExceptionWhenDeletingIntroductionAndIntroductionIsNull() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.deleteIntroductionById("12345a");
+        });
+
+        Assertions.assertEquals("This module doesn't have an introduction.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should successfully update a introduction when everything is OK")
+    void shouldUpdateIntroductionSuccessfully() throws Exception{
+        // creating entity for test
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        // mocking the application
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+        when(moduleRepository.findByTitle("Test")).thenReturn(Optional.of(module));
+        when(moduleRepository.save(any(ModuleEntity.class))).thenReturn(module);
+
+        // calling the action
+
+        TextBlockEntity updatedIntroduction = moduleService.updateIntroduction("12345a",new TextBlockEntity());
+
+        // verifying the outputs
+        verify(moduleRepository, times(1)).save(any());
+        assertNotNull(updatedIntroduction);
+        assertEquals("12345a", module.getId());
+        assertEquals(updatedIntroduction, module.getIntroduction());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when updating introduction on a non-existant module")
+    void shouldThrowExceptionWhenUpdatingIntroductionAndModuleDoesntExists() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.updateIntroduction("12345a", new TextBlockEntity());
+        });
+
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when updating introduction when it is null on a module")
+    void shouldThrowExceptionWhenUpdatingIntroductionAndIntroductionIsNull() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.updateIntroduction("12345a", new TextBlockEntity());
+        });
+
+        Assertions.assertEquals("This module doesn't have an introduction.", thrown.getMessage());
     }
 
 }
