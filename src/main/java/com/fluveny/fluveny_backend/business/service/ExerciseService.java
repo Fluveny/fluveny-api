@@ -28,7 +28,8 @@ public class ExerciseService {
     }
 
     public ExerciseEntity saveExercise(ExerciseEntity exerciseEntity) {
-        grammarRuleModuleService.addExerciseContent(exerciseEntity.getGrammarRuleModuleId(), exerciseEntity);
-        return exerciseRepository.save(exerciseEntity);
+        ExerciseEntity savedExercise = exerciseRepository.save(exerciseEntity);
+        grammarRuleModuleService.addExerciseContent(exerciseEntity.getGrammarRuleModuleId(), savedExercise);
+        return savedExercise;
     }
 }

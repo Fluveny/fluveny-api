@@ -27,7 +27,8 @@ public class PresentationService {
     }
 
     public PresentationEntity savePresentation(PresentationEntity presentationEntity) {
-        grammarRuleModuleService.addPresentationContent(presentationEntity.getGrammarRuleModuleId(), presentationEntity);
-        return presentationRepository.save(presentationEntity);
+        PresentationEntity presentationEntitySaved = presentationRepository.save(presentationEntity);
+        grammarRuleModuleService.addPresentationContent(presentationEntity.getGrammarRuleModuleId(), presentationEntitySaved);
+        return presentationEntitySaved;
     }
 }
