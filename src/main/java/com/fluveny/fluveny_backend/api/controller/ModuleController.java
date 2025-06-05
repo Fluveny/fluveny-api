@@ -1,15 +1,16 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.ModuleResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.*;
+import com.fluveny.fluveny_backend.api.mapper.GrammarRuleModuleMapper;
 import com.fluveny.fluveny_backend.api.mapper.IntroductionMapper;
 import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
 import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
 import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
+import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
+import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,9 +34,11 @@ import java.util.List;
 public class ModuleController implements IntroductionController {
 
     private final ModuleService moduleService;
+    private final GrammarRuleModuleService grammarRuleModuleService;
+
 
     private final ModuleMapper moduleMapper;
-
+    private final GrammarRuleModuleMapper grammarRuleModuleMapper;
     private final IntroductionMapper introductionMapper;
 
     @Operation(summary = "Creating a new module", description = "This endpoint is responsible for creating a new module on the Fluveny by pressing a DTO with the requested information.")
@@ -107,6 +110,18 @@ public class ModuleController implements IntroductionController {
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO){
         ModuleEntity module = moduleService.updateModule(moduleMapper.toEntity(moduleRequestDTO), id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
+    }
+
+    @PutMapping("/{id}/GrammarRuleModule/{grammarRuleModuleId}}")
+    public ResponseEntity<ApiResponseFormat<GrammarRuleModuleResponseDTO>> updateGrammarRuleModuleContentList(
+            @PathVariable String id,
+            @PathVariable String grammarRuleModuleId,
+            @Valid @RequestBody GrammarRuleModuleRequestDTO grammarRuleModuleRequestDTO)
+    {
+
+        GrammarRuleModuleEntity grammarRuleModule = grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleId, grammarRuleModuleMapper.toEntity(grammarRuleModuleRequestDTO));
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleResponseDTO>("Module updated successfully", grammarRuleModuleMapper.toDTO(grammarRuleModule)));
     }
 
     @Operation(summary = "Get all modules", description = "This endpoint is responsible for get all module on the Fluveny.")
