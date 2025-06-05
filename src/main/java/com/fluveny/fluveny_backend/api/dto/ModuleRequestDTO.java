@@ -16,7 +16,7 @@ public class ModuleRequestDTO {
     @NotNull(message = "Title is required")
     @NotBlank(message = "Title cannot be blank")
     @Size(min = 2, max = 100,
-            message = "Title must be between 2 and 70 characters")
+            message = "Title must be between 2 and 100 characters")
     @Pattern(regexp = "^[a-zA-Z0-9]+$",
             message = "Title contains invalid characters"
     )
