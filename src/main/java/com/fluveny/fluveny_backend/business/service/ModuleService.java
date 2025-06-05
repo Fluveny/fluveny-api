@@ -1,16 +1,18 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
+import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
+import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 public class ModuleService implements IntroductionService {
@@ -19,7 +21,12 @@ public class ModuleService implements IntroductionService {
     private ModuleRepository moduleRepository;
 
     @Autowired
+    private GrammarRuleModuleService grammarRuleModuleService;
+
+    @Autowired
     private TextBlockRepository textBlockRepository;
+    @Autowired
+    private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
     public ModuleEntity saveModule(ModuleEntity moduleEntity) {
 
@@ -31,7 +38,23 @@ public class ModuleService implements IntroductionService {
 
         validateGrammarRules(moduleEntity);
 
-        return moduleRepository.save(moduleEntity);
+        ModuleEntity savedModuleEntity = moduleRepository.save(moduleEntity);
+        savedModuleEntity.setGrammarRuleModules(new ArrayList<>());
+
+        List<GrammarRuleEntity> grammarRules = moduleEntity.getGrammarRules();
+
+        for(GrammarRuleEntity grammarRule : grammarRules) {
+            savedModuleEntity.getGrammarRuleModules().add(setGrammarRuleModule(savedModuleEntity, grammarRule));
+        }
+
+        return moduleRepository.save(savedModuleEntity);
+    }
+
+    private GrammarRuleModuleEntity setGrammarRuleModule(ModuleEntity moduleEntity, GrammarRuleEntity grammarRuleEntity) {
+        GrammarRuleModuleEntity grammarRuleModuleEntity = new GrammarRuleModuleEntity();
+        grammarRuleModuleEntity.setModuleId(moduleEntity.getId());
+        grammarRuleModuleEntity.setGrammarRuleId(grammarRuleEntity.getId());
+        return grammarRuleModuleService.saveGrammarRuleModule(grammarRuleModuleEntity);
     }
 
     public ModuleEntity updateModule(ModuleEntity moduleEntity, String id) {
@@ -52,7 +75,58 @@ public class ModuleService implements IntroductionService {
 
         validateGrammarRules(moduleEntity);
 
+        List<GrammarRuleModuleEntity> updatedGrammarRuleModules = new ArrayList<>(existing.get().getGrammarRuleModules());
+        moduleEntity.setGrammarRuleModules(updatedGrammarRuleModules);
+
+        syncGrammarRuleModules(moduleEntity, existing.get());
+        reorderGrammarRuleModules(moduleEntity);
+
         return moduleRepository.save(moduleEntity);
+
+    }
+
+    private void syncGrammarRuleModules(ModuleEntity newModule, ModuleEntity existingModule) {
+
+        List<GrammarRuleModuleEntity> toAdd = new ArrayList<>();
+        List<GrammarRuleModuleEntity> toRemove = new ArrayList<>();
+        List<GrammarRuleEntity> grammarRulesToRemove = new ArrayList<>();
+
+        for (GrammarRuleEntity rule : newModule.getGrammarRules()) {
+            if (!existingModule.getGrammarRules().contains(rule)) {
+                toAdd.add(setGrammarRuleModule(newModule, rule));
+            } else {
+                GrammarRuleModuleEntity gmr = grammarRuleModuleService.getGrammarRuleModuleByGrammarRuleId(existingModule.getId(), rule.getId());
+                toRemove.add(gmr);
+                grammarRulesToRemove.add(rule);
+            }
+        }
+
+        existingModule.getGrammarRuleModules().removeAll(toRemove);
+        existingModule.getGrammarRules().removeAll(grammarRulesToRemove);
+        newModule.getGrammarRuleModules().addAll(toAdd);
+
+        List<GrammarRuleModuleEntity> grammarRuleModuleEntities = existingModule.getGrammarRuleModules();
+
+        if (!grammarRuleModuleEntities.isEmpty()) {
+            List<GrammarRuleModuleEntity> GrammarRuleModulesToRemove = new ArrayList<>(grammarRuleModuleEntities);
+            for (GrammarRuleModuleEntity grammarRuleModuleEntity : GrammarRuleModulesToRemove) {
+                newModule.getGrammarRuleModules().remove(grammarRuleModuleEntity);
+                grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+            }
+        }
+    }
+
+    private void reorderGrammarRuleModules(ModuleEntity moduleEntity) {
+
+        Map<String, Integer> newPositions = new HashMap<>();
+
+        for (int i = 0; i < moduleEntity.getGrammarRules().size(); i++) {
+            newPositions.put(moduleEntity.getGrammarRules().get(i).getId(), i);
+        }
+
+        moduleEntity.getGrammarRuleModules().sort(
+                Comparator.comparingInt(grm -> newPositions.getOrDefault(grm.getGrammarRuleId(), Integer.MAX_VALUE))
+        );
 
     }
 
