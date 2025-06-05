@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.api.dto;
 
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,4 +20,5 @@ public class ModuleResponseDTO {
     private String description;
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
+    private List<GrammarRuleModuleEntity> grammarRulesModule;
 }
