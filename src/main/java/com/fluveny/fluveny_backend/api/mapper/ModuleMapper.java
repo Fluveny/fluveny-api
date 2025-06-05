@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
 public class ModuleMapper {
@@ -35,7 +36,9 @@ public class ModuleMapper {
         LevelEntity level = levelService.findById(moduleRequestDTO.getId_level());
         moduleEntity.setLevel(level);
 
-        Set<String> uniqueIds = new HashSet<>(moduleRequestDTO.getId_grammarRules());
+        List<String> uniqueIds = moduleRequestDTO.getId_grammarRules().stream()
+                .distinct()
+                .toList();
         List<GrammarRuleEntity> grammarRules = new ArrayList<>();
 
         for (String grammarId : uniqueIds) {
@@ -55,6 +58,7 @@ public class ModuleMapper {
         moduleResponseDTO.setLevel(moduleEntity.getLevel());
         moduleResponseDTO.setGrammarRules(moduleEntity.getGrammarRules());
         moduleResponseDTO.setId(moduleEntity.getId());
+        moduleResponseDTO.setGrammarRulesModule(moduleEntity.getGrammarRuleModules());
 
         return moduleResponseDTO;
     }

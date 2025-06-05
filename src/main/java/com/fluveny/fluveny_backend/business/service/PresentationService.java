@@ -15,7 +15,7 @@ public class PresentationService {
     @Autowired
     private PresentationRepository presentationRepository;
     @Autowired
-    private GrammarRuleModuleService grammarRuleModuleService;
+    private SaveContentManager saveContentManager;
 
     public PresentationEntity getPresentationById(String id) {
         Optional<PresentationEntity> presentationEntity = presentationRepository.findById(id);
@@ -26,9 +26,21 @@ public class PresentationService {
         return presentationEntity.get();
     }
 
+    public void deletePresentationById(String id) {
+
+        Optional<PresentationEntity> presentationEntity = presentationRepository.findById(id);
+
+        if(presentationEntity.isEmpty()) {
+            throw new BusinessException("No Presentation with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        presentationRepository.deleteById(id);
+
+    }
+
     public PresentationEntity savePresentation(PresentationEntity presentationEntity) {
         PresentationEntity presentationEntitySaved = presentationRepository.save(presentationEntity);
-        grammarRuleModuleService.addPresentationContent(presentationEntity.getGrammarRuleModuleId(), presentationEntitySaved);
+        saveContentManager.addPresentationContent(presentationEntity.getGrammarRuleModuleId(), presentationEntitySaved);
         return presentationEntitySaved;
     }
 }
