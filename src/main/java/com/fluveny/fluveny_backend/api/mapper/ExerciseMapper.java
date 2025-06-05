@@ -8,12 +8,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class ExerciseMapper {
 
-    public ExerciseEntity toEntity(ExerciseRequestDTO dto) {
+    public ExerciseEntity toEntity(ExerciseRequestDTO dto, String id_grammarRuleModule) {
         ExerciseEntity entity = new ExerciseEntity();
         entity.setHeader(dto.getHeader());
         entity.setPhrase(dto.getPhrase());
         entity.setTemplate(dto.getTemplate());
-        entity.setGrammarRuleModuleId(dto.getGrammarRuleModuleId());
+        entity.setGrammarRuleModuleId(id_grammarRuleModule);
         entity.setJustification(dto.getJustification());
         return entity;
     }
