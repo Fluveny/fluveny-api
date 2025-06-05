@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.List;
@@ -22,6 +23,8 @@ public class ModuleEntity {
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
     private TextBlockEntity introduction;
+    @DBRef
+    private List<GrammarRuleModuleEntity> grammarRuleModules;
 
     public ModuleEntity(String id, String title, String description, LevelEntity level, List<GrammarRuleEntity> grammarRules) {
         this.id = id;
@@ -29,5 +32,14 @@ public class ModuleEntity {
         this.description = description;
         this.level = level;
         this.grammarRules = grammarRules;
+    }
+
+    public ModuleEntity(String id, String title, String description, LevelEntity level, List<GrammarRuleEntity> grammarRules, TextBlockEntity introduction) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.level = level;
+        this.grammarRules = grammarRules;
+        this.introduction = introduction;
     }
 }
