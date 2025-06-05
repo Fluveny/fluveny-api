@@ -13,9 +13,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExerciseRequestDTO {
-    @NotNull(message = "Grammar Rule Module ID is required")
-    @NotBlank(message = "Grammar Rule Module ID cannot be blank")
-    private String grammarRuleModuleId;
     @NotNull(message = "Header is required")
     @NotBlank(message = "Header cannot be blank")
     private String header;
