@@ -112,8 +112,8 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
     }
 
-    @PutMapping("/{id}/GrammarRuleModule/{grammarRuleModuleId}}")
-    public ResponseEntity<ApiResponseFormat<GrammarRuleModuleResponseDTO>> updateGrammarRuleModuleContentList(
+    @PutMapping("/{id}/GrammarRuleModule/{grammarRuleModuleId}")
+    public ResponseEntity<ApiResponseFormat<GrammarRuleModuleEntity>> updateGrammarRuleModuleContentList(
             @PathVariable String id,
             @PathVariable String grammarRuleModuleId,
             @Valid @RequestBody GrammarRuleModuleRequestDTO grammarRuleModuleRequestDTO)
@@ -121,7 +121,7 @@ public class ModuleController implements IntroductionController {
 
         GrammarRuleModuleEntity grammarRuleModule = grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleId, grammarRuleModuleMapper.toEntity(grammarRuleModuleRequestDTO));
 
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleResponseDTO>("Module updated successfully", grammarRuleModuleMapper.toDTO(grammarRuleModule)));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleEntity>("Module updated successfully", grammarRuleModule));
     }
 
     @Operation(summary = "Get all modules", description = "This endpoint is responsible for get all module on the Fluveny.")
