@@ -32,9 +32,9 @@ public class GrammarRuleExerciseController {
     private final GrammarRuleModuleRepository grammarRuleModuleRepository;
 
     @Operation(summary = "Create a new Exercise",
-    description = "This endpoint is responsible for create a new exercise")
+    description = "This endpoint is used to create a new exercise")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "The exercise was create successfully",
+            @ApiResponse(responseCode = "201", description = "Exercise created successfully",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ExerciseResponse.class)
