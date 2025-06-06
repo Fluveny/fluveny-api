@@ -28,7 +28,7 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
-    public ModuleEntity saveModule(ModuleEntity moduleEntity) {
+    public ModuleEntity createModule(ModuleEntity moduleEntity) {
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
 
@@ -54,7 +54,7 @@ public class ModuleService implements IntroductionService {
         GrammarRuleModuleEntity grammarRuleModuleEntity = new GrammarRuleModuleEntity();
         grammarRuleModuleEntity.setModuleId(moduleEntity.getId());
         grammarRuleModuleEntity.setGrammarRuleId(grammarRuleEntity.getId());
-        return grammarRuleModuleService.saveGrammarRuleModule(grammarRuleModuleEntity);
+        return grammarRuleModuleService.createGrammarRuleModule(grammarRuleModuleEntity);
     }
 
     public ModuleEntity updateModule(ModuleEntity moduleEntity, String id) {
@@ -146,7 +146,7 @@ public class ModuleService implements IntroductionService {
 
     }
 
-    public TextBlockEntity getIntroductionByEntityID(String id){
+    public TextBlockEntity getIntroductionByEntityId(String id){
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {
