@@ -49,7 +49,7 @@ public class LevelController {
     })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<LevelEntity>>> getAllLevels() {
-        List<LevelEntity> levelsResponse = levelService.findAll();
+        List<LevelEntity> levelsResponse = levelService.getAllLevels();
         if(levelsResponse.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<LevelEntity>>("No levels were retrieved", new ArrayList<>()));
         }
