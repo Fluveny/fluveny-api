@@ -33,7 +33,7 @@ public class ModuleService implements IntroductionService {
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
 
         if (titleConflict.isPresent()) {
-            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
+            throw new BusinessException("Another module with this title already exists", HttpStatus.BAD_REQUEST);
         }
 
         validateGrammarRules(moduleEntity);
@@ -70,7 +70,7 @@ public class ModuleService implements IntroductionService {
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
         if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
-            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
+            throw new BusinessException("Another module with this title already exists", HttpStatus.BAD_REQUEST);
         }
 
         validateGrammarRules(moduleEntity);
