@@ -20,7 +20,7 @@ public class LevelService {
             this.levelRepository = levelRepository;
         }
 
-        public List<LevelEntity> findAll() {
+        public List<LevelEntity> getAllLevels() {
             List<LevelEntity> levels =  levelRepository.findAll();
             if(levels.isEmpty()) {
                 throw new BusinessException("No levels found", HttpStatus.NOT_FOUND);
@@ -28,16 +28,16 @@ public class LevelService {
             return levels;
         }
 
-        public LevelEntity findById(String id) {
+        public LevelEntity getLevelById(String id) {
             return levelRepository.findById(id)
                     .orElseThrow(() -> new BusinessException("Level with this id not found", HttpStatus.NOT_FOUND));
         }
-        public LevelEntity findByTitle(String title) {
+        public LevelEntity getLevelByTitle(String title) {
             return levelRepository.findByTitle(title)
                     .orElseThrow(() -> new BusinessException("Level with this title not found", HttpStatus.NOT_FOUND));
         }
 
-        public LevelEntity save(LevelEntity level) {
+        public LevelEntity createLevel(LevelEntity level) {
             Optional<LevelEntity> existingLevel = levelRepository.findByTitle(level.getTitle());
             if(existingLevel.isPresent() && (level.getId() == null || !level.getId().equals(existingLevel.get().getId()))) {
                 throw new BusinessException("There is already a level with that title", HttpStatus.CONFLICT);
@@ -45,7 +45,7 @@ public class LevelService {
             return levelRepository.save(level);
         }
 
-        public void deleteById(String id) {
+        public void deleteLevelById(String id) {
             if (!levelRepository.existsById(id)) {
                 throw new BusinessException("Level not found with this id", HttpStatus.NOT_FOUND);
             }
