@@ -62,7 +62,7 @@ public class GrammarRuleController {
     })
     @GetMapping
     public ResponseEntity<GrammarRulesResponse> getAllGrammarRules() {
-        List<GrammarRuleEntity> rules = grammarRuleService.findAll();
+        List<GrammarRuleEntity> rules = grammarRuleService.getAllGrammarRules();
         if (rules.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).body(new GrammarRulesResponse("No grammar rules were found", new ArrayList<>()));
         }
@@ -108,7 +108,7 @@ public class GrammarRuleController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<GrammarRuleResponse> getGrammarRuleById(@PathVariable String id) {
-        GrammarRuleEntity rule = grammarRuleService.findById(id);
+        GrammarRuleEntity rule = grammarRuleService.getGrammarRuleById(id);
         GrammarRuleResponseDTO responseDTO = grammarRuleMapper.toDTO(rule);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
@@ -148,7 +148,7 @@ public class GrammarRuleController {
     })
     @GetMapping("/search")
     public ResponseEntity<GrammarRulesResponse> searchGrammarRules(@RequestParam String title) {
-        List<GrammarRuleEntity> rules = grammarRuleService.searchByTitle(title);
+        List<GrammarRuleEntity> rules = grammarRuleService.searchGrammarRulesByTitle(title);
         List<GrammarRuleResponseDTO> responseDTOs = rules.stream()
                 .map(grammarRuleMapper::toDTO)
                 .toList();
@@ -193,7 +193,7 @@ public class GrammarRuleController {
             @RequestBody @Valid GrammarRuleRequestDTO dto) {
 
         GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
-        GrammarRuleEntity saved = grammarRuleService.save(entity);
+        GrammarRuleEntity saved = grammarRuleService.createGrammarRule(entity);
         GrammarRuleResponseDTO responseDTO = grammarRuleMapper.toDTO(saved);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
@@ -237,7 +237,7 @@ public class GrammarRuleController {
             @RequestBody @Valid GrammarRuleRequestDTO dto) {
 
         GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
-        GrammarRuleEntity updated = grammarRuleService.update(id, entity);
+        GrammarRuleEntity updated = grammarRuleService.updateGrammarRule(id, entity);
         GrammarRuleResponseDTO responseDTO = grammarRuleMapper.toDTO(updated);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
@@ -277,7 +277,7 @@ public class GrammarRuleController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<GrammarRuleResponse> deleteGrammarRule(@PathVariable String id) {
-        grammarRuleService.deleteById(id);
+        grammarRuleService.deleteGrammarRuleById(id);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
         response.setMessage("Grammar rule was deleted");

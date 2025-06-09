@@ -70,7 +70,7 @@ public class ModuleController implements IntroductionController {
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
-        ModuleEntity module = moduleService.saveModule(moduleMapper.toEntity(moduleRequestDTO));
+        ModuleEntity module = moduleService.createModule(moduleMapper.toEntity(moduleRequestDTO));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created successfully", moduleMapper.toDTO(module)));
     }
 
@@ -201,7 +201,7 @@ public class ModuleController implements IntroductionController {
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> getIntroductionByEntityId(@PathVariable String id){
-        TextBlockEntity introduction = moduleService.getIntroductionByEntityID(id);
+        TextBlockEntity introduction = moduleService.getIntroductionByEntityId(id);
         if (introduction == null) {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No Introduction find for this module", null));
         }

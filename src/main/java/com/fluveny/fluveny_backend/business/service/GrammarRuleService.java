@@ -22,22 +22,22 @@ public class GrammarRuleService {
         this.grammarRuleRepository = grammarRuleRepository;
     }
 
-    public List<GrammarRuleEntity> findAll() {
+    public List<GrammarRuleEntity> getAllGrammarRules() {
         List<GrammarRuleEntity> rules = grammarRuleRepository.findAll();
         return rules;
     }
 
-    public GrammarRuleEntity findById(String id) {
+    public GrammarRuleEntity getGrammarRuleById(String id) {
         return grammarRuleRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Grammar rule with this id not found", HttpStatus.NOT_FOUND));
     }
 
-    public GrammarRuleEntity findByTitle(String title) {
+    public GrammarRuleEntity getGrammarRuleByTitle(String title) {
         return grammarRuleRepository.findByTitle(title)
                 .orElseThrow(() -> new BusinessException("Grammar rule with this title not found", HttpStatus.NOT_FOUND));
     }
 
-    public List<GrammarRuleEntity> searchByTitle(String titleText) {
+    public List<GrammarRuleEntity> searchGrammarRulesByTitle(String titleText) {
         List<GrammarRuleEntity> rules = grammarRuleRepository.findByTitleContainingIgnoreCase(titleText);
         if (rules.isEmpty()) {
             throw new BusinessException("No grammar rules found with this title containing", HttpStatus.NOT_FOUND);
@@ -45,7 +45,7 @@ public class GrammarRuleService {
         return rules;
     }
 
-    public GrammarRuleEntity update(String id, GrammarRuleEntity updatedEntity) {
+    public GrammarRuleEntity updateGrammarRule(String id, GrammarRuleEntity updatedEntity) {
         GrammarRuleEntity existing = grammarRuleRepository.findById(id)
                 .orElseThrow(() -> new BusinessException("Grammar rule with this id not found", HttpStatus.NOT_FOUND));
 
@@ -61,7 +61,7 @@ public class GrammarRuleService {
         return grammarRuleRepository.save(existing);
     }
 
-    public GrammarRuleEntity save(GrammarRuleEntity entity) {
+    public GrammarRuleEntity createGrammarRule(GrammarRuleEntity entity) {
         Optional<GrammarRuleEntity> existing = grammarRuleRepository.findByTitle(entity.getTitle());
         if (existing.isPresent()) {
             throw new BusinessException("Grammar rule with this title already exists", HttpStatus.BAD_REQUEST);
@@ -70,7 +70,7 @@ public class GrammarRuleService {
         return grammarRuleRepository.save(entity);
     }
 
-    public void deleteById(String id) {
+    public void deleteGrammarRuleById(String id) {
         if (!grammarRuleRepository.existsById(id)) {
             throw new BusinessException("Grammar rule with this id not found", HttpStatus.NOT_FOUND);
         }

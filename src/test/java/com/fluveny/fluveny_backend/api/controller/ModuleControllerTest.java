@@ -94,7 +94,7 @@ class ModuleControllerTest {
 
         when(moduleMapper.toDTO(moduleEntity)).thenReturn(responseDTO);
         when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
-        when(moduleService.saveModule(moduleEntity)).thenReturn(moduleEntity);
+        when(moduleService.createModule(moduleEntity)).thenReturn(moduleEntity);
 
         mockMvc.perform(post("/api/v1/modules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -107,7 +107,7 @@ class ModuleControllerTest {
 
         verify(moduleMapper, times(1)).toEntity(any());
         verify(moduleMapper, times(1)).toDTO(any());
-        verify(moduleService, times(1)).saveModule(any());
+        verify(moduleService, times(1)).createModule(any());
     }
 
     @Test
@@ -127,7 +127,7 @@ class ModuleControllerTest {
                 .andReturn();
 
         verify(moduleMapper, times(0)).toEntity(any());
-        verify(moduleService, times(0)).saveModule(any());
+        verify(moduleService, times(0)).createModule(any());
     }
 
 
@@ -183,7 +183,7 @@ class ModuleControllerTest {
         ModuleEntity moduleEntity = new ModuleEntity();
 
         when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
-        when(moduleService.saveModule(moduleEntity)).thenThrow(new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST));
+        when(moduleService.createModule(moduleEntity)).thenThrow(new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST));
 
         mockMvc.perform(post("/api/v1/modules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -195,7 +195,7 @@ class ModuleControllerTest {
                 .andReturn();
 
         verify(moduleMapper, times(1)).toEntity(any());
-        verify(moduleService, times(1)).saveModule(any());
+        verify(moduleService, times(1)).createModule(any());
     }
 
     @Test
@@ -207,7 +207,7 @@ class ModuleControllerTest {
         ModuleEntity moduleEntity = new ModuleEntity();
 
         when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
-        when(moduleService.saveModule(moduleEntity)).thenThrow(new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT));
+        when(moduleService.createModule(moduleEntity)).thenThrow(new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT));
 
         mockMvc.perform(post("/api/v1/modules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -219,7 +219,7 @@ class ModuleControllerTest {
                 .andReturn();
 
         verify(moduleMapper, times(1)).toEntity(any());
-        verify(moduleService, times(1)).saveModule(any());
+        verify(moduleService, times(1)).createModule(any());
     }
 
     @Test

@@ -19,7 +19,7 @@ public class ContentManagerService {
     @Autowired
     private ExerciseService exerciseService;
 
-    public void deleteContents(List<ContentEntity> contentEntities) {
+    public void deleteAllContents(List<ContentEntity> contentEntities) {
         for(ContentEntity content : contentEntities){
             if(content.getType() == ContentType.PRESENTATION){
                 presentationService.deletePresentationById(content.getId());
