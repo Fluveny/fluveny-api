@@ -132,7 +132,7 @@ class ModuleServiceTest {
 
         when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
 
-        TextBlockEntity introduction = moduleService.getIntroductionByEntityID("12345a");
+        TextBlockEntity introduction = moduleService.getIntroductionByEntityId("12345a");
 
         assertNotNull(introduction);
     }
@@ -145,7 +145,7 @@ class ModuleServiceTest {
         when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
 
         Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
-            moduleService.getIntroductionByEntityID("12345a");
+            moduleService.getIntroductionByEntityId("12345a");
         });
 
         Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());

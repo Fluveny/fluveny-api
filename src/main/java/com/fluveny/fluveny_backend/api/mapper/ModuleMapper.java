@@ -33,7 +33,7 @@ public class ModuleMapper {
         moduleEntity.setTitle(moduleRequestDTO.getTitle());
         moduleEntity.setDescription(moduleRequestDTO.getDescription());
 
-        LevelEntity level = levelService.findById(moduleRequestDTO.getId_level());
+        LevelEntity level = levelService.getLevelById(moduleRequestDTO.getId_level());
         moduleEntity.setLevel(level);
 
         List<String> uniqueIds = moduleRequestDTO.getId_grammarRules().stream()
@@ -42,7 +42,7 @@ public class ModuleMapper {
         List<GrammarRuleEntity> grammarRules = new ArrayList<>();
 
         for (String grammarId : uniqueIds) {
-            grammarRules.add(grammarRuleService.findById(grammarId));
+            grammarRules.add(grammarRuleService.getGrammarRuleById(grammarId));
         }
 
         moduleEntity.setGrammarRules(grammarRules);

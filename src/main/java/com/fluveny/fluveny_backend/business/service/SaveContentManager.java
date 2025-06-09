@@ -19,7 +19,7 @@ public class SaveContentManager {
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
-    public void addPresentationContent(String id, PresentationEntity presentationEntity) {
+    public void addPresentationToGrammarRuleModule(String id, PresentationEntity presentationEntity) {
         Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(id);
         if (existing.isEmpty()) {
             throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
@@ -34,7 +34,7 @@ public class SaveContentManager {
         grammarRuleModuleRepository.save(existing.get());
     }
 
-    public void addExerciseContent(String id, ExerciseEntity exerciseEntity) {
+    public void addExerciseToGrammarRuleModule(String id, ExerciseEntity exerciseEntity) {
 
         Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(id);
         if (existing.isEmpty()) {

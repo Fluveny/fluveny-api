@@ -38,9 +38,9 @@ public class PresentationService {
 
     }
 
-    public PresentationEntity savePresentation(PresentationEntity presentationEntity) {
+    public PresentationEntity createPresentation(PresentationEntity presentationEntity) {
         PresentationEntity presentationEntitySaved = presentationRepository.save(presentationEntity);
-        saveContentManager.addPresentationContent(presentationEntity.getGrammarRuleModuleId(), presentationEntitySaved);
+        saveContentManager.addPresentationToGrammarRuleModule(presentationEntity.getGrammarRuleModuleId(), presentationEntitySaved);
         return presentationEntitySaved;
     }
 }

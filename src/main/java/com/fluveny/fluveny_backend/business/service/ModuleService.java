@@ -28,12 +28,12 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
-    public ModuleEntity saveModule(ModuleEntity moduleEntity) {
+    public ModuleEntity createModule(ModuleEntity moduleEntity) {
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
 
         if (titleConflict.isPresent()) {
-            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
+            throw new BusinessException("Another module with this title already exists", HttpStatus.BAD_REQUEST);
         }
 
         validateGrammarRules(moduleEntity);
@@ -54,7 +54,7 @@ public class ModuleService implements IntroductionService {
         GrammarRuleModuleEntity grammarRuleModuleEntity = new GrammarRuleModuleEntity();
         grammarRuleModuleEntity.setModuleId(moduleEntity.getId());
         grammarRuleModuleEntity.setGrammarRuleId(grammarRuleEntity.getId());
-        return grammarRuleModuleService.saveGrammarRuleModule(grammarRuleModuleEntity);
+        return grammarRuleModuleService.createGrammarRuleModule(grammarRuleModuleEntity);
     }
 
     public ModuleEntity updateModule(ModuleEntity moduleEntity, String id) {
@@ -70,7 +70,7 @@ public class ModuleService implements IntroductionService {
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
         if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
-            throw new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT);
+            throw new BusinessException("Another module with this title already exists", HttpStatus.BAD_REQUEST);
         }
 
         validateGrammarRules(moduleEntity);
@@ -146,7 +146,7 @@ public class ModuleService implements IntroductionService {
 
     }
 
-    public TextBlockEntity getIntroductionByEntityID(String id){
+    public TextBlockEntity getIntroductionByEntityId(String id){
         Optional<ModuleEntity> existing = moduleRepository.findById(id);
 
         if (existing.isEmpty()) {

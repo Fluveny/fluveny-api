@@ -43,7 +43,7 @@ public class GrammarRuleModuleService {
         return existing.get();
     }
 
-    public GrammarRuleModuleEntity saveGrammarRuleModule(GrammarRuleModuleEntity grammarRuleModule) {
+    public GrammarRuleModuleEntity createGrammarRuleModule(GrammarRuleModuleEntity grammarRuleModule) {
         return grammarRuleModuleRepository.save(grammarRuleModule);
     }
 
@@ -55,7 +55,7 @@ public class GrammarRuleModuleService {
             throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
         }
 
-        contentManagerService.deleteContents(existing.get().getContentList());
+        contentManagerService.deleteAllContents(existing.get().getContentList());
         grammarRuleModuleRepository.deleteById(id);
 
         return existing.get();
