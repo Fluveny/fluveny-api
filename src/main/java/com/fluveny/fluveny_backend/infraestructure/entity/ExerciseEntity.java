@@ -20,4 +20,13 @@ public class ExerciseEntity {
     private String phrase;
     private String template;
     private String justification;
+
+    public ExerciseEntity(String grammarRuleModuleId, String header, String phrase, String template, String justification) {
+        this.grammarRuleModuleId = grammarRuleModuleId;
+        this.header = header;
+        this.phrase = phrase;
+        this.template = template;
+        this.justification = justification;
+    }
+
 }
