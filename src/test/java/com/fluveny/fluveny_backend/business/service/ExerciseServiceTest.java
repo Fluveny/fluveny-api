@@ -126,7 +126,7 @@ class ExerciseServiceTest {
 
         assertEquals(savedExercise, result);
         verify(exerciseRepository, times(1)).save(exerciseEntity);
-        verify(saveContentManager, times(1)).addExerciseContent("test-module-id-001", savedExercise);
+        verify(saveContentManager, times(1)).addExerciseToGrammarRuleModule("test-module-id-001", savedExercise);
     }
 
 
