@@ -52,7 +52,7 @@ public class GrammarRuleService {
         grammarRuleRepository.findByTitle(updatedEntity.getTitle())
                 .filter(rule -> !rule.getId().equals(id))
                 .ifPresent(rule -> {
-                    throw new BusinessException("Grammar rule with this title already exists", HttpStatus.CONFLICT);
+                    throw new BusinessException("Grammar rule with this title already exists", HttpStatus.BAD_REQUEST);
                 });
 
         existing.setTitle(updatedEntity.getTitle());
@@ -64,7 +64,7 @@ public class GrammarRuleService {
     public GrammarRuleEntity save(GrammarRuleEntity entity) {
         Optional<GrammarRuleEntity> existing = grammarRuleRepository.findByTitle(entity.getTitle());
         if (existing.isPresent()) {
-            throw new BusinessException("Grammar rule with this title already exists", HttpStatus.CONFLICT);
+            throw new BusinessException("Grammar rule with this title already exists", HttpStatus.BAD_REQUEST);
         }
         entity.setSlug(generateSlug(entity.getTitle()));
         return grammarRuleRepository.save(entity);
