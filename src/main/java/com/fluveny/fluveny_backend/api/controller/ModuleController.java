@@ -41,7 +41,8 @@ public class ModuleController implements IntroductionController {
     private final GrammarRuleModuleMapper grammarRuleModuleMapper;
     private final IntroductionMapper introductionMapper;
 
-    @Operation(summary = "Creating a new module", description = "This endpoint is responsible for creating a new module on the Fluveny by pressing a DTO with the requested information.")
+    @Operation(summary = "Creating a new module",
+            description = "This endpoint is responsible for creating a new module")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Module created successfully",
                     content = @Content(
@@ -49,13 +50,19 @@ public class ModuleController implements IntroductionController {
                             schema = @Schema(implementation = ModuleResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "409", description = "A module with the given name already exists",
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "Validation errors or business rule violation",
+            @ApiResponse(responseCode = "404", description = "Modules not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -66,22 +73,17 @@ public class ModuleController implements IntroductionController {
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
-        ModuleEntity module = moduleService.saveModule(moduleMapper.toEntity(moduleRequestDTO));
+        ModuleEntity module = moduleService.createModule(moduleMapper.toEntity(moduleRequestDTO));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created successfully", moduleMapper.toDTO(module)));
     }
 
-    @Operation(summary = "Update a module", description = "This endpoint is responsible for update a existing module on the Fluveny. The fields must be filled in with all the information, even if they are not modified.")
+    @Operation(summary = "Update a module by ID",
+            description = "This endpoint is used to update a module by ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Module update successfully",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ModuleResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "409", description = "A module with the given name already exists",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "404", description = "Module not found",
@@ -90,7 +92,13 @@ public class ModuleController implements IntroductionController {
                             schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "Validation errors or business rule violation",
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -123,16 +131,29 @@ public class ModuleController implements IntroductionController {
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleEntity>("Module updated successfully", grammarRuleModule));
     }
-
-    @Operation(summary = "Get all modules", description = "This endpoint is responsible for get all module on the Fluveny.")
+  
+    @Operation(summary = "Get all modules",
+            description = "This endpoint is used to GET all module")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Modules retrieved successfully or no modules found, but the request was successful",
+            @ApiResponse(responseCode = "200", description = "All modules fetched successfully",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ModulesReponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "500", description = "Internal server error",
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Modules not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -153,15 +174,28 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules found with successfully", modulesDTO));
     }
 
-    @Operation(summary = "Get a single module", description = "This endpoint is responsible for get a single module based on its id.")
+    @Operation(summary = "Get module by ID",
+            description = "This endpoint is used to GET module by ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Module retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "Module fetched successfully",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ModulesReponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "500", description = "Internal server error",
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Module not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -182,7 +216,7 @@ public class ModuleController implements IntroductionController {
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> getIntroductionByEntityId(@PathVariable String id){
-        TextBlockEntity introduction = moduleService.getIntroductionByEntityID(id);
+        TextBlockEntity introduction = moduleService.getIntroductionByEntityId(id);
         if (introduction == null) {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No Introduction find for this module", null));
         }

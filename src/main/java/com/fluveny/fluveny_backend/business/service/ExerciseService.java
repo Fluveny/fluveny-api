@@ -16,7 +16,7 @@ public class ExerciseService {
     @Autowired
     private ExerciseRepository exerciseRepository;
     @Autowired
-    private GrammarRuleModuleService grammarRuleModuleService;
+    private SaveContentManager saveContentManager;
 
     public ExerciseEntity getExerciseById(String id) {
         Optional<ExerciseEntity> exerciseEntity = exerciseRepository.findById(id);
@@ -27,9 +27,21 @@ public class ExerciseService {
         return exerciseEntity.get();
     }
 
+    public void deleteExerciseById(String id) {
+
+        Optional<ExerciseEntity> exerciseEntity = exerciseRepository.findById(id);
+
+        if(exerciseEntity.isEmpty()) {
+            throw new BusinessException("No Exercise with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        exerciseRepository.deleteById(id);
+
+    }
+
     public ExerciseEntity saveExercise(ExerciseEntity exerciseEntity) {
         ExerciseEntity savedExercise = exerciseRepository.save(exerciseEntity);
-        grammarRuleModuleService.addExerciseContent(exerciseEntity.getGrammarRuleModuleId(), savedExercise);
+        saveContentManager.addExerciseToGrammarRuleModule(exerciseEntity.getGrammarRuleModuleId(), savedExercise);
         return savedExercise;
     }
 }

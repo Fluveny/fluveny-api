@@ -5,7 +5,7 @@ import org.springframework.stereotype.Service;
 
 @Service
 public interface IntroductionService {
-    public TextBlockEntity getIntroductionByEntityID(String id);
+    public TextBlockEntity getIntroductionByEntityId(String id);
     public TextBlockEntity createIntroduction(String id, TextBlockEntity textBlockEntity);
     public TextBlockEntity updateIntroduction(String id, TextBlockEntity textBlockEntity);
     public void deleteIntroductionById(String id);

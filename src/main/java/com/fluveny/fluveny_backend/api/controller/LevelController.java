@@ -32,12 +32,25 @@ public class LevelController {
         this.levelService = levelService;
     }
 
-    @Operation(summary = "Get all levels", description = "This endpoint is responsible for get all levels on the Fluveny.")
+    @Operation(summary = "Get all levels",
+            description = "This endpoint is used to GET all levels")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Levels retrieved successfully (can be an empty list)",
+            @ApiResponse(responseCode = "200", description = "All levels fetched successfully",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = LevelsResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Levels not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "500", description = "Internal server error",
@@ -49,7 +62,7 @@ public class LevelController {
     })
     @GetMapping
     public ResponseEntity<ApiResponseFormat<List<LevelEntity>>> getAllLevels() {
-        List<LevelEntity> levelsResponse = levelService.findAll();
+        List<LevelEntity> levelsResponse = levelService.getAllLevels();
         if(levelsResponse.isEmpty()) {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<LevelEntity>>("No levels were retrieved", new ArrayList<>()));
         }

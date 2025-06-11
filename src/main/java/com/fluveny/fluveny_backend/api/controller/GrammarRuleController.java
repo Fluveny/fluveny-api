@@ -32,24 +32,39 @@ public class GrammarRuleController {
     private final GrammarRuleService grammarRuleService;
     private final GrammarRuleMapper grammarRuleMapper;
 
-    @Operation(summary = "Get all grammar rules", description = "This endpoint retrieves all grammar rules.")
+    @Operation(summary = "Get all grammar rules",
+            description = "This endpoint is used to GET all the grammar rules")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Grammar rules retrieved successfully or grammar Rules wasn't found, but the request was successful",
+            @ApiResponse(responseCode = "200", description = "All grammar rules fetched successfully",
                     content = @Content(
-                            mediaType = "application/json", schema = @Schema(implementation = GrammarRulesResponse.class)
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRulesResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "500", description = "Internal server error",
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
                     content = @Content(
-                            mediaType = "application/json", schema = @Schema(implementation = ApiResponseFormat.class)
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Grammar rules not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
     @GetMapping
     public ResponseEntity<GrammarRulesResponse> getAllGrammarRules() {
-        List<GrammarRuleEntity> rules = grammarRuleService.findAll();
+        List<GrammarRuleEntity> rules = grammarRuleService.getAllGrammarRules();
         if (rules.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.OK).body(new GrammarRulesResponse("No grammar rules found", new ArrayList<>()));
+            return ResponseEntity.status(HttpStatus.OK).body(new GrammarRulesResponse("No grammar rules were found", new ArrayList<>()));
         }
 
         List<GrammarRuleResponseDTO> responseDTOs = rules.stream()
@@ -57,47 +72,83 @@ public class GrammarRuleController {
                 .toList();
 
         GrammarRulesResponse response = new GrammarRulesResponse();
-        response.setMessage("Grammar rules was found");
+        response.setMessage("All grammar rules were found successfully");
         response.setData(responseDTOs);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @Operation(summary = "Get grammar rule by ID", description = "This endpoint retrieves a grammar rule by its ID.")
+    @Operation(summary = "Get grammar rule by ID",
+            description = "This endpoint is used to GET a grammar rule by ID")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Grammar rule found",
+            @ApiResponse(responseCode = "200", description = "Grammar rule fetched successfully",
                     content = @Content(
-                            mediaType = "application/json", schema = @Schema(implementation = GrammarRulesResponse.class)
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRulesResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+            content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "404", description = "Grammar rule not found",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRulesResponse.class)
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
     @GetMapping("/{id}")
     public ResponseEntity<GrammarRuleResponse> getGrammarRuleById(@PathVariable String id) {
-        GrammarRuleEntity rule = grammarRuleService.findById(id);
+        GrammarRuleEntity rule = grammarRuleService.getGrammarRuleById(id);
         GrammarRuleResponseDTO responseDTO = grammarRuleMapper.toDTO(rule);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
-        response.setMessage("Grammar rule was found");
+        response.setMessage("Grammar rule found with successfully");
         response.setData(responseDTO);
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @Operation(summary = "Search grammar rules by title", description = "This endpoint searches for grammar rules.")
+    @Operation(summary = "Search grammar rules by title",
+            description = "This endpoint is used to search grammar rules by title")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Grammar rules retrieved successfully",
+            @ApiResponse(responseCode = "200", description = "Grammar rules fetched successfully",
                     content = @Content(
-                            mediaType = "application/json", schema = @Schema(implementation = GrammarRulesResponse.class)
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRulesResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Search resource not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content =  @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
     @GetMapping("/search")
     public ResponseEntity<GrammarRulesResponse> searchGrammarRules(@RequestParam String title) {
-        List<GrammarRuleEntity> rules = grammarRuleService.searchByTitle(title);
+        List<GrammarRuleEntity> rules = grammarRuleService.searchGrammarRulesByTitle(title);
         List<GrammarRuleResponseDTO> responseDTOs = rules.stream()
                 .map(grammarRuleMapper::toDTO)
                 .toList();
@@ -109,14 +160,31 @@ public class GrammarRuleController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @Operation(summary = "Create a new grammar rule", description = "This endpoint creates a grammar rule.")
+    @Operation(summary = "Create a new grammar rule",
+            description = "This endpoint is used to create a new grammar rule")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Grammar rule created successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRuleResponse.class)
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRuleResponse.class)
                     )
             ),
-            @ApiResponse(responseCode = "400", description = "Validation errors or business rule violation",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRuleResponse.class)
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Grammar rule not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content =  @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
@@ -125,24 +193,41 @@ public class GrammarRuleController {
             @RequestBody @Valid GrammarRuleRequestDTO dto) {
 
         GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
-        GrammarRuleEntity saved = grammarRuleService.save(entity);
+        GrammarRuleEntity saved = grammarRuleService.createGrammarRule(entity);
         GrammarRuleResponseDTO responseDTO = grammarRuleMapper.toDTO(saved);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
-        response.setMessage("Grammar rule was created");
+        response.setMessage("Grammar rule create with successfully");
         response.setData(responseDTO);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
-    @Operation(summary = "Update an existing grammar rule", description = "This endpoint updates a grammar rule by its ID.")
+    @Operation(summary = "Update an existing grammar rule",
+            description = "This endpoint is used to update an existing exercise")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule updated successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRuleResponse.class)
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRuleResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "404", description = "Grammar rule not found",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRuleResponse.class)
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
@@ -152,7 +237,7 @@ public class GrammarRuleController {
             @RequestBody @Valid GrammarRuleRequestDTO dto) {
 
         GrammarRuleEntity entity = grammarRuleMapper.toEntity(dto);
-        GrammarRuleEntity updated = grammarRuleService.update(id, entity);
+        GrammarRuleEntity updated = grammarRuleService.updateGrammarRule(id, entity);
         GrammarRuleResponseDTO responseDTO = grammarRuleMapper.toDTO(updated);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
@@ -162,20 +247,37 @@ public class GrammarRuleController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-    @Operation(summary = "Delete a grammar rule", description = "This endpoint deletes a grammar rule by its ID.")
+    @Operation(summary = "Delete a grammar rule",
+            description = "This endpoint is used to delete a grammar rule")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule deleted successfully",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRuleResponse.class)
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRuleResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
             @ApiResponse(responseCode = "404", description = "Grammar rule not found",
-                    content = @Content(mediaType = "application/json", schema = @Schema(implementation = GrammarRuleResponse.class)
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content  = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
                     )
             )
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<GrammarRuleResponse> deleteGrammarRule(@PathVariable String id) {
-        grammarRuleService.deleteById(id);
+        grammarRuleService.deleteGrammarRuleById(id);
 
         GrammarRuleResponse response = new GrammarRuleResponse();
         response.setMessage("Grammar rule was deleted");
