@@ -10,7 +10,7 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: myfluveny
     ports:
-      - 27017:27017
+      - 27016:27017
 
 volumes:
   bd-mongodb:
