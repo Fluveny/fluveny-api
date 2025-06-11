@@ -69,7 +69,9 @@ public class GrammarRuleModuleService {
         if (existing.isEmpty()) {
             throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
         }
-
+        
+        grammarRuleModule.setModuleId(existing.get().getModuleId());
+        grammarRuleModule.setGrammarRuleId(existing.get().getGrammarRuleId());
         List<ContentEntity> newContentList = grammarRuleModule.getContentList();
 
 
