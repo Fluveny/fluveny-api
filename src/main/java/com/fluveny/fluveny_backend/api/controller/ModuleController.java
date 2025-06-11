@@ -112,7 +112,7 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
     }
 
-    @PutMapping("/{id}/GrammarRuleModule/{grammarRuleModuleId}")
+    @PutMapping("/{id}/grammar-rule-modules/{grammarRuleModuleId}")
     public ResponseEntity<ApiResponseFormat<GrammarRuleModuleEntity>> updateGrammarRuleModuleContentList(
             @PathVariable String id,
             @PathVariable String grammarRuleModuleId,
