@@ -83,9 +83,8 @@ public class GrammarRuleExerciseControllerTest {
         module.setLevel(level);
         module.setGrammarRules(Arrays.asList(rule1,rule2));
 
-        grammarRuleModule.setGrammarRuleId("12345");
         grammarRuleModule.setModuleId(module.getId());
-        grammarRuleModule.setGrammarRuleId(rule1.getId());
+        grammarRuleModule.setGrammarRule(rule1);
 
         exercise.setGrammarRuleModuleId(grammarRuleModule.getId());
         exercise.setId("12345");

@@ -25,8 +25,9 @@ public class ModuleService implements IntroductionService {
 
     @Autowired
     private TextBlockRepository textBlockRepository;
+
     @Autowired
-    private GrammarRuleModuleRepository grammarRuleModuleRepository;
+    private GrammarRuleService grammarRuleService;
 
     public ModuleEntity createModule(ModuleEntity moduleEntity) {
 
@@ -53,7 +54,7 @@ public class ModuleService implements IntroductionService {
     private GrammarRuleModuleEntity setGrammarRuleModule(ModuleEntity moduleEntity, GrammarRuleEntity grammarRuleEntity) {
         GrammarRuleModuleEntity grammarRuleModuleEntity = new GrammarRuleModuleEntity();
         grammarRuleModuleEntity.setModuleId(moduleEntity.getId());
-        grammarRuleModuleEntity.setGrammarRuleId(grammarRuleEntity.getId());
+        grammarRuleModuleEntity.setGrammarRule(grammarRuleService.getGrammarRuleById(grammarRuleEntity.getId()));
         return grammarRuleModuleService.createGrammarRuleModule(grammarRuleModuleEntity);
     }
 
@@ -125,7 +126,7 @@ public class ModuleService implements IntroductionService {
         }
 
         moduleEntity.getGrammarRuleModules().sort(
-                Comparator.comparingInt(grm -> newPositions.getOrDefault(grm.getGrammarRuleId(), Integer.MAX_VALUE))
+                Comparator.comparingInt(grm -> newPositions.getOrDefault(grm.getGrammarRule().getId(), Integer.MAX_VALUE))
         );
 
     }
