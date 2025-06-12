@@ -8,8 +8,6 @@ import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
 import com.fluveny.fluveny_backend.api.dto.ExerciseRequestDTO;
 import com.fluveny.fluveny_backend.api.mapper.ExerciseMapper;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
-import com.fluveny.fluveny_backend.business.service.ModuleService;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,7 +26,6 @@ import org.springframework.web.server.ResponseStatusException;
 public class GrammarRuleExerciseController {
     private final ExerciseService exerciseService;
     private final ExerciseMapper exerciseMapper;
-    private final ModuleService moduleService;
     private final GrammarRuleModuleRepository grammarRuleModuleRepository;
 
     @Operation(summary = "Create a new Exercise",
@@ -64,8 +61,6 @@ public class GrammarRuleExerciseController {
     public ResponseEntity<ApiResponseFormat<ExerciseEntity>> createExercise(
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module){
-
-            ModuleEntity moduleEntity = moduleService.getModuleById(id_module);
 
             GrammarRuleModuleEntity grammarRuleModule = grammarRuleModuleRepository
                     .findById(id_grammarRuleModule)
