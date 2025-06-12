@@ -71,7 +71,7 @@ public class GrammarRuleModuleService {
         }
         
         grammarRuleModule.setModuleId(existing.get().getModuleId());
-        grammarRuleModule.setGrammarRuleId(existing.get().getGrammarRuleId());
+        grammarRuleModule.setGrammarRule(existing.get().getGrammarRule());
         List<ContentEntity> newContentList = grammarRuleModule.getContentList();
 
 
