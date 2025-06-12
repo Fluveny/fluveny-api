@@ -2,10 +2,12 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.PresentationMapper;
+import com.fluveny.fluveny_backend.api.response.presentation.PresentationResponse;
 import com.fluveny.fluveny_backend.business.service.PresentationService;
+import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
+import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -18,15 +20,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/presentations")
+@RequestMapping("/api/v1/modules/{id_module}/grammar-rules-module/{id_grammarRuleModule}/presentation")
 @RequiredArgsConstructor
 @Validated
-public class PresentationController {
+public class GrammarRulePresentationController {
 
     private final PresentationService presentationService;
     private final PresentationMapper presentationMapper;
+    private final GrammarRuleModuleRepository grammarRuleModuleRepository;
 
     @Operation(summary = "Create a new presentation",
             description = "This endpoint is used to create a new presentation")
@@ -34,7 +38,7 @@ public class PresentationController {
             @ApiResponse(responseCode = "201", description = "Presentation created successfully",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
+                            schema = @Schema(implementation = PresentationResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Bad request for application",
@@ -57,15 +61,23 @@ public class PresentationController {
             )
     })
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<PresentationResponseDTO>> createPresentation(
+    public ResponseEntity<ApiResponseFormat<PresentationEntity>> createPresentation(
             @Parameter(description = "Object containing presentation data", required = true)
-            @Valid @RequestBody PresentationRequestDTO presentationRequestDTO) {
+            @Valid @RequestBody PresentationRequestDTO presentationRequestDTO,
+            @PathVariable String id_module,
+            @PathVariable String id_grammarRuleModule) {
 
-        PresentationEntity entity = presentationMapper.toEntity(presentationRequestDTO);
-        PresentationEntity saved = presentationService.createPresentation(entity);
-        PresentationResponseDTO responseDTO = presentationMapper.toDTO(saved);
+        GrammarRuleModuleEntity grammarRuleModule = grammarRuleModuleRepository
+                .findById(id_grammarRuleModule)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "GrammarRuleModule not found"));
 
+        if (!grammarRuleModule.getModuleId().equals(id_module)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponseFormat<PresentationEntity>(
+                    "Module Id doesn't match with grammar rule module id of module", null));
+        }
+
+        PresentationEntity presentation = presentationService.createPresentation(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseFormat<>("Presentation created successfully", responseDTO));
+                .body(new ApiResponseFormat<PresentationEntity>("Presentation created successfully", presentation));
     }
 }

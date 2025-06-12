@@ -18,4 +18,10 @@ public class PresentationEntity {
     public String grammarRuleModuleId;
     public String title;
     private TextBlockEntity textBlock;
+
+    public PresentationEntity(String grammarRuleModuleId, String title, TextBlockEntity textBlock) {
+        this.grammarRuleModuleId = grammarRuleModuleId;
+        this.title = title;
+        this.textBlock = textBlock;
+    }
 }
