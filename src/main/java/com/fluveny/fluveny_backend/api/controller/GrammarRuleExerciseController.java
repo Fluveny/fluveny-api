@@ -56,7 +56,6 @@ public class GrammarRuleExerciseController {
                     )
             )
     })
-
     @PostMapping
     public ResponseEntity<ApiResponseFormat<ExerciseEntity>> createExercise(
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
