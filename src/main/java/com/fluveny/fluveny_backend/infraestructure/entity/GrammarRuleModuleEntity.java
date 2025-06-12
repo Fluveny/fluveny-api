@@ -19,7 +19,6 @@ public class GrammarRuleModuleEntity {
     public String id;
     @EqualsAndHashCode.Include
     public String moduleId;
-    @EqualsAndHashCode.Include
-    public String grammarRuleId;
+    public GrammarRuleEntity grammarRule;
     public List<ContentEntity> contentList = new ArrayList<ContentEntity>();
 }
