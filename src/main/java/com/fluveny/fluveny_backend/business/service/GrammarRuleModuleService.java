@@ -37,7 +37,7 @@ public class GrammarRuleModuleService {
         Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findByModuleIdAndGrammarRuleId(moduleId, grammarRuleId);
 
         if (existing.isEmpty()) {
-            throw new BusinessException("No Grammar Rule Module wiht " + moduleId + " and grammarRule " + grammarRuleId, HttpStatus.NOT_FOUND);
+            throw new BusinessException("No Grammar Rule Module with this module and grammarRule id was found.", HttpStatus.NOT_FOUND);
         }
 
         return existing.get();
@@ -73,7 +73,6 @@ public class GrammarRuleModuleService {
         grammarRuleModule.setModuleId(existing.get().getModuleId());
         grammarRuleModule.setGrammarRule(existing.get().getGrammarRule());
         List<ContentEntity> newContentList = grammarRuleModule.getContentList();
-
 
         Set<ContentEntity> oldSet = new HashSet<>(existing.get().getContentList());
         Set<ContentEntity> newSet = new HashSet<>(newContentList);

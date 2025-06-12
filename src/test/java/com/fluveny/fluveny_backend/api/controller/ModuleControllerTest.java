@@ -57,6 +57,7 @@ class ModuleControllerTest {
     private final GrammarRuleEntity rule2 = new GrammarRuleEntity();
     private final LevelEntity level = new LevelEntity();
     private final ModuleRequestDTO requestDTO = new ModuleRequestDTO();
+
     @BeforeEach
     public void setUp() {
         mockMvc = MockMvcBuilders
