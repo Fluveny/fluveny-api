@@ -411,7 +411,6 @@ class ModuleControllerTest {
 
         var grammarRuleModuleEntity = new GrammarRuleModuleEntity();
         grammarRuleModuleEntity.setId("12345");
-        grammarRuleModuleEntity.setModuleId("12345");
         grammarRuleModuleEntity.setGrammarRule(new GrammarRuleEntity());
 
 
@@ -434,6 +433,36 @@ class ModuleControllerTest {
         verify(grammarRuleModuleMapper, times(1)).toEntity(any());
         verify(grammarRuleModuleService, times(1)).updateGrammarRuleModule(any(), any());
     }
+
+    @Test
+    @DisplayName("Should reject update request when grammar rule module does not exist")
+    void shouldRejectUpdateWhenGrammarRuleModuleDoesNotExist() throws Exception {
+
+        var grammarRuleModuleEntity = new GrammarRuleModuleEntity();
+
+        grammarRuleModuleEntity.setId("12345");
+        grammarRuleModuleEntity.setModuleId("12345");
+        grammarRuleModuleEntity.setGrammarRule(new GrammarRuleEntity());
+
+        var requestDTO = new GrammarRuleModuleRequestDTO();
+        ModuleEntity moduleEntity = new ModuleEntity();
+        moduleEntity.setId("moduleTest");
+
+        when(grammarRuleModuleMapper.toEntity(any(GrammarRuleModuleRequestDTO.class))).thenReturn(grammarRuleModuleEntity);
+        when(grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleEntity.getId(),grammarRuleModuleEntity)).thenThrow(new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/modules/{id}/grammar-rule-modules/{grammarRuleModuleId}", "12345","12345")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("No Grammar Rule Module with this ID was found."))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(grammarRuleModuleMapper, times(1)).toEntity(any());
+    }
+
 
 
     private void restartRequestDTO() {
