@@ -30,7 +30,6 @@ class ModuleServiceTest {
     @Mock
     private TextBlockRepository textBlockRepository;
 
-
     @InjectMocks
     private ModuleService moduleService;
 

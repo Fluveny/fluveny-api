@@ -15,6 +15,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepositoryTest;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -55,7 +56,7 @@ public class GrammarRuleExerciseControllerTest {
     @Mock
     private ModuleService moduleService;
     @Mock
-    private GrammarRuleModuleRepository  grammarRuleModuleRepository;
+    private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
     MockMvc mockMvc;
 
