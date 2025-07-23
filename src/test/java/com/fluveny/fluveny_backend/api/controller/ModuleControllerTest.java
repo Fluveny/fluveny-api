@@ -1,15 +1,16 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fluveny.fluveny_backend.api.dto.GrammarRuleModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleResponseDTO;
+import com.fluveny.fluveny_backend.api.mapper.GrammarRuleModuleMapper;
 import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
+import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.exception.GlobalExceptionHandler;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.*;
 
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -32,6 +33,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
@@ -49,7 +51,14 @@ class ModuleControllerTest {
     private ModuleService moduleService;
 
     @Mock
+    private GrammarRuleModuleService grammarRuleModuleService;
+
+    @Mock
     private ModuleMapper moduleMapper;
+
+    @Mock
+    private GrammarRuleModuleMapper grammarRuleModuleMapper;
+
 
     MockMvc mockMvc;
 
@@ -57,6 +66,7 @@ class ModuleControllerTest {
     private final GrammarRuleEntity rule2 = new GrammarRuleEntity();
     private final LevelEntity level = new LevelEntity();
     private final ModuleRequestDTO requestDTO = new ModuleRequestDTO();
+    private final GrammarRuleModuleRequestDTO grammarRuleModuleRequestDTO = new GrammarRuleModuleRequestDTO();
 
     @BeforeEach
     public void setUp() {
@@ -393,6 +403,67 @@ class ModuleControllerTest {
         verify(moduleMapper, times(1)).toEntity(any());
         verify(moduleService, times(1)).updateModule(any(), any());
     }
+
+
+    @Test
+    @DisplayName("Should accept update request and update grammar rule module successfully")
+    void shouldAcceptRequestToUpdateGrammarRuleModuleSuccessfully() throws Exception {
+
+        var grammarRuleModuleEntity = new GrammarRuleModuleEntity();
+        grammarRuleModuleEntity.setId("12345");
+        grammarRuleModuleEntity.setGrammarRule(new GrammarRuleEntity());
+
+
+        var requestDTO = new GrammarRuleModuleRequestDTO();
+        ModuleEntity moduleEntity = new ModuleEntity();
+        moduleEntity.setId("moduleTest");
+
+        when(grammarRuleModuleMapper.toEntity(any(GrammarRuleModuleRequestDTO.class))).thenReturn(grammarRuleModuleEntity);
+        when(grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleEntity.getId(),grammarRuleModuleEntity)).thenReturn(grammarRuleModuleEntity);
+
+        mockMvc.perform(put("/api/v1/modules/{id}/grammar-rule-modules/{grammarRuleModuleId}", moduleEntity.getId(),grammarRuleModuleEntity.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Module updated successfully"))
+                .andExpect(jsonPath("$.data.id").value("12345"))
+                .andReturn();
+
+        verify(grammarRuleModuleMapper, times(1)).toEntity(any());
+        verify(grammarRuleModuleService, times(1)).updateGrammarRuleModule(any(), any());
+    }
+
+    @Test
+    @DisplayName("Should reject update request when grammar rule module does not exist")
+    void shouldRejectUpdateWhenGrammarRuleModuleDoesNotExist() throws Exception {
+
+        var grammarRuleModuleEntity = new GrammarRuleModuleEntity();
+
+        grammarRuleModuleEntity.setId("12345");
+        grammarRuleModuleEntity.setModuleId("12345");
+        grammarRuleModuleEntity.setGrammarRule(new GrammarRuleEntity());
+
+        var requestDTO = new GrammarRuleModuleRequestDTO();
+        ModuleEntity moduleEntity = new ModuleEntity();
+        moduleEntity.setId("moduleTest");
+
+        when(grammarRuleModuleMapper.toEntity(any(GrammarRuleModuleRequestDTO.class))).thenReturn(grammarRuleModuleEntity);
+        when(grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleEntity.getId(),grammarRuleModuleEntity)).thenThrow(new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(put("/api/v1/modules/{id}/grammar-rule-modules/{grammarRuleModuleId}", "12345","12345")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(new ObjectMapper().writeValueAsString(requestDTO)))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("No Grammar Rule Module with this ID was found."))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(grammarRuleModuleMapper, times(1)).toEntity(any());
+    }
+
+
 
     private void restartRequestDTO() {
         requestDTO.setTitle("Test - The day in the office");

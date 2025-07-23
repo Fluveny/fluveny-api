@@ -120,10 +120,48 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
     }
 
+
+    @Operation(summary = "Update a grammar rule module by ID",
+            description = "This endpoint is used to update a grammar rule module by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Grammar rule module update successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRuleModuleEntity.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Module not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+
     @PutMapping("/{id}/grammar-rule-modules/{grammarRuleModuleId}")
     public ResponseEntity<ApiResponseFormat<GrammarRuleModuleEntity>> updateGrammarRuleModuleContentList(
+            @Parameter(description = "ID of the module that stores the grammar rule", required = true)
             @PathVariable String id,
+            @Parameter(description = "ID of the grammar rule module to be updated", required = true)
+
             @PathVariable String grammarRuleModuleId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "New grammar rule module content list. It will update the content display position when loaded.",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = GrammarRuleModuleRequestDTO.class))
+            )
             @Valid @RequestBody GrammarRuleModuleRequestDTO grammarRuleModuleRequestDTO)
     {
 
