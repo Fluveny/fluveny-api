@@ -51,6 +51,23 @@ public class ModuleService implements IntroductionService {
         return moduleRepository.save(savedModuleEntity);
     }
 
+    public ModuleEntity deleteModule (ModuleEntity moduleEntity) {
+
+        Optional<ModuleEntity> module = moduleRepository.findById(moduleEntity.getId());
+
+        if (module.isEmpty()) {
+            throw new BusinessException("This module doesn't exist", HttpStatus.BAD_REQUEST);
+        }
+
+        for (GrammarRuleModuleEntity grammarRuleModuleEntity : moduleEntity.getGrammarRuleModules()) {
+            grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+        }
+
+        moduleRepository.deleteById(moduleEntity.getId());
+
+        return module.get();
+    }
+
     private GrammarRuleModuleEntity setGrammarRuleModule(ModuleEntity moduleEntity, GrammarRuleEntity grammarRuleEntity) {
         GrammarRuleModuleEntity grammarRuleModuleEntity = new GrammarRuleModuleEntity();
         grammarRuleModuleEntity.setModuleId(moduleEntity.getId());
