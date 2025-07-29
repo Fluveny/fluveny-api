@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/modules/{id_module}/grammar-rules-module/{id_grammarRuleModule}/exercises")
+@RequestMapping("/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/exercises")
 @RequiredArgsConstructor
 public class GrammarRuleExerciseController {
     private final ExerciseService exerciseService;

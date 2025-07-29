@@ -12,7 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class PresentationEntity {
+public class PresentationEntity implements ResolvedContent {
+    public final String type = "PRESENTATION";
     @Id
     public String id;
     public String grammarRuleModuleId;

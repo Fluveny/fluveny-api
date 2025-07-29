@@ -12,7 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class ExerciseEntity {
+public class ExerciseEntity implements ResolvedContent{
+    public final String type = "EXERCISE";
     @Id
     public String id;
     public String grammarRuleModuleId;
