@@ -8,10 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Service
 public class GrammarRuleModuleService {
@@ -20,6 +17,29 @@ public class GrammarRuleModuleService {
     private ContentManagerService contentManagerService;
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
+
+    public List<ResolvedContent> getContentByGrammarRuleModuleId(String id) {
+        Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        List<ContentEntity> contents = existing.get().getContentList();
+
+        if(contents.isEmpty()) {
+            throw new BusinessException("No Content for this ID was found.", HttpStatus.OK);
+        }
+
+        List<ResolvedContent> resolvedContents = new ArrayList<>();
+
+        for (ContentEntity content : contents) {
+            ResolvedContent resolved = contentManagerService.getContentById(content);
+            resolvedContents.add(resolved);
+        }
+
+        return resolvedContents;
+    }
 
     public GrammarRuleModuleEntity getGrammarRuleModuleById(String id) {
 
