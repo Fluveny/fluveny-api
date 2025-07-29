@@ -29,6 +29,18 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private GrammarRuleService grammarRuleService;
 
+
+    public List<GrammarRuleModuleEntity> getAllGrammarRulesModulesByIdModule (String id) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        return moduleFind.get().getGrammarRuleModules();
+    }
+
     public ModuleEntity createModule(ModuleEntity moduleEntity) {
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
