@@ -96,8 +96,10 @@ public class ModuleService implements IntroductionService {
             throw new BusinessException("This module doesn't exist", HttpStatus.BAD_REQUEST);
         }
 
-        for (GrammarRuleModuleEntity grammarRuleModuleEntity : moduleEntity.getGrammarRuleModules()) {
-            grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+        if(module.get().getGrammarRuleModules() != null) {
+            for (GrammarRuleModuleEntity grammarRuleModuleEntity : moduleEntity.getGrammarRuleModules()) {
+                grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+            }
         }
 
         moduleRepository.deleteById(moduleEntity.getId());
