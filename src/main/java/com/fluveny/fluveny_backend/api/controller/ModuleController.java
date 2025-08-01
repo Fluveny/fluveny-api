@@ -13,6 +13,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -40,6 +42,7 @@ public class ModuleController implements IntroductionController {
     private final ModuleMapper moduleMapper;
     private final GrammarRuleModuleMapper grammarRuleModuleMapper;
     private final IntroductionMapper introductionMapper;
+    private final ModuleRepository moduleRepository;
 
     @Operation(summary = "Creating a new module",
             description = "This endpoint is responsible for creating a new module")
@@ -251,6 +254,54 @@ public class ModuleController implements IntroductionController {
 
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
 
+    }
+
+    @Operation(summary = "Delete module by ID",
+            description = "This endpoint is used to DELETE module by ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Module fetched successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesReponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Module not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> deleteModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
+
+        ModuleEntity module = moduleService.getModuleById(id);
+
+        if (module == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module with that id was not found", null));
+        }
+
+
+        moduleService.deleteIntroductionById(module.getId());
+        List<GrammarRuleModuleEntity> grammarRules = module.getGrammarRuleModules();
+        for (GrammarRuleModuleEntity grammarRuleModule : grammarRules) {
+            grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModule.getId());
+        }
+
+        moduleRepository.deleteById(module.getId());
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module was delete with success", null));
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> getIntroductionByEntityId(@PathVariable String id){
