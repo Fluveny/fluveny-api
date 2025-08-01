@@ -343,22 +343,8 @@ public class ModuleController implements IntroductionController {
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> deleteModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
-
-        ModuleEntity module = moduleService.getModuleById(id);
-
-        if (module == null) {
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module with that id was not found", null));
-        }
-
-
-        moduleService.deleteIntroductionById(module.getId());
-        List<GrammarRuleModuleEntity> grammarRules = module.getGrammarRuleModules();
-        for (GrammarRuleModuleEntity grammarRuleModule : grammarRules) {
-            grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModule.getId());
-        }
-
-        moduleRepository.deleteById(module.getId());
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module was delete with success", null));
+        ModuleEntity module = moduleService.deleteModule(id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module was delete with success", moduleMapper.toDTO(module)));
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> getIntroductionByEntityId(@PathVariable String id){
