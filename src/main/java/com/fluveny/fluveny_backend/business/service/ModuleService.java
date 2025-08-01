@@ -29,6 +29,43 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private GrammarRuleService grammarRuleService;
 
+    public void grammarRuleModuleExistsInModule(String idModule, String idGrammarRuleModule){
+
+        Optional<ModuleEntity> optionalModule = moduleRepository.findById(idModule);
+
+        if (optionalModule.isEmpty()) {
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        List<GrammarRuleModuleEntity> grammarRuleModules = optionalModule.get().getGrammarRuleModules();
+        if (grammarRuleModules.isEmpty()) {
+            throw new BusinessException("This module has no grammar rule modules", HttpStatus.NOT_FOUND);
+        }
+
+        boolean found = false;
+        for (GrammarRuleModuleEntity grm : grammarRuleModules) {
+            if (grm != null && idGrammarRuleModule.equals(grm.getId())) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            throw new BusinessException("This module has no grammar rule module with this id", HttpStatus.NOT_FOUND);
+        }
+    }
+
+    public List<GrammarRuleModuleEntity> getAllGrammarRulesModulesByIdModule (String id) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        return moduleFind.get().getGrammarRuleModules();
+    }
+
     public ModuleEntity createModule(ModuleEntity moduleEntity) {
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
@@ -49,6 +86,25 @@ public class ModuleService implements IntroductionService {
         }
 
         return moduleRepository.save(savedModuleEntity);
+    }
+
+    public ModuleEntity deleteModule (ModuleEntity moduleEntity) {
+
+        Optional<ModuleEntity> module = moduleRepository.findById(moduleEntity.getId());
+
+        if (module.isEmpty()) {
+            throw new BusinessException("This module doesn't exist", HttpStatus.BAD_REQUEST);
+        }
+
+        if(module.get().getGrammarRuleModules() != null) {
+            for (GrammarRuleModuleEntity grammarRuleModuleEntity : moduleEntity.getGrammarRuleModules()) {
+                grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+            }
+        }
+
+        moduleRepository.deleteById(moduleEntity.getId());
+
+        return module.get();
     }
 
     private GrammarRuleModuleEntity setGrammarRuleModule(ModuleEntity moduleEntity, GrammarRuleEntity grammarRuleEntity) {

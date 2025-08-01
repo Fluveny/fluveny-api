@@ -286,4 +286,32 @@ class ModuleServiceTest {
         Assertions.assertEquals("This module doesn't have an introduction.", thrown.getMessage());
     }
 
+
+    @Test
+    @DisplayName("Should delete module successfully")
+    void shouldDeleteModuleSuccesfully() throws Exception {
+
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
+
+        moduleService.deleteModule(module);
+
+
+        verify(moduleRepository).deleteById("12345a");
+    }
+
+    @Test
+    @DisplayName("Should throw exception when deleting introduction on a non-existant module")
+    void shouldThrowExceptionWhenDeletingModuleThatDoesntExists() throws Exception {
+        ModuleEntity module = new ModuleEntity("12345a", "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>(), new TextBlockEntity());
+
+        when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.deleteModule(module);
+        });
+
+        Assertions.assertEquals("This module doesn't exist", thrown.getMessage());
+    }
 }

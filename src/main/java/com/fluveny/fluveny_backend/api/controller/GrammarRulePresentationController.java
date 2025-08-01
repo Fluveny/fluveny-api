@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
-@RequestMapping("/api/v1/modules/{id_module}/grammar-rules-module/{id_grammarRuleModule}/presentation")
+@RequestMapping("/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/presentation")
 @RequiredArgsConstructor
 @Validated
 public class GrammarRulePresentationController {
