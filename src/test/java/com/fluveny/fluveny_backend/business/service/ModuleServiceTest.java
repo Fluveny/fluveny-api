@@ -295,7 +295,7 @@ class ModuleServiceTest {
 
         when(moduleRepository.findById("12345a")).thenReturn(Optional.of(module));
 
-        moduleService.deleteModule(module);
+        moduleService.deleteModule(module.getId());
 
 
         verify(moduleRepository).deleteById("12345a");
@@ -309,7 +309,7 @@ class ModuleServiceTest {
         when(moduleRepository.findById("12345a")).thenReturn(Optional.empty());
 
         Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
-            moduleService.deleteModule(module);
+            moduleService.deleteModule(module.getId());
         });
 
         Assertions.assertEquals("This module doesn't exist", thrown.getMessage());
