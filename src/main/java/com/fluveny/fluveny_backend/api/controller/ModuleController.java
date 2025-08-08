@@ -2,13 +2,11 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.dto.*;
+import com.fluveny.fluveny_backend.api.mapper.ContentMapper;
 import com.fluveny.fluveny_backend.api.mapper.GrammarRuleModuleMapper;
 import com.fluveny.fluveny_backend.api.mapper.IntroductionMapper;
 import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
-import com.fluveny.fluveny_backend.api.response.module.ContentsResponse;
-import com.fluveny.fluveny_backend.api.response.module.GrammarRuleModulesResponse;
-import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
-import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
+import com.fluveny.fluveny_backend.api.response.module.*;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
@@ -40,8 +38,7 @@ public class ModuleController implements IntroductionController {
 
     private final ModuleService moduleService;
     private final GrammarRuleModuleService grammarRuleModuleService;
-
-
+    private final ContentMapper contentMapper;
     private final ModuleMapper moduleMapper;
     private final GrammarRuleModuleMapper grammarRuleModuleMapper;
     private final IntroductionMapper introductionMapper;
@@ -143,15 +140,15 @@ public class ModuleController implements IntroductionController {
             ),
     })
     @GetMapping("/{id}/grammar-rule-modules/{GrammarRuleModuleId}/contents")
-    public ResponseEntity<ApiResponseFormat<List<ResolvedContent>>> getAllContentsByGrammarRuleModuleId(
+    public ResponseEntity<ApiResponseFormat<List<ContentEntity>>> getAllContentsByGrammarRuleModuleId(
             @Parameter(description = "ID of the module that stores the grammar rule", required = true)
             @PathVariable String id,
             @Parameter(description = "ID of the grammar rule module that stores the contents", required = true)
             @PathVariable String GrammarRuleModuleId)
     {
         moduleService.grammarRuleModuleExistsInModule(id, GrammarRuleModuleId);
-        List<ResolvedContent> contents = grammarRuleModuleService.getContentByGrammarRuleModuleId(GrammarRuleModuleId);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ResolvedContent>>("Contents by Grammar Rule Module has successfully found", contents));
+        List<ContentEntity> contents = grammarRuleModuleService.getContentByGrammarRuleModuleId(GrammarRuleModuleId);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentEntity>>("Contents by Grammar Rule Module has successfully found", contents));
     }
 
     @Operation(summary = "Get all grammar rule modules associated with a specific module ID",
@@ -160,26 +157,33 @@ public class ModuleController implements IntroductionController {
             @ApiResponse(responseCode = "200", description = "Grammar rule modules were successfully found or no modules were found for the given ID",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = GrammarRuleModulesResponse.class)
+                            schema = @Schema(implementation = GrammarRuleModulesTinyResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "No module with this ID was found or Bad Request",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = GrammarRuleModulesResponse.class)
+                            schema = @Schema(implementation = GrammarRuleModulesTinyResponse.class)
                     )
             ),
     })
     @GetMapping("/{id}/grammar-rule-modules")
-    public ResponseEntity<ApiResponseFormat<List<GrammarRuleModuleEntity>>> getAllGrammarRulesModulesByIdModule(
+    public ResponseEntity<ApiResponseFormat<List<GrammarRuleModuleTinyDTO>>> getAllGrammarRulesModulesByIdModule(
             @Parameter(description = "ID of the module that stores the grammar rule", required = true)
             @PathVariable String id)
     {
-        List<GrammarRuleModuleEntity> grammarRulesModule = moduleService.getAllGrammarRulesModulesByIdModule(id);
-        if(grammarRulesModule.isEmpty()){
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<GrammarRuleModuleEntity>>("No grammar rule module was found for this module.", grammarRulesModule));
+        List<GrammarRuleModuleEntity> grammarRulesModules = moduleService.getAllGrammarRulesModulesByIdModule(id);
+        List<GrammarRuleModuleTinyDTO> tinyDTO = new ArrayList<>();
+
+        if(grammarRulesModules.isEmpty()){
+            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<GrammarRuleModuleTinyDTO>>("No grammar rule module was found for this module.", tinyDTO));
         }
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<GrammarRuleModuleEntity>>("Grammar rule modules successfully found", grammarRulesModule));
+
+        for (GrammarRuleModuleEntity grammarRuleModule : grammarRulesModules) {
+            tinyDTO.add(grammarRuleModuleMapper.toTinyDTO(grammarRuleModule));
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<GrammarRuleModuleTinyDTO>>("Grammar rule modules successfully found", tinyDTO));
     }
 
     @Operation(summary = "Update a grammar rule module by ID",
