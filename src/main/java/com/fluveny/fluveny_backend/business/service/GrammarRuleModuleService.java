@@ -18,7 +18,7 @@ public class GrammarRuleModuleService {
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
-    public List<ResolvedContent> getContentByGrammarRuleModuleId(String id) {
+    public List<ContentEntity> getContentByGrammarRuleModuleId(String id) {
         Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(id);
 
         if (existing.isEmpty()) {
@@ -31,14 +31,7 @@ public class GrammarRuleModuleService {
             throw new BusinessException("No Content for this ID was found.", HttpStatus.OK);
         }
 
-        List<ResolvedContent> resolvedContents = new ArrayList<>();
-
-        for (ContentEntity content : contents) {
-            ResolvedContent resolved = contentManagerService.getContentById(content);
-            resolvedContents.add(resolved);
-        }
-
-        return resolvedContents;
+        return contents;
     }
 
     public GrammarRuleModuleEntity getGrammarRuleModuleById(String id) {
