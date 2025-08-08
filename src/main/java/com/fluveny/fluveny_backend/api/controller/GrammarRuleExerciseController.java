@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
+import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
@@ -24,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/exercises")
 @RequiredArgsConstructor
 public class GrammarRuleExerciseController {
+    private final ModuleService moduleService;
     private final ExerciseService exerciseService;
     private final ExerciseMapper exerciseMapper;
     private final GrammarRuleModuleRepository grammarRuleModuleRepository;
@@ -38,12 +40,6 @@ public class GrammarRuleExerciseController {
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Exercise not found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
@@ -73,4 +69,72 @@ public class GrammarRuleExerciseController {
             ExerciseEntity exercise = exerciseService.saveExercise(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule));
             return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseEntity>("Exercise create with successfully", exercise));
     }
+
+    @Operation(summary = "Return a exercise by id",
+            description = "This endpoint is used to return a exercise by id")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise found successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ExerciseResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Exercise not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content  = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<ExerciseEntity>> getExerciseByID(
+            @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
+        moduleService.grammarRuleModuleExistsInModule(id_grammarRuleModule, id_module);
+        ExerciseEntity exercise = exerciseService.getExerciseByIdAndValidateGrammarRuleModule(id, id_grammarRuleModule);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseEntity>("Exercise find with successfully", exercise));
+    }
+
+    @Operation(summary = "Update a  Exercise",
+            description = "This endpoint is used to update a exercise")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise updated successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ExerciseResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content  = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @PutMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<ExerciseEntity>> updateExercise(
+            @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
+            @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
+        moduleService.grammarRuleModuleExistsInModule(id_grammarRuleModule, id_module);
+        ExerciseEntity exercise = exerciseService.updateExerciseAndValidateGrammarRuleModule(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule), id, id_module);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseEntity>("Exercise updated with successfully", exercise));
+    }
+
 }
