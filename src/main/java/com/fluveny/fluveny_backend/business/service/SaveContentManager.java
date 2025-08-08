@@ -1,10 +1,7 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.ContentEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.*;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +16,53 @@ public class SaveContentManager {
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
+    public void presentationExistInGrammarRuleModule(String idPresentation, String idGrammarRuleModule){
+        Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(idGrammarRuleModule);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        boolean exists = false;
+
+        for (ContentEntity content : existing.get().getContentList()){
+            if (content.getId().equals(idPresentation) && content.getType().equals(ContentType.PRESENTATION)){
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists){
+            throw new BusinessException("No presentation with this ID in this Grammar Rule Module was found.", HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    public void exerciseExistInGrammarRuleModule(String idExercise, String idGrammarRuleModule){
+
+        Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(idGrammarRuleModule);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        boolean exists = false;
+
+        for (ContentEntity content : existing.get().getContentList()){
+            if (content.getId().equals(idExercise) && content.getType().equals(ContentType.EXERCISE)){
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists){
+            throw new BusinessException("No exercise with this ID in this Grammar Rule Module was found.", HttpStatus.NOT_FOUND);
+        }
+
+    }
+
     public void addPresentationToGrammarRuleModule(String id, PresentationEntity presentationEntity) {
+
         Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(id);
         if (existing.isEmpty()) {
             throw new BusinessException("No Grammar Rule Module with this ID was found.", HttpStatus.NOT_FOUND);
