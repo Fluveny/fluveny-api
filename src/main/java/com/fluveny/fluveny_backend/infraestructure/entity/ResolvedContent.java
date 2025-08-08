@@ -6,4 +6,6 @@ import com.fluveny.fluveny_backend.api.dto.ExerciseResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
 
 public interface ResolvedContent {
+    String getId();
+    String getType();
 }

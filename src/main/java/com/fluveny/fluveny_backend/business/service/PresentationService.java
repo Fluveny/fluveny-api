@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
+import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.PresentationRepository;
@@ -26,6 +27,17 @@ public class PresentationService {
         return presentationEntity.get();
     }
 
+    public PresentationEntity getPresentationByIdAndValidateGrammarRuleModule(String id, String idGrammarRuleModule) {
+        Optional<PresentationEntity> presentationEntity = presentationRepository.findById(id);
+
+        if(presentationEntity.isEmpty()) {
+            throw new BusinessException("No Presentation with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        saveContentManager.presentationExistInGrammarRuleModule(id, idGrammarRuleModule);
+        return presentationEntity.get();
+    }
+
     public void deletePresentationById(String id) {
 
         Optional<PresentationEntity> presentationEntity = presentationRepository.findById(id);
@@ -36,6 +48,19 @@ public class PresentationService {
 
         presentationRepository.deleteById(id);
 
+    }
+
+    public PresentationEntity updatePresentationAndValidateGrammarRuleModule(PresentationEntity presentation, String id, String idGrammarRuleModule) {
+        Optional<PresentationEntity> presentationEntity = presentationRepository.findById(id);
+
+        if(presentationEntity.isEmpty()) {
+            throw new BusinessException("No Presentation with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        saveContentManager.presentationExistInGrammarRuleModule(id, idGrammarRuleModule);
+        presentation.setId(id);
+
+        return presentationRepository.save(presentation);
     }
 
     public PresentationEntity createPresentation(PresentationEntity presentationEntity) {
