@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.api.controller;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fluveny.fluveny_backend.api.dto.GrammarRuleModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
@@ -463,7 +464,112 @@ class ModuleControllerTest {
         verify(grammarRuleModuleMapper, times(1)).toEntity(any());
     }
 
+    @Test
+    @DisplayName("Should accept delete request and delete module successfully")
+    void shouldAcceptRequestToDeleteModuleSuccessfully() throws Exception {
+        String moduleId = "moduleTest";
+        ModuleResponseDTO responseDTO = new ModuleResponseDTO();
+        responseDTO.setId(moduleId);
+        responseDTO.setTitle("Test Module");
+        responseDTO.setDescription("Test Description");
+        responseDTO.setLevel(level);
+        responseDTO.setGrammarRules(Arrays.asList(rule1, rule2));
 
+        ModuleEntity moduleEntity = new ModuleEntity();
+        moduleEntity.setId(moduleId);
+
+        when(moduleService.deleteModule(moduleId)).thenReturn(moduleEntity);
+        when(moduleMapper.toDTO(moduleEntity)).thenReturn(responseDTO);
+
+        mockMvc.perform(delete("/api/v1/modules/{id}", moduleId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("A module was delete with success"))
+                .andExpect(jsonPath("$.data.id").value(moduleId))
+                .andExpect(jsonPath("$.data.title").value("Test Module"))
+                .andReturn();
+
+        verify(moduleService, times(1)).deleteModule(moduleId);
+        verify(moduleMapper, times(1)).toDTO(moduleEntity);
+    }
+
+    @Test
+    @DisplayName("Should reject delete request when module id does not exist")
+    void shouldRejectDeleteRequestWhenModuleIdDoesNotExist() throws Exception {
+        String moduleId = "nonExistentModule";
+
+        when(moduleService.deleteModule(moduleId))
+                .thenThrow(new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(delete("/api/v1/modules/{id}", moduleId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("No module with this ID was found."))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleService, times(1)).deleteModule(moduleId);
+        verify(moduleMapper, times(0)).toDTO(any());
+    }
+
+    @Test
+    @DisplayName("Should reject delete request when module has associated grammar rule modules")
+    void shouldRejectDeleteRequestWhenModuleHasAssociatedGrammarRuleModules() throws Exception {
+        String moduleId = "moduleWithGrammarRules";
+
+        when(moduleService.deleteModule(moduleId))
+                .thenThrow(new BusinessException("Cannot delete module with associated grammar rule modules", HttpStatus.BAD_REQUEST));
+
+        mockMvc.perform(delete("/api/v1/modules/{id}", moduleId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Cannot delete module with associated grammar rule modules"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleService, times(1)).deleteModule(moduleId);
+        verify(moduleMapper, times(0)).toDTO(any());
+    }
+
+    @Test
+    @DisplayName("Should reject delete request when module is being used by users")
+    void shouldRejectDeleteRequestWhenModuleIsBeingUsedByUsers() throws Exception {
+        String moduleId = "moduleInUse";
+
+        when(moduleService.deleteModule(moduleId))
+                .thenThrow(new BusinessException("Cannot delete module that is being used by users", HttpStatus.CONFLICT));
+
+        mockMvc.perform(delete("/api/v1/modules/{id}", moduleId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isConflict())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.message").value("Cannot delete module that is being used by users"))
+                .andExpect(jsonPath("$.data").isEmpty())
+                .andReturn();
+
+        verify(moduleService, times(1)).deleteModule(moduleId);
+        verify(moduleMapper, times(0)).toDTO(any());
+    }
+
+    @Test
+    @DisplayName("Should handle internal server error during module deletion")
+    void shouldHandleInternalServerErrorDuringModuleDeletion() throws Exception {
+        String moduleId = "moduleTest";
+
+        when(moduleService.deleteModule(moduleId))
+                .thenThrow(new RuntimeException("Database connection error"));
+
+        mockMvc.perform(delete("/api/v1/modules/{id}", moduleId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError())
+                .andReturn();
+
+        verify(moduleService, times(1)).deleteModule(moduleId);
+        verify(moduleMapper, times(0)).toDTO(any());
+    }
 
     private void restartRequestDTO() {
         requestDTO.setTitle("Test - The day in the office");
