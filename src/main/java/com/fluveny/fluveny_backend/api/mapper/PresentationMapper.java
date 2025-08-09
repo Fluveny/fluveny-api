@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.api.mapper;
 
 import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.TextBlockResponseDTO;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
@@ -29,11 +30,12 @@ public class PresentationMapper {
     }
 
     public PresentationResponseDTO toDTO(PresentationEntity entity) {
+
         PresentationResponseDTO dto = new PresentationResponseDTO();
-        dto.setId(entity.getId());
-        dto.setGrammarRuleModuleId(entity.getGrammarRuleModuleId());
         dto.setTitle(entity.getTitle());
-        dto.setTextBlock(entity.getTextBlock());
+
+        TextBlockResponseDTO textBlockDto = new TextBlockResponseDTO();
+        textBlockDto.setContent(entity.getTextBlock().getContent());
 
         return dto;
     }
