@@ -10,7 +10,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExerciseResponseDTO {
-    private String grammarRuleModuleId;
     private String header;
     private String phrase;
     private String template;

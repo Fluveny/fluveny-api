@@ -11,7 +11,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class IntroductionResponseDTO {
     private String idModule;
     private TextBlockEntity textBlock;
