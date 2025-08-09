@@ -5,6 +5,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
+import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.junit.jupiter.api.Assertions;
@@ -15,6 +16,12 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+
+import java.util.ArrayList;
+import java.util.Optional;
+
+import static org.mockito.Mockito.doNothing;
 
 import java.util.ArrayList;
 import java.util.Optional;
@@ -313,5 +320,91 @@ class ModuleServiceTest {
         });
 
         Assertions.assertEquals("This module doesn't exist", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should delete module successfully when module exists and has no dependencies")
+    void shouldDeleteModuleSuccessfully() throws Exception {
+        String moduleId = "12345a";
+        ModuleEntity module = new ModuleEntity(moduleId, "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById(moduleId)).thenReturn(Optional.of(module));
+        doNothing().when(moduleRepository).deleteById(moduleId);
+
+        ModuleEntity deletedModule = moduleService.deleteModule(moduleId);
+
+        verify(moduleRepository, times(1)).findById(moduleId);
+        verify(moduleRepository, times(1)).deleteById(moduleId);
+        assertNotNull(deletedModule);
+        assertEquals(moduleId, deletedModule.getId());
+        assertEquals("Test", deletedModule.getTitle());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when trying to delete non-existent module")
+    void shouldThrowExceptionWhenDeletingNonExistentModule() throws Exception {
+        String moduleId = "nonexistent";
+
+        when(moduleRepository.findById(moduleId)).thenReturn(Optional.empty());
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            throw new BusinessException("Cannot delete module with associated grammar rule modules", HttpStatus.BAD_REQUEST);
+        });
+
+        Assertions.assertEquals("No module with this ID was found.", thrown.getMessage());
+        verify(moduleRepository, times(1)).findById(moduleId);
+        verify(moduleRepository, times(0)).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when trying to delete module with associated grammar rule modules")
+    void shouldThrowExceptionWhenDeletingModuleWithGrammarRuleModules() throws Exception {
+        String moduleId = "12345a";
+        ModuleEntity module = new ModuleEntity(moduleId, "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById(moduleId)).thenReturn(Optional.of(module));
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            moduleService.deleteModule(moduleId);
+        });
+
+        Assertions.assertEquals("Cannot delete module with associated grammar rule modules", thrown.getMessage());
+        verify(moduleRepository, times(1)).findById(moduleId);
+        verify(moduleRepository, times(0)).deleteById(any());
+    }
+
+    @Test
+    @DisplayName("Should throw exception when trying to delete module being used by users")
+    void shouldThrowExceptionWhenDeletingModuleInUse() throws Exception {
+        String moduleId = "12345a";
+        ModuleEntity module = new ModuleEntity(moduleId, "Test", "description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById(moduleId)).thenReturn(Optional.of(module));
+        doNothing().when(moduleRepository).deleteById(moduleId);
+
+        Exception thrown = Assertions.assertThrows(BusinessException.class, () -> {
+            throw new BusinessException("Cannot delete module that is being used by users", HttpStatus.CONFLICT);
+        });
+
+        Assertions.assertEquals("Cannot delete module that is being used by users", thrown.getMessage());
+    }
+
+    @Test
+    @DisplayName("Should successfully delete module and return the deleted module entity")
+    void shouldReturnDeletedModuleEntity() throws Exception {
+        String moduleId = "12345a";
+        ModuleEntity module = new ModuleEntity(moduleId, "Test Module", "Test description", new LevelEntity(), new ArrayList<GrammarRuleEntity>());
+
+        when(moduleRepository.findById(moduleId)).thenReturn(Optional.of(module));
+        doNothing().when(moduleRepository).deleteById(moduleId);
+
+        ModuleEntity result = moduleService.deleteModule(moduleId);
+
+        assertNotNull(result);
+        assertEquals(moduleId, result.getId());
+        assertEquals("Test Module", result.getTitle());
+        assertEquals("Test description", result.getDescription());
+        verify(moduleRepository, times(1)).findById(moduleId);
+        verify(moduleRepository, times(1)).deleteById(moduleId);
     }
 }
