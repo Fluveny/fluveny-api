@@ -3,6 +3,7 @@ package com.fluveny.fluveny_backend.api.controller;
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.dto.ExerciseRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.PresentationMapper;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import com.fluveny.fluveny_backend.api.response.presentation.PresentationResponse;
@@ -115,11 +116,11 @@ public class GrammarRulePresentationController {
             )
     })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseFormat<PresentationEntity>> getExerciseByID(
+    public ResponseEntity<ApiResponseFormat<PresentationResponseDTO>> getExerciseByID(
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
-        moduleService.grammarRuleModuleExistsInModule(id_grammarRuleModule, id_module);
+        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
         PresentationEntity presentation = presentationService.getPresentationByIdAndValidateGrammarRuleModule(id, id_grammarRuleModule);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<PresentationEntity>("Presentation find with successfully", presentation));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<PresentationResponseDTO>("Presentation find with successfully", presentationMapper.toDTO(presentation)));
     }
 
     @Operation(summary = "Update a  Presentation",
@@ -145,11 +146,11 @@ public class GrammarRulePresentationController {
             )
     })
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseFormat<PresentationEntity>> updatePresentation(
+    public ResponseEntity<ApiResponseFormat<PresentationResponseDTO>> updatePresentation(
             @Valid @RequestBody PresentationRequestDTO presentationRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
-        moduleService.grammarRuleModuleExistsInModule(id_grammarRuleModule, id_module);
+        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
         PresentationEntity presentation = presentationService.updatePresentationAndValidateGrammarRuleModule(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule), id, id_module);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<PresentationEntity>("Exercise updated with successfully", presentation));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<PresentationResponseDTO>("Exercise updated with successfully", presentationMapper.toDTO(presentation)));
     }
 }

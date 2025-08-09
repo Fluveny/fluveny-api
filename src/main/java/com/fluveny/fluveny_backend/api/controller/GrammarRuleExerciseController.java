@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
+import com.fluveny.fluveny_backend.api.dto.ExerciseResponseDTO;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
@@ -99,11 +100,11 @@ public class GrammarRuleExerciseController {
             )
     })
     @GetMapping("/{id}")
-    public ResponseEntity<ApiResponseFormat<ExerciseEntity>> getExerciseByID(
+    public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> getExerciseByID(
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
-        moduleService.grammarRuleModuleExistsInModule(id_grammarRuleModule, id_module);
+        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
         ExerciseEntity exercise = exerciseService.getExerciseByIdAndValidateGrammarRuleModule(id, id_grammarRuleModule);
-        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseEntity>("Exercise find with successfully", exercise));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise find with successfully", exerciseMapper.toDTO(exercise)));
     }
 
     @Operation(summary = "Update a  Exercise",
@@ -129,12 +130,12 @@ public class GrammarRuleExerciseController {
             )
     })
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponseFormat<ExerciseEntity>> updateExercise(
+    public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> updateExercise(
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
-        moduleService.grammarRuleModuleExistsInModule(id_grammarRuleModule, id_module);
+        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
         ExerciseEntity exercise = exerciseService.updateExerciseAndValidateGrammarRuleModule(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule), id, id_module);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseEntity>("Exercise updated with successfully", exercise));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapper.toDTO(exercise)));
     }
 
 }

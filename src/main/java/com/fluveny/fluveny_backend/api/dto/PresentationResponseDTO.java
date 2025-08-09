@@ -11,9 +11,6 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PresentationResponseDTO {
-
-    private String id;
-    private String grammarRuleModuleId;
     private String title;
-    private TextBlockEntity textBlock;
+    private TextBlockResponseDTO textBlock;
 }
