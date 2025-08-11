@@ -150,7 +150,7 @@ public class GrammarRulePresentationController {
             @Valid @RequestBody PresentationRequestDTO presentationRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
         moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
-        PresentationEntity presentation = presentationService.updatePresentationAndValidateGrammarRuleModule(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule), id, id_module);
+        PresentationEntity presentation = presentationService.updatePresentationAndValidateGrammarRuleModule(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule), id, id_grammarRuleModule);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<PresentationResponseDTO>("Exercise updated with successfully", presentationMapper.toDTO(presentation)));
     }
 }
