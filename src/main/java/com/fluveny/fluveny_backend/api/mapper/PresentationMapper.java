@@ -37,6 +37,9 @@ public class PresentationMapper {
         TextBlockResponseDTO textBlockDto = new TextBlockResponseDTO();
         textBlockDto.setContent(entity.getTextBlock().getContent());
 
+        dto.setTextBlock(textBlockDto);
+
         return dto;
+
     }
 }
