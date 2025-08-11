@@ -110,7 +110,6 @@ public class GrammarRuleExerciseControllerTest {
         responseDTO.setHeader("Header test");
         responseDTO.setPhrase("Phrase test");
         responseDTO.setJustification("Justification test");
-        responseDTO.setGrammarRuleModuleId(grammarRuleModule.getId());
 
         when(moduleService.getModuleById("12345")).thenReturn(new ModuleEntity());
         when(grammarRuleModuleRepository.findById("12345")).thenReturn(Optional.of(grammarRuleModule));
