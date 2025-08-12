@@ -20,6 +20,12 @@ A aplicação roda na porta 8080.
 🔗 Acesse a documentação da API via Swagger:  
 [http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
 
+🔗 Para acessar a documentação da aplicação: 
+```bash
+mvn javadoc:javadoc
+
+```
+Após isso, basta acessar: target/site/index.html
 
 ## Ambiente de Execução
 O Ambiente de Execução destina-se a quem deseja rodar a aplicação em sua máquina sem realizar modificações ou desenvolvimento. Para facilitar esse processo, dockerizamos tanto a API quanto o banco de dados MongoDB, garantindo que a criação e execução sejam mais simples, rápidas e controladas.
