@@ -77,6 +77,16 @@ public class GrammarRuleService {
         grammarRuleRepository.deleteById(id);
     }
 
+    /**
+     * Generates a URL-friendly slug from the given title.
+     * <p>
+     * Converts the title to lowercase, trims whitespace, removes
+     * non-alphanumeric characters (excluding spaces), and replaces
+     * spaces with hyphens.
+     *
+     * @param title the input string to be converted into a slug
+     * @return a slug string suitable for URLs, or null if the input is null
+     */
     private String generateSlug(String title) {
         if (title == null) return null;
         return title.trim().toLowerCase()

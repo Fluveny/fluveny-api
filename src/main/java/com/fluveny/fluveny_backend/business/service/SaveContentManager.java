@@ -10,6 +10,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Service class responsible for save content of types Exercise and Presentation.
+ * <p>
+ * Exists to centralize save operations and avoid circular dependencies between services.
+ */
 @Service
 public class SaveContentManager {
 

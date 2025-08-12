@@ -31,6 +31,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST controller for managing Modules and their related entities.
+ *
+ * This controller provides endpoints to handle CRUD operations for Modules,
+ * as well as for Introductions associated with Modules by implementing the
+ * IntroductionController interface.
+ *
+ * Additionally, it manages operations related to GrammarRuleModules that belong
+ * to Modules, including fetching and updating grammar rule modules and their contents.
+ *
+ * By consolidating Module, Introduction, and GrammarRuleModule functionalities,
+ * this controller offers a unified API surface for module-related data management,
+ * while delegating business logic to appropriate services and maintaining separation of concerns
+ * at the service and mapper layers.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/modules")

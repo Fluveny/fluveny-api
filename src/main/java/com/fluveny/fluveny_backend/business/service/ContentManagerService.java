@@ -12,6 +12,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/**
+ * Service class responsible for managing content of types Exercise and Presentation.
+ * <p>
+ * Exists to centralize content-related operations and avoid circular dependencies between services.
+ */
 @Service
 public class ContentManagerService {
 
