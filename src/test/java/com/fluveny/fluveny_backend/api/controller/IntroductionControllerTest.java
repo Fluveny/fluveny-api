@@ -4,6 +4,8 @@ package com.fluveny.fluveny_backend.api.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.TextBlockRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.TextBlockResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.IntroductionMapper;
 import com.fluveny.fluveny_backend.business.service.IntroductionService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
@@ -85,12 +87,18 @@ public class IntroductionControllerTest {
         IntroductionResponseDTO responseDTO = new IntroductionResponseDTO();
         IntroductionRequestDTO requestDTO = new IntroductionRequestDTO();
 
-        requestDTO.setTextBlock("Introduction One Test");
+        TextBlockRequestDTO textBlockRequestDTO = new TextBlockRequestDTO();
+        textBlockRequestDTO.setContent("Introduction One Test");
+
+        TextBlockResponseDTO textBlockResponseDTO = new TextBlockResponseDTO();
+        textBlockResponseDTO.setContent("Introduction One Test");
+
+        requestDTO.setTextBlock(textBlockRequestDTO);
 
         responseDTO.setIdModule("12345");
-        responseDTO.setTextBlock(textBlock);
+        responseDTO.setTextBlock(textBlockResponseDTO);
 
-        when(introductionMapper.toDTO(textBlock, "12345")).thenReturn(responseDTO);
+        when(introductionMapper.toDTO(textBlockResponseDTO, "12345")).thenReturn(responseDTO);
         when(introductionMapper.toEntity(any(IntroductionRequestDTO.class))).thenReturn(textBlock);
         when(moduleService.createIntroduction("12345", textBlock)).thenReturn(textBlock);
 
@@ -133,7 +141,10 @@ public class IntroductionControllerTest {
 
         IntroductionRequestDTO requestDTO = new IntroductionRequestDTO();
 
-        requestDTO.setTextBlock("Introduction One Test");
+        TextBlockRequestDTO textBlockRequestDTO = new TextBlockRequestDTO();
+        textBlockRequestDTO.setContent("Introduction One Test");
+
+        requestDTO.setTextBlock(textBlockRequestDTO);
 
         when(moduleService.createIntroduction("12345", textBlock)).thenThrow(new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND));
         when(introductionMapper.toEntity(any(IntroductionRequestDTO.class))).thenReturn(textBlock);

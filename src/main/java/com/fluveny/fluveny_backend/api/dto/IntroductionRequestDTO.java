@@ -18,5 +18,5 @@ public class IntroductionRequestDTO {
     @NotNull(message= "Text block can not be null")
     @NotBlank(message = "Text block is required")
     @Size(min = 10, max = 7000, message = "The introduction content must be between 10 and 7000 characters")
-    private String textBlock;
+    private TextBlockRequestDTO textBlock;
 }
