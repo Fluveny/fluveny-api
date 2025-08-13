@@ -10,6 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExerciseResponseDTO {
+    private String id;
     private String header;
     private String phrase;
     private String template;

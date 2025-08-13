@@ -11,6 +11,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PresentationResponseDTO {
+    private String id;
     private String title;
     private TextBlockResponseDTO textBlock;
 }

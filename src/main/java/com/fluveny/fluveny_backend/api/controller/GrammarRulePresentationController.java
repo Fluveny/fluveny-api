@@ -67,7 +67,7 @@ public class GrammarRulePresentationController {
             )
     })
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<PresentationEntity>> createPresentation(
+    public ResponseEntity<ApiResponseFormat<PresentationResponseDTO>> createPresentation(
             @Parameter(description = "Object containing presentation data", required = true)
             @Valid @RequestBody PresentationRequestDTO presentationRequestDTO,
             @PathVariable String id_module,
@@ -78,13 +78,13 @@ public class GrammarRulePresentationController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "GrammarRuleModule not found"));
 
         if (!grammarRuleModule.getModuleId().equals(id_module)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponseFormat<PresentationEntity>(
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponseFormat<PresentationResponseDTO>(
                     "Module Id doesn't match with grammar rule module id of module", null));
         }
 
         PresentationEntity presentation = presentationService.createPresentation(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(new ApiResponseFormat<PresentationEntity>("Presentation created successfully", presentation));
+                .body(new ApiResponseFormat<PresentationResponseDTO>("Presentation created successfully", presentationMapper.toDTO(presentation)));
     }
 
     @Operation(summary = "Return a presentation by id",

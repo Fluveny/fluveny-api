@@ -33,6 +33,7 @@ public class PresentationMapper {
 
         PresentationResponseDTO dto = new PresentationResponseDTO();
         dto.setTitle(entity.getTitle());
+        dto.setId(entity.getId());
 
         TextBlockResponseDTO textBlockDto = new TextBlockResponseDTO();
         textBlockDto.setContent(entity.getTextBlock().getContent());
