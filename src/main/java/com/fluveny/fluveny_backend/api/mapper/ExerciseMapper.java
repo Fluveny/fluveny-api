@@ -20,6 +20,7 @@ public class ExerciseMapper {
 
     public ExerciseResponseDTO toDTO(ExerciseEntity entity) {
         ExerciseResponseDTO dto = new ExerciseResponseDTO();
+        dto.setId(entity.getId());
         dto.setHeader(entity.getHeader());
         dto.setPhrase(entity.getPhrase());
         dto.setJustification(entity.getJustification());

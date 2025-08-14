@@ -54,7 +54,7 @@ public class GrammarRuleExerciseController {
             )
     })
     @PostMapping
-    public ResponseEntity<ApiResponseFormat<ExerciseEntity>> createExercise(
+    public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> createExercise(
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module){
 
@@ -63,12 +63,12 @@ public class GrammarRuleExerciseController {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
             if(!grammarRuleModule.getModuleId().equals(id_module)){
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponseFormat<ExerciseEntity>(
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ApiResponseFormat<ExerciseResponseDTO>(
                         "Module Id doesn't match with grammar rule module id of module",null));
             }
 
             ExerciseEntity exercise = exerciseService.saveExercise(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule));
-            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseEntity>("Exercise create with successfully", exercise));
+            return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise create with successfully", exerciseMapper.toDTO(exercise)));
     }
 
     @Operation(summary = "Return a exercise by id",
@@ -134,7 +134,7 @@ public class GrammarRuleExerciseController {
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
         moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
-        ExerciseEntity exercise = exerciseService.updateExerciseAndValidateGrammarRuleModule(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule), id, id_module);
+        ExerciseEntity exercise = exerciseService.updateExerciseAndValidateGrammarRuleModule(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule), id, id_grammarRuleModule);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapper.toDTO(exercise)));
     }
 

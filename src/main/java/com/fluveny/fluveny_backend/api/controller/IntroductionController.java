@@ -13,7 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 
-
+/**
+ * Interface defining the API endpoints for managing introductions.
+ * <p>
+ * Provides operations to create, read, update, and delete introductions
+ * associated with modules.
+ */
 public interface IntroductionController {
 
     @Operation(summary = "Get introduction by ID",

@@ -29,6 +29,15 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private GrammarRuleService grammarRuleService;
 
+    /**
+     * Checks if a GrammarRuleModule exists within a Module by their IDs.
+     * <p>
+     * Throws BusinessException with NOT_FOUND status if the module or rule module is not found.
+     *
+     * @param idModule the ID of the module
+     * @param idGrammarRuleModule the ID of the grammar rule module
+     * @throws BusinessException if module or grammar rule module does not exist
+     */
     public void grammarRuleModuleExistsInModule(String idModule, String idGrammarRuleModule){
 
         Optional<ModuleEntity> optionalModule = moduleRepository.findById(idModule);
@@ -144,7 +153,17 @@ public class ModuleService implements IntroductionService {
 
     }
 
-    private void syncGrammarRuleModules(ModuleEntity newModule, ModuleEntity existingModule) {
+    /**
+     * Synchronizes the associations between grammar rules and the module.
+     * <p>
+     * Adds new associations from the module to rules not yet linked,
+     * removes associations that were removed in the new version,
+     * and updates the internal lists accordingly.
+     *
+     * @param newModule the module with the new list of grammar rules
+     * @param existingModule the current module to be updated
+     */
+    public void syncGrammarRuleModules(ModuleEntity newModule, ModuleEntity existingModule) {
 
         List<GrammarRuleModuleEntity> toAdd = new ArrayList<>();
         List<GrammarRuleModuleEntity> toRemove = new ArrayList<>();
@@ -175,7 +194,13 @@ public class ModuleService implements IntroductionService {
         }
     }
 
-    private void reorderGrammarRuleModules(ModuleEntity moduleEntity) {
+    /**
+     * Reorders the list of associations between grammar rules and the module
+     * to reflect the current order of grammar rules in the module.
+     *
+     * @param moduleEntity the module whose associations will be reordered
+     */
+    public void reorderGrammarRuleModules(ModuleEntity moduleEntity) {
 
         Map<String, Integer> newPositions = new HashMap<>();
 

@@ -2,10 +2,7 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.dto.*;
-import com.fluveny.fluveny_backend.api.mapper.ContentMapper;
-import com.fluveny.fluveny_backend.api.mapper.GrammarRuleModuleMapper;
-import com.fluveny.fluveny_backend.api.mapper.IntroductionMapper;
-import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
+import com.fluveny.fluveny_backend.api.mapper.*;
 import com.fluveny.fluveny_backend.api.response.module.*;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
@@ -31,6 +28,21 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * REST controller for managing Modules and their related entities.
+ *
+ * This controller provides endpoints to handle CRUD operations for Modules,
+ * as well as for Introductions associated with Modules by implementing the
+ * IntroductionController interface.
+ *
+ * Additionally, it manages operations related to GrammarRuleModules that belong
+ * to Modules, including fetching and updating grammar rule modules and their contents.
+ *
+ * By consolidating Module, Introduction, and GrammarRuleModule functionalities,
+ * this controller offers a unified API surface for module-related data management,
+ * while delegating business logic to appropriate services and maintaining separation of concerns
+ * at the service and mapper layers.
+ */
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/modules")
@@ -43,6 +55,7 @@ public class ModuleController implements IntroductionController {
     private final GrammarRuleModuleMapper grammarRuleModuleMapper;
     private final IntroductionMapper introductionMapper;
     private final ModuleRepository moduleRepository;
+    private final TextBlockMapper textBlockMapper;
 
     @Operation(summary = "Creating a new module",
             description = "This endpoint is responsible for creating a new module")
@@ -356,17 +369,17 @@ public class ModuleController implements IntroductionController {
         if (introduction == null) {
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("No Introduction find for this module", null));
         }
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<IntroductionResponseDTO>("Introduction was found", introductionMapper.toDTO(introduction, id)));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<IntroductionResponseDTO>("Introduction was found", introductionMapper.toDTO(textBlockMapper.toDTO(introduction), id)));
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> updateIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO){
         TextBlockEntity introduction = moduleService.updateIntroduction(id, introductionMapper.toEntity(introductionRequestDTO));
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was updated", introductionMapper.toDTO(introduction, id)));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was updated", introductionMapper.toDTO(textBlockMapper.toDTO(introduction), id)));
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO) {
         TextBlockEntity introduction = moduleService.createIntroduction(id, introductionMapper.toEntity(introductionRequestDTO));
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was created", introductionMapper.toDTO(introduction, id)));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was created", introductionMapper.toDTO(textBlockMapper.toDTO(introduction), id)));
     }
 
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> deleteIntroduction(@PathVariable String id){

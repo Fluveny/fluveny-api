@@ -10,6 +10,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Service class responsible for save content of types Exercise and Presentation.
+ * <p>
+ * Exists to centralize save operations and avoid circular dependencies between services.
+ */
 @Service
 public class SaveContentManager {
 
@@ -17,6 +22,7 @@ public class SaveContentManager {
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
 
     public void presentationExistInGrammarRuleModule(String idPresentation, String idGrammarRuleModule){
+
         Optional<GrammarRuleModuleEntity> existing = grammarRuleModuleRepository.findById(idGrammarRuleModule);
 
         if (existing.isEmpty()) {

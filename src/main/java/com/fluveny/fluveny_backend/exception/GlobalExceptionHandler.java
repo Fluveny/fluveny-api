@@ -12,6 +12,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.stream.Collectors;
 
+/**
+ * Global exception handler to intercept and handle exceptions thrown across the application.
+ *
+ * Provides centralized handling for:
+ * - BusinessException: Custom application exceptions with specific HTTP status codes.
+ * - MethodArgumentNotValidException: Validation errors from request payloads.
+ * - HttpMessageNotReadableException: Errors due to malformed or missing request bodies.
+ *
+ * Each handler returns a standardized API response format with an appropriate HTTP status.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
