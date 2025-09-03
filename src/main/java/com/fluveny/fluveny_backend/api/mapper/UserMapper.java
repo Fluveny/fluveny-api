@@ -24,7 +24,7 @@ public class UserMapper {
         String encryptedPassword = new BCryptPasswordEncoder().encode(userDTO.getPassword());
         userEntity.setPassword(encryptedPassword);
 
-        RoleEntity role = roleService.getRoleById(userDTO.getId_role());
+        RoleEntity role = roleService.getRoleByName("STUDENT");
         userEntity.setRole(role);
 
         return userEntity;

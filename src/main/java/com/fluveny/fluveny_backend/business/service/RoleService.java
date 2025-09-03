@@ -37,4 +37,15 @@ public class RoleService {
 
         return role.get();
     }
+
+    public RoleEntity getRoleByName (String name){
+
+        Optional<RoleEntity> role = roleRepository.findByName(name);
+
+        if(role.isEmpty()){
+            throw new BusinessException("There is no role registered with this name.", HttpStatus.NOT_FOUND);
+        }
+
+        return role.get();
+    }
 }

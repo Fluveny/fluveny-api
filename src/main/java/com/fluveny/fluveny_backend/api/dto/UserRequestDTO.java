@@ -46,8 +46,4 @@ public class UserRequestDTO {
     )
     private String email;
 
-    @NotNull(message = "Role Id is required")
-    @NotBlank(message = "Role Id cannot be blank")
-    private String id_role;
-
 }
