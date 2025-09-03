@@ -2,12 +2,17 @@ package com.fluveny.fluveny_backend;
 
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.LevelRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.RoleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
+import javax.management.relation.Role;
 import java.util.List;
 import java.util.logging.Level;
 
@@ -18,9 +23,23 @@ public class RunOnStatup implements CommandLineRunner {
     private LevelRepository levelRepository;
     @Autowired
     private GrammarRuleRepository grammarRuleRepository;
+    @Autowired
+    private RoleRepository roleRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     public void run(String... args) throws Exception {
+
+        if (roleRepository.count() < 3){
+            List<RoleEntity> roles = List.of(
+                    createRole("ADMIN", "Administrator responsible for managing users and modules in Fluveny"),
+                    createRole("STUDENT", "Student in FLuveny"),
+                    createRole("CONTENT_CREATOR", "Content Creator responsible for managing modules in Fluveny")
+            );
+            roleRepository.saveAll(roles);
+        }
+
         if (levelRepository.count() < 5) {
             List<LevelEntity> levels = List.of(
                     createLevel("A1", 100),
@@ -50,6 +69,13 @@ public class RunOnStatup implements CommandLineRunner {
             );
             grammarRuleRepository.saveAll(grammarRules);
         }
+    }
+
+    private RoleEntity createRole (String name, String description) {
+        RoleEntity role = new RoleEntity();
+        role.setName(name);
+        role.setDescription(description);
+        return role;
     }
 
     private LevelEntity createLevel(String title, int experienceValue) {
