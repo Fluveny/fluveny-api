@@ -105,7 +105,7 @@ public class ModuleService implements IntroductionService {
             throw new BusinessException("This module doesn't exist", HttpStatus.BAD_REQUEST);
         }
 
-        if(!module.get().getGrammarRuleModules().isEmpty()){
+        if(module.get().getIntroduction() != null){
             this.deleteIntroductionById(module.get().getId());
         }
 
