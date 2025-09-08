@@ -77,7 +77,8 @@ public class AuthController {
      */
     @Operation(summary = "User login with CAPTCHA", description = "Authenticates user with CAPTCHA verification")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Login successful"),
+            @ApiResponse(responseCode = "200", description = "Login successful",
+                    content = @Content(schema = @Schema(implementation = LoginResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid input or CAPTCHA verification failed"),
             @ApiResponse(responseCode = "401", description = "Invalid credentials"),
             @ApiResponse(responseCode = "423", description = "Account locked")
@@ -107,6 +108,77 @@ public class AuthController {
     }
 
     /**
+     * Standard logout endpoint using token in request body.
+     *
+     * @param logoutRequest Request containing JWT token to invalidate
+     * @param request HTTP request for IP extraction
+     * @return Logout confirmation message
+     */
+    @Operation(
+            summary = "User logout",
+            description = "Standard logout endpoint. Invalidates JWT token sent in request body."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid input or missing token"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token")
+    })
+    @PostMapping("/logout")
+    public ResponseEntity<ApiResponseFormat<String>> logout(
+            @Valid @RequestBody LogoutRequestDTO logoutRequest,
+            HttpServletRequest request) {
+
+        try {
+            if (logoutRequest.getToken() == null || logoutRequest.getToken().trim().isEmpty()) {
+                throw new BusinessException("Token is required", HttpStatus.BAD_REQUEST);
+            }
+
+            String message = authorizationService.logout(logoutRequest.getToken(), request);
+            return ResponseEntity.ok(new ApiResponseFormat<>(message, null));
+
+        } catch (BusinessException e) {
+            throw e;
+        }
+    }
+
+    /**
+     * Alternative logout endpoint using Authorization header.
+     * More RESTful approach where token is sent in Authorization header instead of request body.
+     *
+     * @param authorizationHeader Bearer token in Authorization header
+     * @param request HTTP request for IP extraction
+     * @return Logout confirmation message
+     */
+    @Operation(
+            summary = "User logout (Authorization header)",
+            description = "Alternative logout endpoint using Authorization header. Client must remove JWT token from storage."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logout successful"),
+            @ApiResponse(responseCode = "400", description = "Invalid or missing Authorization header"),
+            @ApiResponse(responseCode = "401", description = "Invalid or expired token")
+    })
+    @PostMapping("/logout-header")
+    public ResponseEntity<ApiResponseFormat<String>> logoutWithHeader(
+            @Parameter(description = "Bearer token in Authorization header")
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+            HttpServletRequest request) {
+
+        try {
+            if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+                throw new BusinessException("Authorization header with Bearer token is required", HttpStatus.BAD_REQUEST);
+            }
+
+            String token = authorizationHeader.substring(7);
+            String message = authorizationService.logout(token, request);
+            return ResponseEntity.ok(new ApiResponseFormat<>(message, null));
+
+        } catch (BusinessException e) {
+            throw e;
+        }
+    }
+
+    /**
      * Checks if CAPTCHA is required for a specific username and IP.
      * Used by frontend to determine if CAPTCHA should be displayed.
      *
@@ -116,7 +188,8 @@ public class AuthController {
      */
     @Operation(summary = "Check CAPTCHA requirement", description = "Determines if CAPTCHA is required for login attempt")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "CAPTCHA requirement status returned"),
+            @ApiResponse(responseCode = "200", description = "CAPTCHA requirement status returned",
+                    content = @Content(schema = @Schema(implementation = CaptchaCheckResponseDTO.class))),
             @ApiResponse(responseCode = "400", description = "Invalid username")
     })
     @GetMapping("/captcha/check")
