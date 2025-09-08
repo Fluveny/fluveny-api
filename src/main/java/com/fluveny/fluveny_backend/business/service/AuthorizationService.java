@@ -9,6 +9,8 @@ import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.LoginAttemptRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.UserRepository;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -52,8 +54,8 @@ public class AuthorizationService {
             );
         }
 
+        // Check if CAPTCHA is required
         if (loginAttempt.shouldRequireCaptcha()) {
-
         }
 
         Optional<UserEntity> userOpt = userRepository.findByUsername(username);
@@ -99,6 +101,8 @@ public class AuthorizationService {
         }
 
         UserEntity user = userOpt.get();
+
+        // TODO: Implement email service integration
 
         return "Password recovery instructions have been sent to your email address.";
     }
@@ -147,6 +151,36 @@ public class AuthorizationService {
         attempt.setFailedAttempts(0);
         attempt.setRequiresCaptcha(false);
         return attempt;
+    }
+
+    private static final Logger log = LoggerFactory.getLogger(AuthorizationService.class);
+
+    /**
+     * Performs user logout by validating token and logging the event.
+     * logout that relies on client-side token removal.
+     *
+     * @param token JWT token to be invalidated
+     * @param request HTTP request for IP extraction and logging
+     * @return Success message
+     * @throws BusinessException if token is invalid
+     */
+    public String logout(String token, HttpServletRequest request) {
+        try {
+            if (!validateToken(token)) {
+                throw new BusinessException("Invalid or expired token", HttpStatus.UNAUTHORIZED);
+            }
+
+            String username = getUsernameFromToken(token);
+            String ipAddress = getClientIpAddress(request);
+
+            log.info("User logout successful - Username: {}, IP: {}", username, ipAddress);
+
+            return "Logout successful. Please remove the token from client storage.";
+
+        } catch (Exception e) {
+            log.error("Error during logout: {}", e.getMessage());
+            throw new BusinessException("Invalid token", HttpStatus.UNAUTHORIZED);
+        }
     }
 
     private String getClientIpAddress(HttpServletRequest request) {
