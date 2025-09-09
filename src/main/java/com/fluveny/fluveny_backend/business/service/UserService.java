@@ -30,4 +30,12 @@ public class UserService {
         return userRepository.save(user);
 
     }
+
+    public UserEntity getUserByEmail(String email) {
+        Optional<UserEntity> userEmail = userRepository.findByEmail(email);
+        if(userEmail.isEmpty()) {
+            throw new BusinessException("A user with this email does not exist.", HttpStatus.BAD_REQUEST);
+        }
+        return userEmail.get();
+    }
 }
