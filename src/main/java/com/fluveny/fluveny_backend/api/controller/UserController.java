@@ -6,6 +6,7 @@ import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.UserResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.UserMapper;
 import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
+import com.fluveny.fluveny_backend.api.response.user.UserErrorResponse;
 import com.fluveny.fluveny_backend.api.response.user.UserResponse;
 import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
@@ -47,7 +48,7 @@ public class UserController {
             @ApiResponse(responseCode = "400", description = "User with this username or email already exists or Bad request for application",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
+                            schema = @Schema(implementation = UserErrorResponse.class)
                     )
 
             ),
