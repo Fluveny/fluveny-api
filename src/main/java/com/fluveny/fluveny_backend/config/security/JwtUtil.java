@@ -95,7 +95,4 @@ public class JwtUtil {
         }
     }
 
-    public String getEmailFromToken(String token) {
-        return extractClaim(token, "email");
-    }
 }
