@@ -1,5 +1,8 @@
 package com.fluveny.fluveny_backend;
 
+import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
+import com.fluveny.fluveny_backend.api.mapper.UserMapper;
+import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import javax.management.relation.Role;
 import java.util.List;
+import java.util.Optional;
 import java.util.logging.Level;
 
 @Component
@@ -25,6 +29,10 @@ public class RunOnStatup implements CommandLineRunner {
     private GrammarRuleRepository grammarRuleRepository;
     @Autowired
     private RoleRepository roleRepository;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private UserMapper userMapper;
     @Autowired
     private UserRepository userRepository;
 
@@ -39,6 +47,27 @@ public class RunOnStatup implements CommandLineRunner {
             );
             roleRepository.saveAll(roles);
         }
+
+        if(userService.getUserByEmail("test@fluveny-br.com") == null){
+            UserRequestDTO userRequestDTO = new UserRequestDTO();
+
+            userRequestDTO.setUsername("content_creator_tester");
+            userRequestDTO.setPassword("testPassword1234_");
+            userRequestDTO.setEmail("test@fluveny-br.com");
+
+            UserEntity user = userMapper.toEntity(userRequestDTO);
+            Optional<RoleEntity> role = roleRepository.findByName("CONTENT_CREATOR");
+
+            if(role.isPresent()){
+                user.setRole(role.get());
+            }
+
+            userService.createUser(user);
+        }
+
+
+
+
 
         if (levelRepository.count() < 5) {
             List<LevelEntity> levels = List.of(
