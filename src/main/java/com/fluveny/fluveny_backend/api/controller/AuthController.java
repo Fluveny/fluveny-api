@@ -11,17 +11,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/api/v1/auth")
 @Tag(name = "Authentication", description = "Authentication and authorization endpoints")
-@CrossOrigin(origins = "*", allowedHeaders = "*")
 public class AuthController {
 
     @Autowired
@@ -49,6 +51,7 @@ public class AuthController {
             HttpServletRequest request) {
 
         try {
+
             String ipAddress = getClientIpAddress(request);
             boolean requiresCaptcha = authorizationService.requiresCaptcha(loginRequest.getUsername(), ipAddress);
 
@@ -60,7 +63,16 @@ public class AuthController {
             }
 
             LoginResponseDTO response = authorizationService.login(loginRequest, request);
-            return ResponseEntity.ok(new ApiResponseFormat<>("Login successful", response));
+
+            ResponseCookie cookie = ResponseCookie.from("fluveny-token", response.getToken())
+                                    .httpOnly(true)
+                                    .secure(true)
+                                    .path("/")
+                                    .maxAge(24 * 60 * 60)
+                                    .sameSite("None")
+                                    .build();
+
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(new ApiResponseFormat<>("Login successful", response));
 
         } catch (BusinessException e) {
             throw e;
@@ -129,12 +141,19 @@ public class AuthController {
             HttpServletRequest request) {
 
         try {
+
             if (logoutRequest.getToken() == null || logoutRequest.getToken().trim().isEmpty()) {
                 throw new BusinessException("Token is required", HttpStatus.BAD_REQUEST);
             }
 
             String message = authorizationService.logout(logoutRequest.getToken(), request);
-            return ResponseEntity.ok(new ApiResponseFormat<>(message, null));
+            ResponseCookie cookie = ResponseCookie.from("fluveny-token", "")
+                    .httpOnly(false)
+                    .secure(true)
+                    .path("/")
+                    .maxAge(0)
+                    .build();
+            return ResponseEntity.ok().header(HttpHeaders.SET_COOKIE, cookie.toString()).body(new ApiResponseFormat<>(message, null));
 
         } catch (BusinessException e) {
             throw e;
