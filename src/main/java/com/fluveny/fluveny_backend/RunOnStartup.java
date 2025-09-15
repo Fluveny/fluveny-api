@@ -3,6 +3,7 @@ package com.fluveny.fluveny_backend;
 import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
 import com.fluveny.fluveny_backend.api.mapper.UserMapper;
 import com.fluveny.fluveny_backend.business.service.UserService;
+import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
@@ -15,13 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import javax.management.relation.Role;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Level;
 
 @Component
-public class RunOnStatup implements CommandLineRunner {
+public class RunOnStartup implements CommandLineRunner {
 
     @Autowired
     private LevelRepository levelRepository;
@@ -48,9 +47,10 @@ public class RunOnStatup implements CommandLineRunner {
             roleRepository.saveAll(roles);
         }
 
-        if(userService.getUserByEmail("test@fluveny-br.com") == null){
+        try {
+            userService.getUserByEmail("test@fluveny-br.com");
+        } catch (BusinessException e) {
             UserRequestDTO userRequestDTO = new UserRequestDTO();
-
             userRequestDTO.setUsername("content_creator_tester");
             userRequestDTO.setPassword("testPassword1234_");
             userRequestDTO.setEmail("test@fluveny-br.com");
@@ -58,9 +58,7 @@ public class RunOnStatup implements CommandLineRunner {
             UserEntity user = userMapper.toEntity(userRequestDTO);
             Optional<RoleEntity> role = roleRepository.findByName("CONTENT_CREATOR");
 
-            if(role.isPresent()){
-                user.setRole(role.get());
-            }
+            role.ifPresent(user::setRole);
 
             userService.createUser(user);
         }

@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.api.dto;
 
+import com.fluveny.fluveny_backend.validation.UsernameOrEmail;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -19,11 +20,8 @@ public class LoginRequestDTO {
     @NotBlank(message = "Username cannot be blank")
     @Size(min = 8, max = 200,
             message = "Username must be between 8 and 200 characters")
-    @Pattern(
-            regexp = "^[a-zA-Z0-9._]+$",
-            message = "Username can only contain letters, numbers, dots, and underscores"
-    )
-    private String username;
+    @UsernameOrEmail
+    private String usernameOrEmail;
 
     @NotNull(message = "Password is required")
     @NotBlank(message = "Password cannot be blank")

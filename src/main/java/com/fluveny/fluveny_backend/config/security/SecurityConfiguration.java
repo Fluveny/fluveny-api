@@ -36,6 +36,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/captcha/check").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/token/validate").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/token/username").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/auth/me").permitAll()
 
                         // Grammar Rule Controller
                         .requestMatchers(HttpMethod.GET, "/api/v1/grammar-rules").permitAll()

@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.api.dto.LoginRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.LoginResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.LoginResultDTO;
 import com.fluveny.fluveny_backend.config.security.JwtUtil;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.LoginAttemptEntity;
@@ -13,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -40,12 +42,26 @@ public class AuthorizationService {
      * @return LoginResponseDTO with token and user information
      * @throws BusinessException if authentication fails or account is locked
      */
-    public LoginResponseDTO login(LoginRequestDTO loginRequest, HttpServletRequest request) {
+    public LoginResultDTO login(LoginRequestDTO loginRequest, HttpServletRequest request) {
+        String identifier = loginRequest.getUsernameOrEmail();
         String ipAddress = getClientIpAddress(request);
-        String username = loginRequest.getUsername();
 
-        Optional<LoginAttemptEntity> attemptOpt = loginAttemptRepository.findByUsernameAndIpAddress(username, ipAddress);
-        LoginAttemptEntity loginAttempt = attemptOpt.orElse(createNewLoginAttempt(username, ipAddress));
+        Optional<UserEntity> userOpt;
+        if (identifier.contains("@")) {
+            userOpt = userRepository.findByEmail(identifier);
+        } else {
+            userOpt = userRepository.findByUsername(identifier);
+        }
+
+        if (userOpt.isEmpty()) {
+            throw new BusinessException("Invalid credentials", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserEntity user = userOpt.get();
+        String canonicalUsername = user.getUsername();
+
+        Optional<LoginAttemptEntity> attemptOpt = loginAttemptRepository.findByUsernameAndIpAddress(canonicalUsername, ipAddress);
+        LoginAttemptEntity loginAttempt = attemptOpt.orElse(createNewLoginAttempt(canonicalUsername, ipAddress));
 
         if (loginAttempt.isLocked()) {
             throw new BusinessException(
@@ -53,18 +69,6 @@ public class AuthorizationService {
                     HttpStatus.LOCKED
             );
         }
-
-        // Check if CAPTCHA is required
-        if (loginAttempt.shouldRequireCaptcha()) {
-        }
-
-        Optional<UserEntity> userOpt = userRepository.findByUsername(username);
-        if (userOpt.isEmpty()) {
-            handleFailedLogin(loginAttempt);
-            throw new BusinessException("Invalid credentials", HttpStatus.UNAUTHORIZED);
-        }
-
-        UserEntity user = userOpt.get();
 
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
             handleFailedLogin(loginAttempt);
@@ -76,13 +80,21 @@ public class AuthorizationService {
 
         String token = jwtUtil.generateToken(user);
 
-        return new LoginResponseDTO(
-                token,
-                user.getUsername(),
-                user.getEmail(),
-                user.getRole().getName(),
-                "Login successful"
-        );
+        return new LoginResultDTO(user.getUsername(), user.getEmail(), user.getRole().getName(), token);
+    }
+
+    /**
+     * Finds a user by their username and returns their email.
+     * This is useful for populating user data from a validated session (e.g., in the /me endpoint).
+     *
+     * @param username The username to search for.
+     * @return The email address of the found user.
+     * @throws UsernameNotFoundException if no user is found with the given username.
+     */
+    public String findEmailByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .map(UserEntity::getEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
     }
 
     /**

@@ -25,7 +25,7 @@ public class JwtUtil {
 
     public String generateToken(UserEntity user) {
         Instant now = Instant.now();
-        Instant expiration = now.plus(2, ChronoUnit.HOURS); // Token expires in 2 hours
+        Instant expiration = now.plus(24, ChronoUnit.HOURS);
 
         return JWT.create()
                 .withSubject(user.getUsername())
