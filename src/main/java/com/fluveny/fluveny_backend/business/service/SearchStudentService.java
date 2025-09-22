@@ -52,7 +52,7 @@ public class SearchStudentService {
         }
 
         // Finding user modules
-        Set<String> moduleIds = moduleResponseStudentDTOList.stream().map(ModuleResponseStudentDTO::getId).toList();
+        Set<String> moduleIds = moduleResponseStudentDTOList.stream().map(ModuleResponseStudentDTO::getId).collect(Collectors.toSet());
         List<ModuleStudent> moduleStudents = moduleStudentRepository
                 .findByIdStudentUserNameAndIdModuleIdIn(userEntity.getId(), moduleIds);
 
