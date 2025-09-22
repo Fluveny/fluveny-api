@@ -22,4 +22,6 @@ public class ModuleResponseStudentDTO {
     private List<GrammarRuleEntity> grammarRules;
     private List<GrammarRuleModuleEntity> grammarRulesModule;
     private Boolean isFavorite;
+    private Boolean isVisible;
+    private Float progress;
 }
