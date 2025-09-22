@@ -6,6 +6,7 @@ import com.fluveny.fluveny_backend.api.mapper.ModuleSearchStudentMapper;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleStudent;
 import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
@@ -24,6 +25,8 @@ public class SearchStudentService {
     private MongoTemplate mongoTemplate;
     @Autowired
     private ModuleSearchStudentMapper moduleSearchStudentMapper;
+    @Autowired
+    private ModuleStudentRepository moduleStudentRepository;
 
     public List<ModuleResponseStudentDTO> searchModuleByStudent (UserEntity userEntity, SearchModuleStudentDTO searchModuleStudentDTO) {
 
@@ -49,12 +52,9 @@ public class SearchStudentService {
         }
 
         // Finding user modules
-        Query queryAboutUser = new Query();
-        queryAboutUser.addCriteria(Criteria.where("id.studentUserName").is(userEntity.getId()));
-        queryAboutUser.addCriteria(Criteria.where("id.moduleId").in(moduleResponseStudentDTOList.stream()
-                .map(ModuleResponseStudentDTO::getId)
-                .toList()));
-        List<ModuleStudent> moduleStudents = mongoTemplate.find(queryAboutUser, ModuleStudent.class);
+        Set<String> moduleIds = moduleResponseStudentDTOList.stream().map(ModuleResponseStudentDTO::getId).toList();
+        List<ModuleStudent> moduleStudents = moduleStudentRepository
+                .findByIdStudentUserNameAndIdModuleIdIn(userEntity.getId(), moduleIds);
 
         // If I need some filter that comes from the user, filter
         if(searchModuleStudentDTO.getIsFavorite() != null || searchModuleStudentDTO.getIsVisible() != null){
