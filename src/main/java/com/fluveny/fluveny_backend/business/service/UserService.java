@@ -46,4 +46,13 @@ public class UserService {
         }
         return userEmail.get();
     }
+
+    public UserEntity getUserByUsername(String username) {
+
+        Optional<UserEntity> userUsername = userRepository.findByUsername(username);
+        if(userUsername.isEmpty()) {
+            throw new BusinessException("A user with this username does not exist.", HttpStatus.BAD_REQUEST);
+        }
+        return userUsername.get();
+    }
 }
