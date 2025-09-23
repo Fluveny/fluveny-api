@@ -27,6 +27,11 @@ public class ModuleRequestDTO {
             message = "Description must be between 10 and 500 characters")
     private String description;
 
+    @NotNull(message = "Estimated time is required")
+    @Min(value = 1, message = "Estimated time must be at least 1 minute")
+    @Max(value = 600, message = "Estimated time cannot exceed 600 minutes")
+    private Integer estimatedTime;
+
     @NotNull(message = "Level is required")
     @NotBlank(message = "Level ID cannot be blank")
     @Pattern(regexp = "^[a-zA-Z0-9\\-]+$",

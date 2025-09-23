@@ -32,6 +32,7 @@ public class ModuleMapper {
         ModuleEntity moduleEntity = new ModuleEntity();
         moduleEntity.setTitle(moduleRequestDTO.getTitle());
         moduleEntity.setDescription(moduleRequestDTO.getDescription());
+        moduleEntity.setTempoEstimado(moduleRequestDTO.getEstimatedTime());
 
         LevelEntity level = levelService.getLevelById(moduleRequestDTO.getId_level());
         moduleEntity.setLevel(level);
@@ -55,6 +56,7 @@ public class ModuleMapper {
         ModuleResponseDTO moduleResponseDTO = new ModuleResponseDTO();
         moduleResponseDTO.setTitle(moduleEntity.getTitle());
         moduleResponseDTO.setDescription(moduleEntity.getDescription());
+        moduleResponseDTO.setEstimatedTime(moduleEntity.getEstimatedTime());
         moduleResponseDTO.setLevel(moduleEntity.getLevel());
         moduleResponseDTO.setGrammarRules(moduleEntity.getGrammarRules());
         moduleResponseDTO.setId(moduleEntity.getId());
