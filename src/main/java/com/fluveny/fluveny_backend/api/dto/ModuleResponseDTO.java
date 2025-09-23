@@ -18,6 +18,7 @@ public class ModuleResponseDTO {
     private String id;
     private String title;
     private String description;
+    private Integer estimatedTime;
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
     private List<GrammarRuleModuleEntity> grammarRulesModule;
