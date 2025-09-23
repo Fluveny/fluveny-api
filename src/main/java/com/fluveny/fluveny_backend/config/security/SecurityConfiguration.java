@@ -51,7 +51,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/exercises/{id}").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/exercises/{id}").permitAll()
 
-                        // Grammar Rule Apresentation Controller
+                        // Grammar Rule Presentation Controller
                         .requestMatchers(HttpMethod.POST, "/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/presentation").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/presentation{id}").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/presentation{id}").permitAll()
@@ -73,6 +73,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/modules/{id}").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id}/grammar-rule-modules/{GrammarRuleModuleId}/contents").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id}/grammar-rule-modules").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/modules/search-student").hasRole("STUDENT")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/modules/{id}/grammar-rule-modules/{grammarRuleModuleId}").hasRole("CONTENT_CREATOR")
 
                         // Introduction Controller
