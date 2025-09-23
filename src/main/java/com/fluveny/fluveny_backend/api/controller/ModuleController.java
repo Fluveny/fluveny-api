@@ -6,6 +6,9 @@ import com.fluveny.fluveny_backend.api.mapper.*;
 import com.fluveny.fluveny_backend.api.response.module.*;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
+import com.fluveny.fluveny_backend.business.service.SearchStudentService;
+import com.fluveny.fluveny_backend.business.service.UserService;
+import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
@@ -20,8 +23,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -56,6 +62,56 @@ public class ModuleController implements IntroductionController {
     private final IntroductionMapper introductionMapper;
     private final ModuleRepository moduleRepository;
     private final TextBlockMapper textBlockMapper;
+    private final SearchStudentService searchStudentService;
+    private final UserService userService;
+
+    @Operation(summary = "Search for modules by user",
+            description = "This endpoint is responsible for search a modules by user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Modules found successfully or no modules found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesUserResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/search-student")
+    public ResponseEntity<ApiResponseFormat<List<ModuleResponseStudentDTO>>> searchByStudent(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Search Module Data.",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = SearchModuleStudentDTO.class))
+            )
+            @Valid @RequestBody SearchModuleStudentDTO searchModuleStudentDTO,
+            Authentication authentication
+    ){
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        List<ModuleResponseStudentDTO> moduleResponseStudentDTOS = searchStudentService.searchModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), searchModuleStudentDTO);
+
+        if(moduleResponseStudentDTOS.isEmpty()){
+            throw new BusinessException("No modules found", HttpStatus.OK);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseStudentDTO>>("Modules found successfully", moduleResponseStudentDTOS));
+
+    }
 
     @Operation(summary = "Creating a new module",
             description = "This endpoint is responsible for creating a new module")
@@ -67,12 +123,6 @@ public class ModuleController implements IntroductionController {
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Modules not found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
