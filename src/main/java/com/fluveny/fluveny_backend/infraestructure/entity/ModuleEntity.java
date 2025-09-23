@@ -27,12 +27,30 @@ public class ModuleEntity {
     @DBRef
     private List<GrammarRuleModuleEntity> grammarRuleModules;
 
+    public ModuleEntity(String id, String title, String description, LevelEntity level, List<GrammarRuleEntity> grammarRules) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.level = level;
+        this.grammarRules = grammarRules;
+    }
+
     public ModuleEntity(String id, String title, String description, LevelEntity level, List<GrammarRuleEntity> grammarRules, Integer estimatedTime) {
         this.id = id;
         this.title = title;
         this.description = description;
         this.level = level;
         this.grammarRules = grammarRules;
+        this.estimatedTime = estimatedTime;
+    }
+
+    public ModuleEntity(String id, String title, String description, LevelEntity level, List<GrammarRuleEntity> grammarRules, TextBlockEntity introduction) {
+        this.id = id;
+        this.title = title;
+        this.description = description;
+        this.level = level;
+        this.grammarRules = grammarRules;
+        this.introduction = introduction;
         this.estimatedTime = estimatedTime;
     }
 
