@@ -43,6 +43,6 @@ public class ModuleEntity {
         this.level = level;
         this.grammarRules = grammarRules;
         this.introduction = introduction;
-        this.estimatedTime = estimatedTim
+        this.estimatedTime = estimatedTime;
     }
 }
