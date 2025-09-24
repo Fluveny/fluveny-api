@@ -64,6 +64,7 @@ public class ModuleController implements IntroductionController {
     private final TextBlockMapper textBlockMapper;
     private final SearchStudentService searchStudentService;
     private final UserService userService;
+    private final ModuleOverviewMapper moduleOverviewMapper;
 
     @Operation(summary = "Search for modules by user",
             description = "This endpoint is responsible for search a modules by user")
@@ -435,6 +436,45 @@ public class ModuleController implements IntroductionController {
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> deleteIntroduction(@PathVariable String id){
         moduleService.deleteIntroductionById(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was deleted", null));
+    }
+
+    @Operation(summary = "Get module overview for student",
+            description = "This endpoint returns complete module overview information for the student page")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Module overview fetched successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModuleOverviewResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Module not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/{id}/overview")
+    public ResponseEntity<ApiResponseFormat<ModuleOverviewDTO>> getModuleOverview(
+            @Parameter(description = "ID of the module", required = true)
+            @PathVariable String id,
+            Authentication authentication) {
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        ModuleOverviewDTO moduleOverview = moduleService.getModuleOverview(id, userDetails.getUsername());
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponseFormat<>("Module overview retrieved successfully", moduleOverview));
     }
 
 }
