@@ -304,7 +304,7 @@ public class ModuleController implements IntroductionController {
             @ApiResponse(responseCode = "200", description = "Final Challenge update successfully",
                     content = @Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = GrammarRuleModuleEntity.class)
+                            schema = @Schema(implementation = FinalChallengeReturnResponse.class)
                     )
             ),
             @ApiResponse(responseCode = "400", description = "Bad request for application",
@@ -333,6 +333,40 @@ public class ModuleController implements IntroductionController {
     {
         List<String> exerciseList = moduleService.updateFinalChallenge(finalChallengeRequestDTO, id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Final Challenge updated successfully", exerciseList));
+    }
+
+    @Operation(summary = "Get a Exercises in final challenge module by ID",
+            description = "This endpoint is used to get a exercises in final challenge by module ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise in Final Challenge found successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = FinalChallengeReturnResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/{id}/final-challenge")
+    public ResponseEntity<ApiResponseFormat<List<String>>> getAllExercisesInFinalChallenge(
+            @Parameter(description = "ID of the module that stores the final challenge", required = true)
+            @PathVariable String id)
+    {
+        ModuleEntity module = moduleService.getModuleById(id);
+        if(module.getFinalChallenge().isEmpty()){
+            throw new BusinessException("No Exercises was found for this Final Challenge.", HttpStatus.OK);
+        }
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Exercise in Final Challenge found successfully", module.getFinalChallenge()));
     }
   
     @Operation(summary = "Get all modules",
