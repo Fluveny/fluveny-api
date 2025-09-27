@@ -9,17 +9,14 @@ import org.springframework.stereotype.Component;
 @Component
 public class ModuleSearchStudentMapper {
 
-    public ModuleResponseStudentDTO toDTO(ModuleEntity moduleEntity, Boolean isFavorite) {
+    public ModuleResponseStudentDTO toDTO(ModuleEntity moduleEntity) {
 
         ModuleResponseStudentDTO moduleResponseStudentDTO = new ModuleResponseStudentDTO();
 
         moduleResponseStudentDTO.setTitle(moduleEntity.getTitle());
-        moduleResponseStudentDTO.setDescription(moduleEntity.getDescription());
         moduleResponseStudentDTO.setLevel(moduleEntity.getLevel());
         moduleResponseStudentDTO.setGrammarRules(moduleEntity.getGrammarRules());
         moduleResponseStudentDTO.setId(moduleEntity.getId());
-        moduleResponseStudentDTO.setGrammarRulesModule(moduleEntity.getGrammarRuleModules());
-        moduleResponseStudentDTO.setIsFavorite(isFavorite);
 
         return moduleResponseStudentDTO;
 

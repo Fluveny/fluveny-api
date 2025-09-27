@@ -60,6 +60,7 @@ public class ModuleMapper {
         moduleResponseDTO.setLevel(moduleEntity.getLevel());
         moduleResponseDTO.setGrammarRules(moduleEntity.getGrammarRules());
         moduleResponseDTO.setId(moduleEntity.getId());
+        moduleResponseDTO.setFinalChallenge(moduleEntity.getFinalChallenge());
         moduleResponseDTO.setGrammarRulesModule(moduleEntity.getGrammarRuleModules());
 
         return moduleResponseDTO;

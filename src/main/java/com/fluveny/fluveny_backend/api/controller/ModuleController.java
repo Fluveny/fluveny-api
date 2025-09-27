@@ -88,7 +88,7 @@ public class ModuleController implements IntroductionController {
                     )
             )
     })
-    @GetMapping("/search-student")
+    @GetMapping("/search/student")
     public ResponseEntity<ApiResponseFormat<List<ModuleResponseStudentDTO>>> searchByStudent(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Search Module Data.",
@@ -297,6 +297,43 @@ public class ModuleController implements IntroductionController {
 
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleEntity>("Module updated successfully", grammarRuleModule));
     }
+
+    @Operation(summary = "Update a final challenge module by ID",
+            description = "This endpoint is used to update a final challenge by module ID")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Final Challenge update successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = GrammarRuleModuleEntity.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @PutMapping("/{id}/final-challenge")
+    public ResponseEntity<ApiResponseFormat<List<String>>> updateFinalChallengeExerciseList(
+            @Parameter(description = "ID of the module that stores the final challenge", required = true)
+            @PathVariable String id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "New Final Challenge exercise list. It will update the content display position when loaded.",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = FinalChallengeRequestDTO.class))
+            )
+            @Valid @RequestBody FinalChallengeRequestDTO finalChallengeRequestDTO)
+    {
+        List<String> exerciseList = moduleService.updateFinalChallenge(finalChallengeRequestDTO, id);
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Final Challenge updated successfully", exerciseList));
+    }
   
     @Operation(summary = "Get all modules",
             description = "This endpoint is used to GET all module")
@@ -372,11 +409,9 @@ public class ModuleController implements IntroductionController {
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
 
             ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
-
             if (moduleDTO == null) {
                 return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module with that id was not found", null));
             }
-
             return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Modules find with successfully", moduleDTO));
 
     }
