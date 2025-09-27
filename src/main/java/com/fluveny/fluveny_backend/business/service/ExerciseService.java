@@ -13,6 +13,7 @@ import java.util.Optional;
 
 @Service
 public class ExerciseService {
+
     @Autowired
     private ExerciseRepository exerciseRepository;
     @Autowired
@@ -28,6 +29,7 @@ public class ExerciseService {
     }
 
     public ExerciseEntity getExerciseByIdAndValidateGrammarRuleModule(String id, String idGrammarRuleModule) {
+
         Optional<ExerciseEntity> exerciseEntity = exerciseRepository.findById(id);
 
         if(exerciseEntity.isEmpty()) {
@@ -35,6 +37,7 @@ public class ExerciseService {
         }
         saveContentManager.exerciseExistInGrammarRuleModule(id, idGrammarRuleModule);
         return exerciseEntity.get();
+
     }
 
     public ExerciseEntity updateExerciseAndValidateGrammarRuleModule(ExerciseEntity exercise, String id, String idGrammarRuleModule) {
