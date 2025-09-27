@@ -1,12 +1,12 @@
 package com.fluveny.fluveny_backend.business.service;
 
+import com.fluveny.fluveny_backend.api.dto.ModuleOverviewDTO;
+import com.fluveny.fluveny_backend.api.mapper.ModuleOverviewMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.*;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,6 +29,11 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private GrammarRuleService grammarRuleService;
 
+    @Autowired
+    private ModuleStudentRepository moduleStudentRepository;
+
+    @Autowired
+    private ModuleOverviewMapper moduleOverviewMapper;
     /**
      * Checks if a GrammarRuleModule exists within a Module by their IDs.
      * <p>
@@ -302,4 +307,16 @@ public class ModuleService implements IntroductionService {
         }
     }
 
+    public ModuleOverviewDTO getModuleOverview(String moduleId, String studentUsername) {
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        ModuleStudentId moduleStudentId = new ModuleStudentId(moduleId, studentUsername);
+        Optional<ModuleStudent> moduleStudent = moduleStudentRepository.findById(moduleStudentId);
+
+        return moduleOverviewMapper.toDTO(moduleFind.get(), moduleStudent.orElse(null));
+    }
 }
