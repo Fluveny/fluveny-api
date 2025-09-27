@@ -2,7 +2,9 @@ package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.api.dto.ModuleResponseStudentDTO;
 import com.fluveny.fluveny_backend.api.dto.SearchModuleStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.StatusDTOEnum;
 import com.fluveny.fluveny_backend.api.mapper.ModuleSearchStudentMapper;
+import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleStudent;
 import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
@@ -12,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -37,9 +40,11 @@ public class SearchStudentService {
             String pattern = ".*" + Pattern.quote(searchModuleStudentDTO.getModuleName()) + ".*";
             query.addCriteria(Criteria.where("title").regex(pattern, "i"));
         }
+
         if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
             query.addCriteria(Criteria.where("level.id").is(searchModuleStudentDTO.getLevelId()));
         }
+
         if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
             query.addCriteria(Criteria.where("grammarRules.id").all(searchModuleStudentDTO.getGrammarRulesId()));
         }
@@ -48,7 +53,7 @@ public class SearchStudentService {
         // Transforming modules into DTOS
         List<ModuleResponseStudentDTO> moduleResponseStudentDTOList = new ArrayList<>();
         for (ModuleEntity moduleEntity : moduleEntities) {
-            moduleResponseStudentDTOList.add(moduleSearchStudentMapper.toDTO(moduleEntity, null));
+            moduleResponseStudentDTOList.add(moduleSearchStudentMapper.toDTO(moduleEntity));
         }
 
         // Finding user modules
@@ -57,7 +62,7 @@ public class SearchStudentService {
                 .findByIdStudentUserNameAndIdModuleIdIn(userEntity.getId(), moduleIds);
 
         // If I need some filter that comes from the user, filter
-        if(searchModuleStudentDTO.getIsFavorite() != null || searchModuleStudentDTO.getIsVisible() != null){
+        if(searchModuleStudentDTO.getStatus() != null && !searchModuleStudentDTO.getStatus().isEmpty()) {
             moduleResponseStudentDTOList = filterByStudent(moduleStudents, searchModuleStudentDTO, moduleResponseStudentDTOList);
         }
 
@@ -67,7 +72,6 @@ public class SearchStudentService {
             ModuleStudent correspondingModuleStudent = moduleStudentMap.get(dto.getId());
             if (correspondingModuleStudent != null) {
                 dto.setIsFavorite(correspondingModuleStudent.getIsFavorite());
-                dto.setIsVisible(correspondingModuleStudent.getIsVisible());
                 dto.setProgress(correspondingModuleStudent.getProgress());
             }
         }
@@ -78,23 +82,40 @@ public class SearchStudentService {
 
     public List<ModuleResponseStudentDTO> filterByStudent (List<ModuleStudent> moduleStudents, SearchModuleStudentDTO searchModuleStudentDTO, List<ModuleResponseStudentDTO> moduleResponseStudentDTOList) {
 
-        if(searchModuleStudentDTO.getIsFavorite() != null){
-            moduleStudents.removeIf(moduleStudent ->
-                    !moduleStudent.getIsFavorite().equals(searchModuleStudentDTO.getIsFavorite())
-            );
-        }
+        Set<String> studentModuleIdsBeforeFilter = moduleStudents.stream()
+                .map(s -> s.getId().getModuleId())
+                .collect(Collectors.toSet());
 
-        if(searchModuleStudentDTO.getIsVisible() != null){
-            moduleStudents.removeIf(moduleStudent ->
-                    !moduleStudent.getIsVisible().equals(searchModuleStudentDTO.getIsVisible())
-            );
-        }
+        moduleStudents = moduleStudents.stream().filter(moduleStudent -> {
+            Float progress = moduleStudent.getProgress();
+
+            if (searchModuleStudentDTO.getStatus().contains(StatusDTOEnum.FAVORITE) && Boolean.TRUE.equals(moduleStudent.getIsFavorite())) {
+                return true;
+            }
+
+            if (searchModuleStudentDTO.getStatus().contains(StatusDTOEnum.COMPLETED) && progress != null && Float.compare(progress, 100f) == 0) {
+                return true;
+            }
+
+            if (searchModuleStudentDTO.getStatus().contains(StatusDTOEnum.IN_PROGRESS) && progress != null && Float.compare(progress, 0f) > 0 && Float.compare(progress, 100f) < 0) {
+                return true;
+            }
+
+            if (searchModuleStudentDTO.getStatus().contains(StatusDTOEnum.NOT_STARTED) && (progress == null || Float.compare(progress, 0f) == 0)) {
+                return true;
+            }
+
+            return false;
+
+        }).toList();
 
         Set<String> studentModuleIds = moduleStudents.stream()
                 .map(s -> s.getId().getModuleId())
                 .collect(Collectors.toSet());
 
-        moduleResponseStudentDTOList.removeIf(m -> !studentModuleIds.contains(m.getId()));
+        moduleResponseStudentDTOList.removeIf(module -> {
+            return !studentModuleIds.contains(module.getId()) && !(searchModuleStudentDTO.getStatus().contains(StatusDTOEnum.NOT_STARTED) && !studentModuleIdsBeforeFilter.contains(module.getId()));
+        });
 
         return moduleResponseStudentDTOList;
 
