@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  mongo-dev:
+    image: mongo:latest
+    container_name: mongodb_fluveny_dev
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: dev
+      MONGO_INITDB_ROOT_PASSWORD: fluvenydev123
+    volumes:
+      - mongo_dev_data:/data/db
+
+volumes:
+  mongo_dev_data:
+    driver: local
