@@ -90,12 +90,14 @@ public class ModuleController implements IntroductionController {
     })
     @GetMapping("/search/student")
     public ResponseEntity<ApiResponseFormat<List<ModuleResponseStudentDTO>>> searchByStudent(
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "Search Module Data.",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = SearchModuleStudentDTO.class))
-            )
-            @Valid @RequestBody SearchModuleStudentDTO searchModuleStudentDTO,
+            @Parameter(description = "ID of the module to be updated", required = false)
+            @RequestParam(required = false) String moduleName,
+            @Parameter(description = "ID of the module to be updated", required = false)
+            @RequestParam(required = false) List<String> grammarRulesId,
+            @Parameter(description = "ID of the module to be updated", required = false)
+            @RequestParam(required = false) List<String> levelsId,
+            @Parameter(description = "ID of the module to be updated", required = false)
+            @RequestParam(required = false) List<StatusDTOEnum> status,
             Authentication authentication
     ){
 
@@ -104,7 +106,7 @@ public class ModuleController implements IntroductionController {
         }
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        List<ModuleResponseStudentDTO> moduleResponseStudentDTOS = searchStudentService.searchModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), searchModuleStudentDTO);
+        List<ModuleResponseStudentDTO> moduleResponseStudentDTOS = searchStudentService.searchModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), new SearchModuleStudentDTO(moduleName, grammarRulesId, levelsId, status));
 
         if(moduleResponseStudentDTOS.isEmpty()){
             throw new BusinessException("No modules found", HttpStatus.OK);

@@ -42,7 +42,7 @@ public class SearchStudentService {
         }
 
         if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
-            query.addCriteria(Criteria.where("level.id").is(searchModuleStudentDTO.getLevelId()));
+            query.addCriteria(Criteria.where("level.id").in(searchModuleStudentDTO.getLevelId()));
         }
 
         if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
