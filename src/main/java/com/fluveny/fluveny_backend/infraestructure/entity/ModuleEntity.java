@@ -8,6 +8,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Document(collection = "fl_module")
@@ -24,6 +25,7 @@ public class ModuleEntity {
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
     private TextBlockEntity introduction;
+    private List<String> finalChallenge = new ArrayList<>();
     @DBRef
     private List<GrammarRuleModuleEntity> grammarRuleModules;
 

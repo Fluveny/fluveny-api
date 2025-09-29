@@ -22,4 +22,5 @@ public class ModuleResponseDTO {
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
     private List<GrammarRuleModuleEntity> grammarRulesModule;
+    private List<String> finalChallenge;
 }

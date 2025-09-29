@@ -17,11 +17,8 @@ import java.util.List;
 public class ModuleResponseStudentDTO {
     private String id;
     private String title;
-    private String description;
     private LevelEntity level;
     private List<GrammarRuleEntity> grammarRules;
-    private List<GrammarRuleModuleEntity> grammarRulesModule;
     private Boolean isFavorite;
-    private Boolean isVisible;
     private Float progress;
 }

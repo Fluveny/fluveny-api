@@ -91,7 +91,7 @@ public class GrammarRuleModuleService {
         Set<ContentEntity> newSet = new HashSet<>(newContentList);
 
         for (ContentEntity contentEntity : newSet) {
-            contentManagerService.verifyContentOwnership(contentEntity.getType(), contentEntity.getId(), existing.get().getId());
+            contentManagerService.verifyContentOwnership(contentEntity.getType(), contentEntity.getId(), existing.get().getId(), ParentOfTheContent.GRAMMAR_RULE_MODULE);
         }
 
         if (!oldSet.equals(newSet) || existing.get().getContentList().size() != newContentList.size()) {

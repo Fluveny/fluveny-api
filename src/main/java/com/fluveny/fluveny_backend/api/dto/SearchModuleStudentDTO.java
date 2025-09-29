@@ -20,7 +20,6 @@ public class SearchModuleStudentDTO {
     private String moduleName;
 
     private List<String> grammarRulesId;
-    private String levelId;
-    private Boolean isFavorite;
-    private Boolean isVisible;
+    private List<String> levelId;
+    private List<StatusDTOEnum> status;
 }

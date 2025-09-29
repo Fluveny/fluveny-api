@@ -46,22 +46,30 @@ public class ContentManagerService {
         }
     }
 
-    public void verifyContentOwnership(ContentType contentType, String id, String grammarRuleModuleId) {
+    public void verifyContentOwnership(ContentType contentType, String id, String parentId, ParentOfTheContent parentOfTheContent) {
 
-        if (contentType == ContentType.PRESENTATION) {
+        if (parentOfTheContent == ParentOfTheContent.GRAMMAR_RULE_MODULE && contentType == ContentType.PRESENTATION) {
 
             PresentationEntity presentationEntity = presentationService.getPresentationById(id);
 
-            if (!presentationEntity.getGrammarRuleModuleId().equals(grammarRuleModuleId)) {
+            if (!presentationEntity.getGrammarRuleModuleId().equals(parentId)) {
                 throw new BusinessException("This presentation does not belong to this Grammar Rule Module", HttpStatus.BAD_REQUEST);
             }
 
-        } else if (contentType == ContentType.EXERCISE) {
+        } else if (parentOfTheContent == ParentOfTheContent.GRAMMAR_RULE_MODULE && contentType == ContentType.EXERCISE) {
             ExerciseEntity exerciseEntity = exerciseService.getExerciseById(id);
 
-            if (!exerciseEntity.getGrammarRuleModuleId().equals(grammarRuleModuleId)) {
+            if (!exerciseEntity.getGrammarRuleModuleId().equals(parentId)) {
                 throw new BusinessException("This exercise does not belong to this Grammar Rule Module", HttpStatus.BAD_REQUEST);
             }
+        } else if (parentOfTheContent == ParentOfTheContent.FINAL_CHALLENGE && contentType == ContentType.EXERCISE){
+
+            ExerciseEntity exerciseEntity = exerciseService.getExerciseById(id);
+
+            if (!exerciseEntity.getGrammarRuleModuleId().equals(parentId)) {
+                throw new BusinessException("This exercise does not belong to this Final Challenge", HttpStatus.BAD_REQUEST);
+            }
+
         }
     }
 }

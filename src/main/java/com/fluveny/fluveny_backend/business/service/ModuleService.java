@@ -1,9 +1,11 @@
 package com.fluveny.fluveny_backend.business.service;
 
+import com.fluveny.fluveny_backend.api.dto.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleOverviewDTO;
 import com.fluveny.fluveny_backend.api.mapper.ModuleOverviewMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.*;
+import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
@@ -34,6 +36,10 @@ public class ModuleService implements IntroductionService {
 
     @Autowired
     private ModuleOverviewMapper moduleOverviewMapper;
+
+    @Autowired
+    private ContentManagerService contentManagerService;
+
     /**
      * Checks if a GrammarRuleModule exists within a Module by their IDs.
      * <p>
@@ -319,4 +325,67 @@ public class ModuleService implements IntroductionService {
 
         return moduleOverviewMapper.toDTO(moduleFind.get(), moduleStudent.orElse(null));
     }
+
+    public List<String> updateFinalChallenge (FinalChallengeRequestDTO finalChallengeRequestDTO, String moduleId) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        Set<String> oldSet = new HashSet<>(moduleFind.get().getFinalChallenge());
+        Set<String> newSet = new HashSet<>(finalChallengeRequestDTO.getExerciseList());
+
+        for (String exercise : newSet) {
+            contentManagerService.verifyContentOwnership(ContentType.EXERCISE, exercise, moduleFind.get().getId(), ParentOfTheContent.FINAL_CHALLENGE);
+        }
+
+        if (!oldSet.equals(newSet) || moduleFind.get().getFinalChallenge().size() != newSet.size()) {
+            throw new BusinessException("There are different content types or content IDs in the grammar rule module.", HttpStatus.BAD_REQUEST);
+        }
+
+        moduleFind.get().setFinalChallenge(finalChallengeRequestDTO.getExerciseList());
+        this.updateModule(moduleFind.get(), moduleId);
+
+        return finalChallengeRequestDTO.getExerciseList();
+
+    }
+
+    public void exerciseExistInFinalChallenge(String idExercise, String moduleId){
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        boolean exists = false;
+
+        for (String exercise : moduleFind.get().getFinalChallenge()){
+            if (exercise.equals(idExercise)){
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists){
+            throw new BusinessException("No exercise with this ID in this Final Challenge was found.", HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    public void addExerciseToFinalChallenge (String id, ExerciseEntity exerciseEntity) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        moduleFind.get().getFinalChallenge().add(exerciseEntity.getId());
+        this.updateModule(moduleFind.get(), id);
+
+    }
+
 }

@@ -63,10 +63,6 @@ public class RunOnStartup implements CommandLineRunner {
             userService.createUser(user);
         }
 
-
-
-
-
         if (levelRepository.count() < 5) {
             List<LevelEntity> levels = List.of(
                     createLevel("A1", 100),
