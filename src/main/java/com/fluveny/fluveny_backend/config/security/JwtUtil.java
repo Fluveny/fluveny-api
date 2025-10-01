@@ -16,24 +16,24 @@ import java.util.Date;
 @Component
 public class JwtUtil {
 
-    @Value("${api.security.token.secret:my-secret-key}")
-    private String secret;
+    @Value("${jwt.secret}")
+    private String SECRET_KEY;
+
+    @Value("${jwt.expiration}")
+    private long EXPIRATION_TIME;
 
     private Algorithm getAlgorithm() {
-        return Algorithm.HMAC256(secret);
+        return Algorithm.HMAC256(SECRET_KEY);
     }
 
     public String generateToken(UserEntity user) {
-        Instant now = Instant.now();
-        Instant expiration = now.plus(24, ChronoUnit.HOURS);
-
         return JWT.create()
                 .withSubject(user.getUsername())
                 .withClaim("username", user.getUsername())
                 .withClaim("email", user.getEmail())
                 .withClaim("role", user.getRole().getName())
-                .withIssuedAt(Date.from(now))
-                .withExpiresAt(Date.from(expiration))
+                .withIssuedAt(new Date(System.currentTimeMillis()))
+                .withExpiresAt(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .sign(getAlgorithm());
     }
 

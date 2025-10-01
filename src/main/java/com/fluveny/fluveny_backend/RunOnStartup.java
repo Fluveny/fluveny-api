@@ -11,9 +11,10 @@ import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.LevelRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.RoleRepository;
-import com.fluveny.fluveny_backend.infraestructure.repository.UserRepository;
+import org.springframework.core.env.Profiles;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,18 +23,23 @@ import java.util.Optional;
 @Component
 public class RunOnStartup implements CommandLineRunner {
 
-    @Autowired
-    private LevelRepository levelRepository;
-    @Autowired
-    private GrammarRuleRepository grammarRuleRepository;
-    @Autowired
-    private RoleRepository roleRepository;
-    @Autowired
-    private UserService userService;
-    @Autowired
-    private UserMapper userMapper;
-    @Autowired
-    private UserRepository userRepository;
+    private final LevelRepository levelRepository;
+    private final GrammarRuleRepository grammarRuleRepository;
+    private final RoleRepository roleRepository;
+    private final UserService userService;
+    private final UserMapper userMapper;
+    private final Environment environment; // Injetando o Environment
+
+    public RunOnStartup(LevelRepository levelRepository, GrammarRuleRepository grammarRuleRepository,
+                        RoleRepository roleRepository, UserService userService,
+                        UserMapper userMapper, Environment environment) {
+        this.levelRepository = levelRepository;
+        this.grammarRuleRepository = grammarRuleRepository;
+        this.roleRepository = roleRepository;
+        this.userService = userService;
+        this.userMapper = userMapper;
+        this.environment = environment;
+    }
 
     @Override
     public void run(String... args) throws Exception {
@@ -47,21 +53,24 @@ public class RunOnStartup implements CommandLineRunner {
             roleRepository.saveAll(roles);
         }
 
-        try {
-            userService.getUserByEmail("test@fluveny-br.com");
-        } catch (BusinessException e) {
-            UserRequestDTO userRequestDTO = new UserRequestDTO();
-            userRequestDTO.setUsername("content_creator_tester");
-            userRequestDTO.setPassword("testPassword1234_");
-            userRequestDTO.setEmail("test@fluveny-br.com");
+        if (environment.acceptsProfiles(Profiles.of("dev"))) {
+            try {
+                userService.getUserByEmail("test@fluveny-br.com");
+            } catch (BusinessException e) {
+                UserRequestDTO userRequestDTO = new UserRequestDTO();
+                userRequestDTO.setUsername("content_creator_tester");
+                userRequestDTO.setPassword("testPassword1234_");
+                userRequestDTO.setEmail("test@fluveny-br.com");
 
-            UserEntity user = userMapper.toEntity(userRequestDTO);
-            Optional<RoleEntity> role = roleRepository.findByName("CONTENT_CREATOR");
+                UserEntity user = userMapper.toEntity(userRequestDTO);
+                Optional<RoleEntity> role = roleRepository.findByName("CONTENT_CREATOR");
 
-            role.ifPresent(user::setRole);
+                role.ifPresent(user::setRole);
 
-            userService.createUser(user);
+                userService.createUser(user);
+            }
         }
+
 
         if (levelRepository.count() < 5) {
             List<LevelEntity> levels = List.of(
