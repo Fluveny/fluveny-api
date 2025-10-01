@@ -8,9 +8,14 @@ import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleStudent;
 import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -30,26 +35,18 @@ public class SearchStudentService {
     private ModuleSearchStudentMapper moduleSearchStudentMapper;
     @Autowired
     private ModuleStudentRepository moduleStudentRepository;
+    @Autowired
+    private ModuleRepository moduleRepository;
 
-    public List<ModuleResponseStudentDTO> searchModuleByStudent (UserEntity userEntity, SearchModuleStudentDTO searchModuleStudentDTO) {
+    public Page<ModuleResponseStudentDTO> searchModuleByStudent (UserEntity userEntity, SearchModuleStudentDTO searchModuleStudentDTO, Integer pageSize, Integer pageNumber) {
 
         // Making the query to find the filtered modules
-        Query query = new Query();
-        List<ModuleEntity> moduleEntities = new ArrayList<>();
-        if (searchModuleStudentDTO.getModuleName() != null && !searchModuleStudentDTO.getModuleName().isEmpty()) {
-            String pattern = ".*" + Pattern.quote(searchModuleStudentDTO.getModuleName()) + ".*";
-            query.addCriteria(Criteria.where("title").regex(pattern, "i"));
-        }
 
-        if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
-            query.addCriteria(Criteria.where("level.id").in(searchModuleStudentDTO.getLevelId()));
-        }
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
-        if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
-            query.addCriteria(Criteria.where("grammarRules.id").all(searchModuleStudentDTO.getGrammarRulesId()));
-        }
-        moduleEntities = mongoTemplate.find(query, ModuleEntity.class);
 
+        var queryResult = moduleRepository.searchByModuleNameLevelOrGrammarRules(searchModuleStudentDTO.getModuleName(),searchModuleStudentDTO.getLevelId(),searchModuleStudentDTO.getGrammarRulesId(),pageable);
+        List<ModuleEntity> moduleEntities = queryResult.getContent();
         // Transforming modules into DTOS
         List<ModuleResponseStudentDTO> moduleResponseStudentDTOList = new ArrayList<>();
         for (ModuleEntity moduleEntity : moduleEntities) {
@@ -76,7 +73,7 @@ public class SearchStudentService {
             }
         }
 
-        return moduleResponseStudentDTOList;
+        return new PageImpl<>(moduleResponseStudentDTOList, pageable, queryResult.getTotalElements());
 
     }
 
