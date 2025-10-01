@@ -23,6 +23,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -89,7 +90,7 @@ public class ModuleController implements IntroductionController {
             )
     })
     @GetMapping("/search/student")
-    public ResponseEntity<ApiResponseFormat<List<ModuleResponseStudentDTO>>> searchByStudent(
+    public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchByStudent(
             @Parameter(description = "ID of the module to be updated", required = false)
             @RequestParam(required = false) String moduleName,
             @Parameter(description = "ID of the module to be updated", required = false)
@@ -98,21 +99,24 @@ public class ModuleController implements IntroductionController {
             @RequestParam(required = false) List<String> levelsId,
             @Parameter(description = "ID of the module to be updated", required = false)
             @RequestParam(required = false) List<StatusDTOEnum> status,
+            @RequestParam Integer pageNumber,
+            @RequestParam Integer pageSize,
             Authentication authentication
     ){
+        System.out.println();
 
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
         }
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        List<ModuleResponseStudentDTO> moduleResponseStudentDTOS = searchStudentService.searchModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), new SearchModuleStudentDTO(moduleName, grammarRulesId, levelsId, status));
+        Page<ModuleResponseStudentDTO> moduleResponseStudentDTOS = searchStudentService.searchModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), new SearchModuleStudentDTO(moduleName, grammarRulesId, levelsId, status),pageSize,pageNumber);
 
         if(moduleResponseStudentDTOS.isEmpty()){
             throw new BusinessException("No modules found", HttpStatus.OK);
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseStudentDTO>>("Modules found successfully", moduleResponseStudentDTOS));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<Page<ModuleResponseStudentDTO>>("Modules found successfully", moduleResponseStudentDTOS));
 
     }
 
