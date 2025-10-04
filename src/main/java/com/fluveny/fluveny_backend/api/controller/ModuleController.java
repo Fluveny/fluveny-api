@@ -168,6 +168,7 @@ public class ModuleController implements IntroductionController {
 
     @Operation(summary = "Creating a new module",
             description = "This endpoint is responsible for creating a new module")
+
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Module created successfully",
                     content = @Content(

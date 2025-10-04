@@ -11,5 +11,5 @@ import java.util.Set;
 
 public interface ModuleStudentRepository extends MongoRepository<ModuleStudent, ModuleStudentId> {
     List<ModuleStudent> findByIdStudentUserNameAndIdModuleIdIn(String studentUserName, Set<String> moduleIds);
-    Page<ModuleStudent> findByIdStudentUserName(String studentUserName, Pageable pageable);
+    List<ModuleStudent> findByIdStudentUserName(String studentUserName);
 }

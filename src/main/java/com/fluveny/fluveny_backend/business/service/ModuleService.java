@@ -14,14 +14,13 @@ import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class ModuleService implements IntroductionService {
@@ -52,16 +51,25 @@ public class ModuleService implements IntroductionService {
 
     public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
 
-        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+        Page<ModuleEntity> modulesPage = moduleRepository.findAll(
+                PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "level.title"))
+        );
 
-        Page<ModuleStudent> moduleStudents = moduleStudentRepository
-                .findByIdStudentUserName(userEntity.getId(), pageable);
+        List<ModuleStudent> moduleStudents = moduleStudentRepository
+                .findByIdStudentUserName(userEntity.getId());
 
-        return moduleStudents.map(module ->
+        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream()
+                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), Function.identity()));
+
+        return modulesPage.map(module ->
         {
-            ModuleResponseStudentDTO dto = moduleSearchStudentMapper.toDTO(this.getModuleById(module.getId().getModuleId()));
-            dto.setProgress(module.getProgress());
-            dto.setIsFavorite(module.getIsFavorite());
+            ModuleResponseStudentDTO dto = moduleSearchStudentMapper.toDTO(module);
+
+            ModuleStudent moduleStudent = moduleStudentMap.get(module.getId());
+            if (moduleStudent != null) {
+                dto.setProgress(moduleStudent.getProgress());
+                dto.setIsFavorite(moduleStudent.getIsFavorite());
+            }
             return dto;
         }
         );
