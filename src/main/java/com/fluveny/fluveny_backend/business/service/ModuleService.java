@@ -2,7 +2,10 @@ package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.api.dto.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleOverviewDTO;
+import com.fluveny.fluveny_backend.api.dto.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.SearchModuleStudentDTO;
 import com.fluveny.fluveny_backend.api.mapper.ModuleOverviewMapper;
+import com.fluveny.fluveny_backend.api.mapper.ModuleSearchStudentMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.*;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
@@ -11,6 +14,10 @@ import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +46,26 @@ public class ModuleService implements IntroductionService {
 
     @Autowired
     private ContentManagerService contentManagerService;
+
+    @Autowired
+    private ModuleSearchStudentMapper moduleSearchStudentMapper;
+
+    public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
+
+        Pageable pageable = PageRequest.of(pageNumber, pageSize);
+
+        Page<ModuleStudent> moduleStudents = moduleStudentRepository
+                .findByIdStudentUserName(userEntity.getId(), pageable);
+
+        return moduleStudents.map(module ->
+        {
+            ModuleResponseStudentDTO dto = moduleSearchStudentMapper.toDTO(this.getModuleById(module.getId().getModuleId()));
+            dto.setProgress(module.getProgress());
+            dto.setIsFavorite(module.getIsFavorite());
+            return dto;
+        }
+        );
+    }
 
     /**
      * Checks if a GrammarRuleModule exists within a Module by their IDs.
