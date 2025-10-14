@@ -2,20 +2,20 @@ package com.fluveny.fluveny_backend.api.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fluveny.fluveny_backend.api.dto.ExerciseRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.ExerciseResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.ExerciseMapper;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.exception.GlobalExceptionHandler;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
-import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepositoryTest;
+
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -60,7 +60,7 @@ public class GrammarRuleExerciseControllerTest {
 
     MockMvc mockMvc;
 
-    private final ExerciseEntity exercise = new ExerciseEntity();
+    private final ExerciseTranslateEntity exercise = new ExerciseTranslateEntity();
     private final GrammarRuleModuleEntity grammarRuleModule = new GrammarRuleModuleEntity();
     private final ModuleEntity module = new ModuleEntity();
     private final LevelEntity level = new LevelEntity();
@@ -98,8 +98,8 @@ public class GrammarRuleExerciseControllerTest {
     @Test
     @DisplayName("Should accept create request and add grammarRuleExercise successfully")
     void shouldAcceptCreateRequestAndAddGrammarRuleExerciseSuccessfully() throws Exception {
-        ExerciseResponseDTO responseDTO = new ExerciseResponseDTO();
-        ExerciseRequestDTO requestDTO =  new ExerciseRequestDTO();
+        ExerciseTranslateResponseDTO responseDTO = new ExerciseTranslateResponseDTO();
+        ExerciseTranslateRequestDTO requestDTO =  new ExerciseTranslateRequestDTO();
 
         requestDTO.setHeader("Header test");
         requestDTO.setPhrase("Phrase test");
@@ -113,8 +113,8 @@ public class GrammarRuleExerciseControllerTest {
 
         when(moduleService.getModuleById("12345")).thenReturn(new ModuleEntity());
         when(grammarRuleModuleRepository.findById("12345")).thenReturn(Optional.of(grammarRuleModule));
-        when(exerciseMapper.toEntity(any(ExerciseRequestDTO.class), eq("12345"))).thenReturn(exercise);
-        when(exerciseService.saveExercise(any(ExerciseEntity.class))).thenReturn(exercise);
+        when(exerciseMapper.toEntity(any(ExerciseTranslateRequestDTO.class), eq("12345"))).thenReturn(exercise);
+        when(exerciseService.saveExercise(any(ExerciseTranslateEntity.class))).thenReturn(exercise);
 
         mockMvc.perform(post("/api/v1/modules/{id_module}/grammar-rules-module/{id_grammarRuleModule}/exercises", "12345", "12345")
                     .contentType(MediaType.APPLICATION_JSON)
@@ -132,7 +132,7 @@ public class GrammarRuleExerciseControllerTest {
     @DisplayName("Should reject exercise when header is missing")
     void shouldRejectRequestToAddExerciseWhenHeaderIsMissing() throws Exception {
 
-        ExerciseRequestDTO requestDTO = new ExerciseRequestDTO();
+        ExerciseTranslateRequestDTO requestDTO = new ExerciseTranslateRequestDTO();
 
         requestDTO.setTemplate("Template test");
         requestDTO.setJustification("Justification test");
@@ -156,7 +156,7 @@ public class GrammarRuleExerciseControllerTest {
     @DisplayName("Should reject exercise when phrase is missing")
     void shouldRejectRequestToAddExerciseWhenPhraseIsMissing() throws Exception {
 
-        ExerciseRequestDTO requestDTO = new ExerciseRequestDTO();
+        ExerciseTranslateRequestDTO requestDTO = new ExerciseTranslateRequestDTO();
 
         requestDTO.setTemplate("Template test");
         requestDTO.setJustification("Justification test");
@@ -180,7 +180,7 @@ public class GrammarRuleExerciseControllerTest {
     @DisplayName("Should reject exercise when justification is missing")
     void shouldRejectRequestToAddExerciseWhenJustificationIsMissing() throws Exception {
 
-        ExerciseRequestDTO requestDTO = new ExerciseRequestDTO();
+        ExerciseTranslateRequestDTO requestDTO = new ExerciseTranslateRequestDTO();
 
         requestDTO.setTemplate("Template test");
         requestDTO.setPhrase("Phrase test");
@@ -204,7 +204,7 @@ public class GrammarRuleExerciseControllerTest {
     @DisplayName("Should reject exercise when template is missing")
     void shouldRejectRequestToAddExerciseWhenTemplateIsMissing() throws Exception {
 
-        ExerciseRequestDTO requestDTO = new ExerciseRequestDTO();
+        ExerciseTranslateRequestDTO requestDTO = new ExerciseTranslateRequestDTO();
 
         requestDTO.setJustification("Justification test");
         requestDTO.setPhrase("Phrase test");
