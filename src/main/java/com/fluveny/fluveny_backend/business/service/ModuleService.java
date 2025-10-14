@@ -2,7 +2,10 @@ package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.api.dto.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.ModuleOverviewDTO;
+import com.fluveny.fluveny_backend.api.dto.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.SearchModuleStudentDTO;
 import com.fluveny.fluveny_backend.api.mapper.ModuleOverviewMapper;
+import com.fluveny.fluveny_backend.api.mapper.ModuleSearchStudentMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.*;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
@@ -11,10 +14,13 @@ import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class ModuleService implements IntroductionService {
@@ -39,6 +45,35 @@ public class ModuleService implements IntroductionService {
 
     @Autowired
     private ContentManagerService contentManagerService;
+
+    @Autowired
+    private ModuleSearchStudentMapper moduleSearchStudentMapper;
+
+    public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
+
+        Page<ModuleEntity> modulesPage = moduleRepository.findAll(
+                PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "level.title"))
+        );
+
+        List<ModuleStudent> moduleStudents = moduleStudentRepository
+                .findByIdStudentUserName(userEntity.getId());
+
+        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream()
+                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), Function.identity()));
+
+        return modulesPage.map(module ->
+        {
+            ModuleResponseStudentDTO dto = moduleSearchStudentMapper.toDTO(module);
+
+            ModuleStudent moduleStudent = moduleStudentMap.get(module.getId());
+            if (moduleStudent != null) {
+                dto.setProgress(moduleStudent.getProgress());
+                dto.setIsFavorite(moduleStudent.getIsFavorite());
+            }
+            return dto;
+        }
+        );
+    }
 
     /**
      * Checks if a GrammarRuleModule exists within a Module by their IDs.

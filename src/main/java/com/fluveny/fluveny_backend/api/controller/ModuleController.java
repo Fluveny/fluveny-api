@@ -67,8 +67,9 @@ public class ModuleController implements IntroductionController {
     private final UserService userService;
     private final ModuleOverviewMapper moduleOverviewMapper;
 
-    @Operation(summary = "Search for modules by user",
-            description = "This endpoint is responsible for search a modules by user")
+    @Operation(summary = "Search all modules modules by student",
+            description = "This endpoint is responsible for return all modules with students informations",
+            tags = {"Module - Student"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Modules found successfully or no modules found",
                     content = @Content(
@@ -89,7 +90,52 @@ public class ModuleController implements IntroductionController {
                     )
             )
     })
-    @GetMapping("/search/student")
+    @GetMapping("/student")
+    public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> getAllModulesByStudent(
+            @RequestParam Integer pageNumber,
+            @RequestParam Integer pageSize,
+            Authentication authentication
+    ){
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        Page<ModuleResponseStudentDTO> moduleResponseStudentDTOS = moduleService.getAllModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), pageSize, pageNumber);
+
+        if(moduleResponseStudentDTOS.isEmpty()){
+            throw new BusinessException("No modules found", HttpStatus.OK);
+        }
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<Page<ModuleResponseStudentDTO>>("Modules found successfully", moduleResponseStudentDTOS));
+
+    }
+
+    @Operation(summary = "Search for modules by user",
+            description = "This endpoint is responsible for search a modules by user",
+            tags = {"Module - Student"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Modules found successfully or no modules found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesUserResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/student/search")
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchByStudent(
             @Parameter(description = "ID of the module to be updated", required = false)
             @RequestParam(required = false) String moduleName,
@@ -122,6 +168,7 @@ public class ModuleController implements IntroductionController {
 
     @Operation(summary = "Creating a new module",
             description = "This endpoint is responsible for creating a new module")
+
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Module created successfully",
                     content = @Content(
