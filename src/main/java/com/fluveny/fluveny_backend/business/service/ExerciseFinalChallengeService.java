@@ -1,8 +1,10 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ExerciseRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.ExerciseTranslateRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

@@ -1,17 +1,16 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.ExerciseRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.ExerciseResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.ExerciseMapper;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import com.fluveny.fluveny_backend.business.service.ExerciseFinalChallengeService;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
-import com.fluveny.fluveny_backend.business.service.ModuleService;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.repository.ExerciseRepository;
-import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -22,7 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/v1/modules/{id_module}/final-challenge")
@@ -58,7 +56,7 @@ public class FinalChallengeExerciseController {
     @PostMapping
     public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> createExercise(
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO, @PathVariable String id_module){
-            ExerciseEntity exercise = exerciseFinalChallengeService.createExerciseInFinalChallenge(exerciseMapper.toEntity(exerciseRequestDTO, id_module));
+        ExerciseEntity exercise = exerciseFinalChallengeService.createExerciseInFinalChallenge(exerciseMapper.toEntity(exerciseRequestDTO, id_module));
             return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise create with successfully", exerciseMapper.toDTO(exercise)));
     }
 
@@ -91,7 +89,7 @@ public class FinalChallengeExerciseController {
             )
     })
     @GetMapping("/{id_exercise}")
-    public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> getExerciseByID( @PathVariable String id_module, @PathVariable String id_exercise){
+    public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> getExerciseByID(@PathVariable String id_module, @PathVariable String id_exercise){
         ExerciseEntity exercise = exerciseFinalChallengeService.getExerciseByIdAndValidateFinalChallenge(id_exercise, id_module);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise find with successfully", exerciseMapper.toDTO(exercise)));
     }
@@ -120,7 +118,7 @@ public class FinalChallengeExerciseController {
     })
     @PutMapping("/{id_exercise}")
     public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> updateExercise(
-            @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,  @PathVariable String id_module, @PathVariable String id_exercise){
+            @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO, @PathVariable String id_module, @PathVariable String id_exercise){
         ExerciseEntity exercise = exerciseFinalChallengeService.updateExerciseAndValidateFinalChallenge(exerciseMapper.toEntity(exerciseRequestDTO, id_module), id_exercise, id_module);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapper.toDTO(exercise)));
     }

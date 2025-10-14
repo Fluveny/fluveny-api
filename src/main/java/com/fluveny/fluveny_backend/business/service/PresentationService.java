@@ -1,8 +1,6 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.PresentationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
