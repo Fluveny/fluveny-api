@@ -134,10 +134,10 @@ public class GrammarRuleExerciseController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> updateExercise(
-            @Valid @RequestBody ExerciseRequestDTO exerciseTranslateRequestDTO,
+            @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO,
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id){
         moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
-        ExerciseEntity exercise = exerciseService.updateExerciseAndValidateGrammarRuleModule(exerciseMapper.toEntity(exerciseTranslateRequestDTO, id_grammarRuleModule), id, id_grammarRuleModule);
+        ExerciseEntity exercise = exerciseService.updateExerciseAndValidateGrammarRuleModule(exerciseMapper.toEntity(exerciseRequestDTO, id_grammarRuleModule), id, id_grammarRuleModule);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapper.toDTO(exercise)));
     }
 

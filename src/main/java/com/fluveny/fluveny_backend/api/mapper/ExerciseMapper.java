@@ -9,6 +9,11 @@ import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+
 @Component
 public class ExerciseMapper {
 
@@ -36,14 +41,8 @@ public class ExerciseMapper {
             case ORGANIZE:
 
                 ExerciseConstructorPhraseRequestDTO dtoConstructor = (ExerciseConstructorPhraseRequestDTO) dto;
-                ExerciseConstructionPhraseEntity constructorEntity = new ExerciseConstructionPhraseEntity();
-
-                constructorEntity.setGrammarRuleModuleId(id_grammarRuleModule);
-                constructorEntity.setHeader(dtoConstructor.getHeader());
-                constructorEntity.setPhrase(dtoConstructor.getPhrase());
-                constructorEntity.setJustification(dtoConstructor.getJustification());
-
-                entity = constructorEntity;
+                entity = toEntityConstructionPhrase(dtoConstructor);
+                entity.setGrammarRuleModuleId(id_grammarRuleModule);
 
             case COMPLETE:
                 // not implemented yet
@@ -74,19 +73,41 @@ public class ExerciseMapper {
             dto = dtoTranslate;
 
         } else if (entity instanceof ExerciseConstructionPhraseEntity entityConstructor) {
-
-            ExerciseConstructorPhraseResponseDTO dtoConstructor = new ExerciseConstructorPhraseResponseDTO();
-
-            dtoConstructor.setId(entityConstructor.getId());
-            dtoConstructor.setStyle(ExerciseStyle.ORGANIZE);
-            dtoConstructor.setGrammarRuleModuleId(entityConstructor.getGrammarRuleModuleId());
-            dtoConstructor.setHeader(entityConstructor.getHeader());
-            dtoConstructor.setPhrase(entityConstructor.getPhrase());
-            dtoConstructor.setJustification(entityConstructor.getJustification());
-
-            dto = dtoConstructor;
+            dto = toDTOConstructionPhrase(entityConstructor);
+            dto.setGrammarRuleModuleId(entityConstructor.getGrammarRuleModuleId());
         }
 
         return dto;
+
     }
+
+    private ExerciseConstructionPhraseEntity toEntityConstructionPhrase (ExerciseConstructorPhraseRequestDTO dtoConstructor){
+        ExerciseConstructionPhraseEntity entity = new ExerciseConstructionPhraseEntity();
+        entity.setDistractors(dtoConstructor.getDistractors());
+        entity.setTranslation(dtoConstructor.getTranslation());
+        entity.setOriginalSentence(dtoConstructor.getOriginalSentence());
+        entity.setCorrectWords(List.of(dtoConstructor.getTranslation().split("\\s+")));
+        return entity;
+    }
+
+    private ExerciseConstructorPhraseResponseDTO toDTOConstructionPhrase (ExerciseConstructionPhraseEntity entityConstructor){
+
+        ExerciseConstructorPhraseResponseDTO exerciseConstructorPhraseResponseDTO = new ExerciseConstructorPhraseResponseDTO();
+
+        exerciseConstructorPhraseResponseDTO.setTranslation(entityConstructor.getTranslation());
+        exerciseConstructorPhraseResponseDTO.setOriginalSentence(entityConstructor.getOriginalSentence());
+        exerciseConstructorPhraseResponseDTO.setGrammarRuleModuleId(entityConstructor.getGrammarRuleModuleId());
+        exerciseConstructorPhraseResponseDTO.setId(entityConstructor.getId());
+        exerciseConstructorPhraseResponseDTO.setStyle(ExerciseStyle.ORGANIZE);
+
+        List<String> words = new ArrayList<>();
+        words.addAll(entityConstructor.getDistractors());
+        words.addAll(entityConstructor.getCorrectWords());
+        Collections.shuffle(words);
+
+        exerciseConstructorPhraseResponseDTO.setWords(words);
+
+        return exerciseConstructorPhraseResponseDTO;
+    }
+
 }

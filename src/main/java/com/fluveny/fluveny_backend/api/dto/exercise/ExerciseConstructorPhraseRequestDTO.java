@@ -8,18 +8,19 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.List;
+
 @Setter
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 public class ExerciseConstructorPhraseRequestDTO extends ExerciseRequestDTO {
-    @NotNull(message = "Header is required")
-    @NotBlank(message = "Header cannot be blank")
-    private String header;
+    @NotNull(message = "Original Sentence is required")
+    @NotBlank(message = "Original Sentence cannot be blank")
+    private String originalSentence;
     @NotNull(message = "Phrase is required")
     @NotBlank(message = "Phrase cannot be blank")
-    private String phrase;
+    private String translation;
     @NotNull(message = "Justification is required")
-    @NotBlank(message = "Justification cannot be blank")
-    private String justification;
+    private List<String> distractors;
 }

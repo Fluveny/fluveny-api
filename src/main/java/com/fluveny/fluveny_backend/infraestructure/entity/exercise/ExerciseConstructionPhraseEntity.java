@@ -7,6 +7,8 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.util.List;
+
 @Document(collection = "fl_exercise")
 @Getter
 @Setter
@@ -14,9 +16,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 @NoArgsConstructor
 public class ExerciseConstructionPhraseEntity extends ExerciseEntity {
 
-    private String header;
-    private String phrase;
-    private String justification;
-
+    private String originalSentence;
+    private String translation;
+    private List<String> correctWords;
+    private List<String> distractors;
 
 }
