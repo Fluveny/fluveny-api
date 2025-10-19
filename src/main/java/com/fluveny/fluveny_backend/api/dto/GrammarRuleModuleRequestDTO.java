@@ -1,9 +1,6 @@
 package com.fluveny.fluveny_backend.api.dto;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.ContentEntity;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
-import jakarta.validation.constraints.Size;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -17,7 +14,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GrammarRuleModuleRequestDTO {
-
     public List<ContentEntity> contentList = new ArrayList<ContentEntity>();
-
 }

@@ -1,12 +1,12 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.ContentEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentPresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
-import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepositoryTest;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -176,11 +176,11 @@ public class GrammarRuleModuleServiceTest {
 
         String moduleId = "12345";
 
-        ContentEntity oldContent = new ContentEntity();
+        ContentEntity oldContent = new ContentPresentationEntity();
         oldContent.setId("12345");
         oldContent.setType(ContentType.PRESENTATION);
 
-        ContentEntity newContent = new ContentEntity();
+        ContentEntity newContent = new ContentPresentationEntity();
         newContent.setId("123456");
         newContent.setType(ContentType.PRESENTATION);
 
