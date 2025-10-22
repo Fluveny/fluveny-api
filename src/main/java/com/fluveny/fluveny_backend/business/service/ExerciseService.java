@@ -74,4 +74,17 @@ public class ExerciseService {
         saveContentManager.addExerciseToGrammarRuleModule(exerciseEntity.getGrammarRuleModuleId(), savedExercise);
         return savedExercise;
     }
+
+    public void deleteExerciseAndValidateGrammarRuleModule(String id, String idGrammarRuleModule) {
+
+        Optional<ExerciseEntity> exerciseEntity = exerciseRepository.findById(id);
+
+        if(exerciseEntity.isEmpty()) {
+            throw new BusinessException("No Exercise with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        saveContentManager.exerciseExistInGrammarRuleModule(id, idGrammarRuleModule);
+
+        exerciseRepository.deleteById(id);
+    }
 }

@@ -51,4 +51,17 @@ public class ExerciseFinalChallengeService {
         return savedExercise;
     }
 
+    public void deleteExerciseAndValidateFinalChallenge(String id, String idModule) {
+
+        Optional<ExerciseEntity> exerciseEntity = exerciseRepository.findById(id);
+
+        if(exerciseEntity.isEmpty()) {
+            throw new BusinessException("No Exercise with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        moduleService.exerciseExistInFinalChallenge(id, idModule);
+
+        exerciseRepository.deleteById(id);
+    }
+
 }
