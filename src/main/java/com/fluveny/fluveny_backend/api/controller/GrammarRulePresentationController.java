@@ -1,15 +1,12 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.ExerciseRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.PresentationMapper;
-import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import com.fluveny.fluveny_backend.api.response.presentation.PresentationResponse;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.business.service.PresentationService;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;

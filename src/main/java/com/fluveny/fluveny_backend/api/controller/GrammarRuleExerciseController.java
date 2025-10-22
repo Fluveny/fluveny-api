@@ -1,13 +1,16 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.ExerciseResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateResponseDTO;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
-import com.fluveny.fluveny_backend.api.dto.ExerciseRequestDTO;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
+import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
 import com.fluveny.fluveny_backend.api.mapper.ExerciseMapper;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import io.swagger.v3.oas.annotations.Operation;

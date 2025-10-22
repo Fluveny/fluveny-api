@@ -1,10 +1,10 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.ContentEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ResolvedContent;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ResolvedContent;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,7 +25,7 @@ public class ContentManagerService {
     @Autowired
     private ExerciseService exerciseService;
 
-    public ResolvedContent getContentById(ContentEntity contentEntity) {
+    public ResolvedContent getContentById (ContentEntity contentEntity) {
         if (contentEntity.getType() == ContentType.PRESENTATION) {
             return presentationService.getPresentationById(contentEntity.getId());
         } else if (contentEntity.getType() == ContentType.EXERCISE) {

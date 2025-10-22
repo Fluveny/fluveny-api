@@ -1,7 +1,5 @@
 package com.fluveny.fluveny_backend.api.dto;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.ContentEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ExerciseEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

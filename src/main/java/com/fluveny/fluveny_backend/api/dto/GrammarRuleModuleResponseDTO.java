@@ -1,6 +1,6 @@
 package com.fluveny.fluveny_backend.api.dto;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.ContentEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,7 +14,5 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class GrammarRuleModuleResponseDTO {
-
     public List<ContentEntity> contentList = new ArrayList<ContentEntity>();
-
 }

@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.infraestructure.entity;
 
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;

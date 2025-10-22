@@ -1,7 +1,7 @@
 package com.fluveny.fluveny_backend.api.mapper;
 
 import com.fluveny.fluveny_backend.api.dto.ContentResponseDTO;
-import com.fluveny.fluveny_backend.infraestructure.entity.ResolvedContent;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ResolvedContent;
 import org.springframework.stereotype.Component;
 
 @Component

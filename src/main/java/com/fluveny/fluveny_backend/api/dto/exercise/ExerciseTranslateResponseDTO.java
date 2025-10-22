@@ -1,5 +1,6 @@
-package com.fluveny.fluveny_backend.api.dto;
+package com.fluveny.fluveny_backend.api.dto.exercise;
 
+import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -9,8 +10,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class ExerciseResponseDTO {
-    private String id;
+public class ExerciseTranslateResponseDTO extends ExerciseResponseDTO {
     private String header;
     private String phrase;
     private String template;
