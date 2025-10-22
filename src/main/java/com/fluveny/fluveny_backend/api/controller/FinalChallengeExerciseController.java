@@ -123,4 +123,40 @@ public class FinalChallengeExerciseController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapper.toDTO(exercise)));
     }
 
+    @Operation(summary = "Delete an Exercise from Final Challenge",
+            description = "This endpoint is used to delete an exercise from final challenge")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise deleted successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Exercise not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content  = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @DeleteMapping("/{id_exercise}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteExercise(
+            @PathVariable String id_module,
+            @PathVariable String id_exercise){
+        exerciseFinalChallengeService.deleteExerciseAndValidateFinalChallenge(id_exercise, id_module);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponseFormat<>("Exercise deleted successfully", null));
+    }
 }

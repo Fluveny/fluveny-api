@@ -141,4 +141,42 @@ public class GrammarRuleExerciseController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapper.toDTO(exercise)));
     }
 
+    @Operation(summary = "Delete an Exercise",
+            description = "This endpoint is used to delete an exercise")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise deleted successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Exercise not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content  = @Content(
+                            mediaType = "application/json",
+                            schema =  @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteExercise(
+            @PathVariable String id_grammarRuleModule,
+            @PathVariable String id_module,
+            @PathVariable String id){
+        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
+        exerciseService.deleteExerciseAndValidateGrammarRuleModule(id, id_grammarRuleModule);
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponseFormat<>("Exercise deleted successfully", null));
+    }
 }
