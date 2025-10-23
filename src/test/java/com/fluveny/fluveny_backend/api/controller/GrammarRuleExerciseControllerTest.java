@@ -4,7 +4,7 @@ package com.fluveny.fluveny_backend.api.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateResponseDTO;
-import com.fluveny.fluveny_backend.api.mapper.ExerciseMapper;
+import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseMapperFactory;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
@@ -50,7 +50,7 @@ public class GrammarRuleExerciseControllerTest {
     @Mock
     private ExerciseService exerciseService;
     @Mock
-    private ExerciseMapper  exerciseMapper;
+    private ExerciseMapperFactory exerciseMapperFactory;
     @Mock
     private GrammarRuleService grammarRuleService;
     @Mock
@@ -113,7 +113,7 @@ public class GrammarRuleExerciseControllerTest {
 
         when(moduleService.getModuleById("12345")).thenReturn(new ModuleEntity());
         when(grammarRuleModuleRepository.findById("12345")).thenReturn(Optional.of(grammarRuleModule));
-        when(exerciseMapper.toEntity(any(ExerciseTranslateRequestDTO.class), eq("12345"))).thenReturn(exercise);
+        when(exerciseMapperFactory.toEntity(any(ExerciseTranslateRequestDTO.class), eq("12345"))).thenReturn(exercise);
         when(exerciseService.saveExercise(any(ExerciseTranslateEntity.class))).thenReturn(exercise);
 
         mockMvc.perform(post("/api/v1/modules/{id_module}/grammar-rules-module/{id_grammarRuleModule}/exercises", "12345", "12345")
@@ -124,7 +124,7 @@ public class GrammarRuleExerciseControllerTest {
                 .andExpect(jsonPath("$.message").exists())
                 .andReturn();
 
-        verify(exerciseMapper, times(1)).toEntity(any(), any());
+        verify(exerciseMapperFactory, times(1)).toEntity(any(), any());
         verify(exerciseService, times(1)).saveExercise(any());
     }
 
@@ -148,7 +148,7 @@ public class GrammarRuleExerciseControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(exerciseMapper, times(0)).toEntity(any(), any());
+        verify(exerciseMapperFactory, times(0)).toEntity(any(), any());
         verify(exerciseService, times(0)).saveExercise(any());
     }
 
@@ -172,7 +172,7 @@ public class GrammarRuleExerciseControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(exerciseMapper, times(0)).toEntity(any(), any());
+        verify(exerciseMapperFactory, times(0)).toEntity(any(), any());
         verify(exerciseService, times(0)).saveExercise(any());
     }
 
@@ -196,7 +196,7 @@ public class GrammarRuleExerciseControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(exerciseMapper, times(0)).toEntity(any(), any());
+        verify(exerciseMapperFactory, times(0)).toEntity(any(), any());
         verify(exerciseService, times(0)).saveExercise(any());
     }
 
@@ -220,7 +220,7 @@ public class GrammarRuleExerciseControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(exerciseMapper, times(0)).toEntity(any(), any());
+        verify(exerciseMapperFactory, times(0)).toEntity(any(), any());
         verify(exerciseService, times(0)).saveExercise(any());
     }
 }
