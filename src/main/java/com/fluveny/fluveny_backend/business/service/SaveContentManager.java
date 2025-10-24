@@ -5,6 +5,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.*;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentPresentationEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseCompletePhraseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseConstructionPhraseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
@@ -116,8 +117,12 @@ public class SaveContentManager {
         if(exerciseEntity.getClass() == ExerciseTranslateEntity.class){
             return ExerciseStyle.TRANSLATE;
         }
+        if(exerciseEntity.getClass() == ExerciseCompletePhraseEntity.class){
+            return ExerciseStyle.COMPLETE;
+        }
 
-        return ExerciseStyle.COMPLETE;
+        return null;
+
     }
 
 }

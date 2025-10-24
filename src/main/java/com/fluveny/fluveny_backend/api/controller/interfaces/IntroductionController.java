@@ -1,4 +1,4 @@
-package com.fluveny.fluveny_backend.api.controller;
+package com.fluveny.fluveny_backend.api.controller.interfaces;
 
 import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
