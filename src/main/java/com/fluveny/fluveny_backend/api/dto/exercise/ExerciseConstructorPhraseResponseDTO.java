@@ -17,5 +17,5 @@ import java.util.List;
 public class ExerciseConstructorPhraseResponseDTO extends ExerciseResponseDTO {
     private String originalSentence;
     private String translation;
-    private List<String> words;
+    private List<String> distractors;
 }

@@ -33,13 +33,7 @@ public class ExerciseConstructionPhraseMapper {
         exerciseConstructorPhraseResponseDTO.setId(entityConstructor.getId());
         exerciseConstructorPhraseResponseDTO.setStyle(ExerciseStyle.ORGANIZE);
         exerciseConstructorPhraseResponseDTO.setGrammarRuleModuleId(parentId);
-
-        List<String> words = new ArrayList<>();
-        words.addAll(entityConstructor.getDistractors());
-        words.addAll(entityConstructor.getCorrectWords());
-        Collections.shuffle(words);
-
-        exerciseConstructorPhraseResponseDTO.setWords(words);
+        exerciseConstructorPhraseResponseDTO.setDistractors(entityConstructor.getDistractors());
         return exerciseConstructorPhraseResponseDTO;
     }
 

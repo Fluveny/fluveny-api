@@ -40,7 +40,7 @@ public interface GrammarRuleExerciseControllerInterface {
                                                         "style": "CONSTRUCTION_PHRASE",
                                                         "originalSentence": "string",
                                                         "translation": "string",
-                                                        "words": ["string"]
+                                                        "distractors": ["string"]
                                                       }
                                                     }
                                                     """
@@ -213,7 +213,7 @@ public interface GrammarRuleExerciseControllerInterface {
                                                         "style": "CONSTRUCTION_PHRASE",
                                                         "originalSentence": "string",
                                                         "translation": "string",
-                                                        "words": ["string"]
+                                                        "distractors": ["string"]
                                                       }
                                                     }
                                                     """
