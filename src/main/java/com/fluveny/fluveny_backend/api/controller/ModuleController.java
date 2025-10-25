@@ -56,17 +56,11 @@ import java.util.List;
 public class ModuleController implements IntroductionController {
 
     private final ModuleService moduleService;
-    private final GrammarRuleModuleService grammarRuleModuleService;
-    private final ContentMapper contentMapper;
     private final ModuleMapper moduleMapper;
-    private final GrammarRuleModuleMapper grammarRuleModuleMapper;
     private final IntroductionMapper introductionMapper;
-    private final ModuleRepository moduleRepository;
     private final TextBlockMapper textBlockMapper;
     private final SearchStudentService searchStudentService;
     private final UserService userService;
-    private final ModuleOverviewMapper moduleOverviewMapper;
-    private final ExerciseFinalChallengeMapper exerciseFinalChallengeMapper;
 
     @Operation(summary = "Search all modules modules by student",
             description = "This endpoint is responsible for return all modules with students informations",
@@ -239,115 +233,6 @@ public class ModuleController implements IntroductionController {
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO){
         ModuleEntity module = moduleService.updateModule(moduleMapper.toEntity(moduleRequestDTO), id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
-    }
-
-    @Operation(summary = "Get all contents associated with a specific grammar rule module ID",
-            description = "This endpoint is responsible for retrieving all contents of a grammar rule module by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Contents were successfully found or no contents were found for the given ID",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ContentsResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "No gramma rule module with this ID was found or Bad Request",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ContentsResponse.class)
-                    )
-            ),
-    })
-    @GetMapping("/{id}/grammar-rule-modules/{GrammarRuleModuleId}/contents")
-    public ResponseEntity<ApiResponseFormat<List<ContentEntity>>> getAllContentsByGrammarRuleModuleId(
-            @Parameter(description = "ID of the module that stores the grammar rule", required = true)
-            @PathVariable String id,
-            @Parameter(description = "ID of the grammar rule module that stores the contents", required = true)
-            @PathVariable String GrammarRuleModuleId)
-    {
-        moduleService.grammarRuleModuleExistsInModule(id, GrammarRuleModuleId);
-        List<ContentEntity> contents = grammarRuleModuleService.getContentByGrammarRuleModuleId(GrammarRuleModuleId);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentEntity>>("Contents by Grammar Rule Module has successfully found", contents));
-    }
-
-    @Operation(summary = "Get all grammar rule modules associated with a specific module ID",
-            description = "This endpoint is responsible for retrieving all grammar rule modules of a module by its ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Grammar rule modules were successfully found or no modules were found for the given ID",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = GrammarRuleModulesTinyResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "No module with this ID was found or Bad Request",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = GrammarRuleModulesTinyResponse.class)
-                    )
-            ),
-    })
-    @GetMapping("/{id}/grammar-rule-modules")
-    public ResponseEntity<ApiResponseFormat<List<GrammarRuleModuleTinyDTO>>> getAllGrammarRulesModulesByIdModule(
-            @Parameter(description = "ID of the module that stores the grammar rule", required = true)
-            @PathVariable String id)
-    {
-        List<GrammarRuleModuleEntity> grammarRulesModules = moduleService.getAllGrammarRulesModulesByIdModule(id);
-        List<GrammarRuleModuleTinyDTO> tinyDTO = new ArrayList<>();
-
-        if(grammarRulesModules.isEmpty()){
-            return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<GrammarRuleModuleTinyDTO>>("No grammar rule module was found for this module.", tinyDTO));
-        }
-
-        for (GrammarRuleModuleEntity grammarRuleModule : grammarRulesModules) {
-            tinyDTO.add(grammarRuleModuleMapper.toTinyDTO(grammarRuleModule));
-        }
-
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<GrammarRuleModuleTinyDTO>>("Grammar rule modules successfully found", tinyDTO));
-    }
-
-    @Operation(summary = "Update a grammar rule module by ID",
-            description = "This endpoint is used to update a grammar rule module by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Grammar rule module update successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = GrammarRuleModuleEntity.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Module not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @PutMapping("/{id}/grammar-rule-modules/{grammarRuleModuleId}")
-    public ResponseEntity<ApiResponseFormat<GrammarRuleModuleEntity>> updateGrammarRuleModuleContentList(
-            @Parameter(description = "ID of the module that stores the grammar rule", required = true)
-            @PathVariable String id,
-            @Parameter(description = "ID of the grammar rule module to be updated", required = true)
-
-            @PathVariable String grammarRuleModuleId,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New grammar rule module content list. It will update the content display position when loaded.",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = GrammarRuleModuleRequestDTO.class))
-            )
-            @Valid @RequestBody GrammarRuleModuleRequestDTO grammarRuleModuleRequestDTO)
-    {
-        GrammarRuleModuleEntity grammarRuleModule = grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleId, grammarRuleModuleMapper.toEntity(grammarRuleModuleRequestDTO));
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleEntity>("Module updated successfully", grammarRuleModule));
     }
 
     @Operation(summary = "Update a final challenge module by ID",

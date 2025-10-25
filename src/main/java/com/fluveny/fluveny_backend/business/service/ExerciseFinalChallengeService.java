@@ -51,4 +51,23 @@ public class ExerciseFinalChallengeService {
         return savedExercise;
     }
 
+    /**
+     * Deletes an exercise from Final Challenge
+     * This method validates that the exercise exists in the Final Challenge before deletion
+     *
+     * @param idExercise the ID of the exercise to delete
+     * @param idModule the ID of the module containing the Final Challenge
+     * @throws BusinessException if exercise or module not found
+     */
+    public void deleteExerciseFromFinalChallenge(String idExercise, String idModule) {
+        moduleService.exerciseExistInFinalChallenge(idExercise, idModule);
+
+        Optional<ExerciseEntity> exerciseEntity = exerciseRepository.findById(idExercise);
+        if (exerciseEntity.isEmpty()) {
+            throw new BusinessException("No Exercise with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        exerciseRepository.deleteById(idExercise);
+    }
+
 }

@@ -1,11 +1,13 @@
-package com.fluveny.fluveny_backend.api.controller;
+package com.fluveny.fluveny_backend.api.controller.grammarRuleModule;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.PresentationMapper;
 import com.fluveny.fluveny_backend.api.response.presentation.PresentationResponse;
+import com.fluveny.fluveny_backend.business.service.ContentManagerService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
+import com.fluveny.fluveny_backend.business.service.ParentOfTheContent;
 import com.fluveny.fluveny_backend.business.service.PresentationService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
@@ -34,6 +36,7 @@ public class GrammarRulePresentationController {
     private final ModuleService moduleService;
     private final PresentationMapper presentationMapper;
     private final GrammarRuleModuleRepository grammarRuleModuleRepository;
+    private final ContentManagerService contentManagerService;
 
     @Operation(summary = "Create a new presentation",
             description = "This endpoint is used to create a new presentation")
@@ -150,4 +153,5 @@ public class GrammarRulePresentationController {
         PresentationEntity presentation = presentationService.updatePresentationAndValidateGrammarRuleModule(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule), id, id_grammarRuleModule);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<PresentationResponseDTO>("Exercise updated with successfully", presentationMapper.toDTO(presentation)));
     }
+
 }
