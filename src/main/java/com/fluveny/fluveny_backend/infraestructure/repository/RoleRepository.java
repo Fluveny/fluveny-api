@@ -1,6 +1,6 @@
 package com.fluveny.fluveny_backend.infraestructure.repository;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.RoleEntity;
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 

@@ -2,18 +2,18 @@ package com.fluveny.fluveny_backend.api.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.TextBlockRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.TextBlockResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.module.TextBlockRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.TextBlockResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.IntroductionMapper;
 import com.fluveny.fluveny_backend.business.service.IntroductionService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.exception.GlobalExceptionHandler;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

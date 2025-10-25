@@ -1,15 +1,13 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.UserResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.UserMapper;
-import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
 import com.fluveny.fluveny_backend.api.response.user.UserErrorResponse;
 import com.fluveny.fluveny_backend.api.response.user.UserResponse;
 import com.fluveny.fluveny_backend.business.service.UserService;
-import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -17,7 +15,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-import org.apache.coyote.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -37,7 +34,8 @@ public class UserController {
     private UserMapper userMapper;
 
     @Operation(summary = "Creating a new user",
-            description = "This endpoint is responsible for creating a new user")
+            description = "This endpoint is responsible for creating a new user",
+            tags = {"User"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "user created successfully",
                     content = @Content(

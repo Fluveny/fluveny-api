@@ -5,11 +5,14 @@ import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseConstructorPhraseReq
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseCompletePhraseResponse;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseConstructionPhraseResponse;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseTranslatePhraseResponse;
+import com.fluveny.fluveny_backend.api.response.module.FinalChallengeReturnResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,11 +22,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RequestMapping("/api/v1/modules/{id_module}/final-challenge")
 public interface FinalChallengeExerciseControllerInterface {
 
     @Operation(summary = "Create a new Exercise in Final Challenge",
-            description = "This endpoint is used to create a new exercise")
+            description = "This endpoint is used to create a new exercise",
+            tags = {"Final Challenge"})
     @ApiResponses(value = {
             @ApiResponse(
                     responseCode = "201",
@@ -164,7 +170,8 @@ public interface FinalChallengeExerciseControllerInterface {
 
 
     @Operation(summary = "Return a exercise by id",
-            description = "This endpoint is used to return a exercise by id")
+            description = "This endpoint is used to return a exercise by id",
+            tags = {"Final Challenge"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exercise found successfully",
                     content = @Content(
@@ -195,7 +202,8 @@ public interface FinalChallengeExerciseControllerInterface {
     public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> getExerciseByID(@PathVariable String id_module, @PathVariable String id_exercise);
 
     @Operation(summary = "Update a  Exercise",
-            description = "This endpoint is used to update a exercise")
+            description = "This endpoint is used to update a exercise",
+            tags = {"Final Challenge"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exercise updated successfully",
                     content = @Content(
@@ -332,5 +340,96 @@ public interface FinalChallengeExerciseControllerInterface {
             )
             ExerciseRequestDTO exerciseRequestDTO,
             @PathVariable String id_exercise, @PathVariable String id_module);
+
+    @Operation(summary = "Update a final challenge module by ID",
+            description = "This endpoint is used to update a final challenge by module ID",
+            tags = {"Final Challenge"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Final Challenge update successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = FinalChallengeReturnResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @PutMapping()
+    public ResponseEntity<ApiResponseFormat<List<String>>> updateFinalChallengeExerciseList(
+            @Parameter(description = "ID of the module that stores the final challenge", required = true)
+            @PathVariable String id_module,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "New Final Challenge exercise list. It will update the content display position when loaded.",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = FinalChallengeRequestDTO.class))
+            )
+            @Valid @RequestBody FinalChallengeRequestDTO finalChallengeRequestDTO);
+
+    @Operation(summary = "Get a Exercises in final challenge module by ID",
+            description = "This endpoint is used to get a exercises in final challenge by module ID",
+            tags = {"Final Challenge"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise in Final Challenge found successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = FinalChallengeReturnResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping()
+    public ResponseEntity<ApiResponseFormat<List<String>>> getAllExercisesInFinalChallenge(
+            @Parameter(description = "ID of the module that stores the final challenge", required = true)
+            @PathVariable String id_module);
+
+    @Operation(summary = "Delete an exercise from Final Challenge",
+            description = "This endpoint deletes an exercise from the Final Challenge. " +
+                    "The system deletes the exercise and removes it from the Final Challenge list.",
+            tags = {"Final Challenge"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Exercise deleted successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Exercise or Module not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @DeleteMapping("/{id_exercise}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteExerciseFromFinalChallenge(
+            @PathVariable String id_module,
+            @PathVariable String id_exercise);
 
 }

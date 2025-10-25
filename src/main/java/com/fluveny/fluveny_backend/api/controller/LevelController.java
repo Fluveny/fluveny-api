@@ -33,7 +33,8 @@ public class LevelController {
     }
 
     @Operation(summary = "Get all levels",
-            description = "This endpoint is used to GET all levels")
+            description = "This endpoint is used to GET all levels",
+            tags = {"Level"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "All levels fetched successfully",
                     content = @Content(

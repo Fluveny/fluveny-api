@@ -1,7 +1,7 @@
 package com.fluveny.fluveny_backend.api.controller.interfaces;
 
-import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionResponseDTO;
 import com.fluveny.fluveny_backend.api.response.module.IntroductionResponse;
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,7 +22,8 @@ import jakarta.validation.Valid;
 public interface IntroductionController {
 
     @Operation(summary = "Get introduction by ID",
-            description = "This endpoint is used to GET one introduction")
+            description = "This endpoint is used to GET one introduction",
+            tags = {"Introduction"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Introduction fetched successfully",
                     content = @Content(
@@ -53,7 +54,8 @@ public interface IntroductionController {
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> getIntroductionByEntityId(@PathVariable String id);
 
     @Operation(summary = "Create a new introduction",
-            description = "This endpoint is used to create a new introduction")
+            description = "This endpoint is used to create a new introduction",
+            tags = {"Introduction"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Introduction created successfully",
                     content =  @Content(
@@ -84,7 +86,8 @@ public interface IntroductionController {
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> createIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO);
 
     @Operation(summary = "Update one introduction by ID",
-            description = "This endpoint is used to update one introduction by ID and module ID")
+            description = "This endpoint is used to update one introduction by ID and module ID",
+            tags = {"Introduction"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Introduction updated successfully",
                     content = @Content(
@@ -115,7 +118,8 @@ public interface IntroductionController {
     public ResponseEntity<ApiResponseFormat<IntroductionResponseDTO>> updateIntroduction(@PathVariable String id, @Valid @RequestBody IntroductionRequestDTO introductionRequestDTO);
 
     @Operation(summary = "Delete one introduction",
-            description = "This endpoint is used to delete one introduction by module's ID")
+            description = "This endpoint is used to delete one introduction by module's ID",
+            tags = {"Introduction"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Introduction deleted successfully",
                     content = @Content(

@@ -9,6 +9,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseCompl
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseConstructionPhraseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;

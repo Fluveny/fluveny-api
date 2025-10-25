@@ -1,8 +1,8 @@
 package com.fluveny.fluveny_backend.api.mapper;
 
-import com.fluveny.fluveny_backend.api.dto.IntroductionRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.IntroductionResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.TextBlockResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.module.TextBlockResponseDTO;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.springframework.beans.factory.annotation.Autowired;

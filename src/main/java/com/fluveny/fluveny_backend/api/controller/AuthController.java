@@ -1,9 +1,9 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.LoginRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.LoginResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.LoginResultDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.LoginRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.LoginResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.LoginResultDTO;
 import com.fluveny.fluveny_backend.business.service.AuthorizationService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import io.swagger.v3.oas.annotations.Operation;

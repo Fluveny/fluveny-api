@@ -2,11 +2,11 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fluveny.fluveny_backend.api.dto.GrammarRuleModuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.ModuleResponseDTO;
-import com.fluveny.fluveny_backend.api.mapper.GrammarRuleModuleMapper;
-import com.fluveny.fluveny_backend.api.mapper.ModuleMapper;
+import com.fluveny.fluveny_backend.api.dto.grammarrulemodule.GrammarRuleModuleRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseDTO;
+import com.fluveny.fluveny_backend.api.mapper.grammarrulemodule.GrammarRuleModuleMapper;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleMapper;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
@@ -19,6 +19,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +37,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.Arrays;
-import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;

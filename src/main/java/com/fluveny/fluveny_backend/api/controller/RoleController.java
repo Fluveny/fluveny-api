@@ -1,10 +1,9 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
 import com.fluveny.fluveny_backend.api.response.role.RoleResponse;
 import com.fluveny.fluveny_backend.business.service.RoleService;
-import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.RoleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -13,7 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -27,7 +25,8 @@ public class RoleController {
     private RoleService roleService;
 
     @Operation(summary = "Get all Roles",
-            description = "This endpoint is used to GET all roles")
+            description = "This endpoint is used to GET all roles",
+            tags = {"Role"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "All roles fetched successfully",
                     content = @Content(

@@ -1,29 +1,23 @@
 package com.fluveny.fluveny_backend.business.service;
 
-import com.fluveny.fluveny_backend.api.dto.ModuleResponseStudentDTO;
-import com.fluveny.fluveny_backend.api.dto.SearchModuleStudentDTO;
-import com.fluveny.fluveny_backend.api.dto.StatusDTOEnum;
-import com.fluveny.fluveny_backend.api.mapper.ModuleSearchStudentMapper;
-import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleStudent;
-import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
+import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
-import org.apache.catalina.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.query.Criteria;
-import org.springframework.data.mongodb.core.query.Query;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service

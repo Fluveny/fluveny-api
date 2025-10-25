@@ -1,8 +1,8 @@
 package com.fluveny.fluveny_backend.api.mapper;
 
-import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.TextBlockResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.presentation.PresentationRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.presentation.PresentationResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.module.TextBlockResponseDTO;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
