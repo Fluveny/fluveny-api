@@ -5,7 +5,9 @@ import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.PresentationMapper;
 import com.fluveny.fluveny_backend.api.response.presentation.PresentationResponse;
+import com.fluveny.fluveny_backend.business.service.ContentManagerService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
+import com.fluveny.fluveny_backend.business.service.ParentOfTheContent;
 import com.fluveny.fluveny_backend.business.service.PresentationService;
 import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
@@ -34,6 +36,7 @@ public class GrammarRulePresentationController {
     private final ModuleService moduleService;
     private final PresentationMapper presentationMapper;
     private final GrammarRuleModuleRepository grammarRuleModuleRepository;
+    private final ContentManagerService contentManagerService;
 
     @Operation(summary = "Create a new presentation",
             description = "This endpoint is used to create a new presentation")
@@ -149,5 +152,41 @@ public class GrammarRulePresentationController {
         moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
         PresentationEntity presentation = presentationService.updatePresentationAndValidateGrammarRuleModule(presentationMapper.toEntity(presentationRequestDTO, id_grammarRuleModule), id, id_grammarRuleModule);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<PresentationResponseDTO>("Exercise updated with successfully", presentationMapper.toDTO(presentation)));
+    }
+
+    @Operation(summary = "Delete a content (window/janela)",
+            description = "This endpoint deletes any content (exercise or presentation) from a Grammar Rule Module. " +
+                    "The system automatically identifies the content type and deletes accordingly.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Content deleted successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Content or Grammar Rule Module not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @DeleteMapping("/content/{id_content}")
+    public ResponseEntity<ApiResponseFormat<Void>> deleteContent(
+            @PathVariable String id_module,
+            @PathVariable String id_grammarRuleModule,
+            @PathVariable String id_content) {
+
+        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
+        contentManagerService.deleteContent(id_content, id_grammarRuleModule, ParentOfTheContent.GRAMMAR_RULE_MODULE);
+
+        return ResponseEntity.status(HttpStatus.OK)
+                .body(new ApiResponseFormat<>("Content deleted successfully", null));
     }
 }
