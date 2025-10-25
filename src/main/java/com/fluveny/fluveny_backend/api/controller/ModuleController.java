@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.controller.interfaces.IntroductionController;
 import com.fluveny.fluveny_backend.api.dto.*;
 import com.fluveny.fluveny_backend.api.mapper.*;
+import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseFinalChallengeMapper;
 import com.fluveny.fluveny_backend.api.response.module.*;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
@@ -14,6 +15,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntit
 import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -64,6 +66,7 @@ public class ModuleController implements IntroductionController {
     private final SearchStudentService searchStudentService;
     private final UserService userService;
     private final ModuleOverviewMapper moduleOverviewMapper;
+    private final ExerciseFinalChallengeMapper exerciseFinalChallengeMapper;
 
     @Operation(summary = "Search all modules modules by student",
             description = "This endpoint is responsible for return all modules with students informations",
@@ -343,9 +346,7 @@ public class ModuleController implements IntroductionController {
             )
             @Valid @RequestBody GrammarRuleModuleRequestDTO grammarRuleModuleRequestDTO)
     {
-
         GrammarRuleModuleEntity grammarRuleModule = grammarRuleModuleService.updateGrammarRuleModule(grammarRuleModuleId, grammarRuleModuleMapper.toEntity(grammarRuleModuleRequestDTO));
-
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleEntity>("Module updated successfully", grammarRuleModule));
     }
 
@@ -372,7 +373,7 @@ public class ModuleController implements IntroductionController {
             )
     })
     @PutMapping("/{id}/final-challenge")
-    public ResponseEntity<ApiResponseFormat<List<String>>> updateFinalChallengeExerciseList(
+    public ResponseEntity<ApiResponseFormat<List<ContentExerciseEntity>>> updateFinalChallengeExerciseList(
             @Parameter(description = "ID of the module that stores the final challenge", required = true)
             @PathVariable String id,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -383,7 +384,7 @@ public class ModuleController implements IntroductionController {
             @Valid @RequestBody FinalChallengeRequestDTO finalChallengeRequestDTO)
     {
         List<String> exerciseList = moduleService.updateFinalChallenge(finalChallengeRequestDTO, id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Final Challenge updated successfully", exerciseList));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentExerciseEntity>>("Final Challenge updated successfully", exerciseFinalChallengeMapper.toDTO(exerciseList)));
     }
 
     @Operation(summary = "Get a Exercises in final challenge module by ID",
@@ -409,7 +410,7 @@ public class ModuleController implements IntroductionController {
             )
     })
     @GetMapping("/{id}/final-challenge")
-    public ResponseEntity<ApiResponseFormat<List<String>>> getAllExercisesInFinalChallenge(
+    public ResponseEntity<ApiResponseFormat<List<ContentExerciseEntity>>> getAllExercisesInFinalChallenge(
             @Parameter(description = "ID of the module that stores the final challenge", required = true)
             @PathVariable String id)
     {
@@ -417,7 +418,7 @@ public class ModuleController implements IntroductionController {
         if(module.getFinalChallenge().isEmpty()){
             throw new BusinessException("No Exercises was found for this Final Challenge.", HttpStatus.OK);
         }
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Exercise in Final Challenge found successfully", module.getFinalChallenge()));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentExerciseEntity>>("Exercise in Final Challenge found successfully", exerciseFinalChallengeMapper.toDTO(module.getFinalChallenge())));
     }
   
     @Operation(summary = "Get all modules",
