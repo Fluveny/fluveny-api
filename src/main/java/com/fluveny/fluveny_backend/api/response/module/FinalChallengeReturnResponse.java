@@ -1,10 +1,11 @@
 package com.fluveny.fluveny_backend.api.response.module;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentExerciseEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
 
 @Schema(name = "FinalChallengeReturnResponse")
-public class FinalChallengeReturnResponse extends ApiResponseFormat<List<String>>  {
+public class FinalChallengeReturnResponse extends ApiResponseFormat<List<ContentExerciseEntity>>  {
 }
