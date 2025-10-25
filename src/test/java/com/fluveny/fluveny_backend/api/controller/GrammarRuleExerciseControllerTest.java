@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.api.controller;
 
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fluveny.fluveny_backend.api.controller.grammarRuleModule.GrammarRuleExerciseController;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseMapperFactory;

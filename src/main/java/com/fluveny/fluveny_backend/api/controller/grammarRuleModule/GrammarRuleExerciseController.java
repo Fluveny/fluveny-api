@@ -1,7 +1,6 @@
-package com.fluveny.fluveny_backend.api.controller;
+package com.fluveny.fluveny_backend.api.controller.grammarRuleModule;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.controller.interfaces.FinalChallengeExerciseControllerInterface;
 import com.fluveny.fluveny_backend.api.controller.interfaces.GrammarRuleExerciseControllerInterface;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseResponseDTO;
@@ -13,7 +12,6 @@ import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntit
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseMapperFactory;
-import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -67,38 +65,5 @@ public class GrammarRuleExerciseController implements GrammarRuleExerciseControl
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ExerciseResponseDTO>("Exercise updated with successfully", exerciseMapperFactory.toDTO(exercise)));
     }
 
-    @Operation(summary = "Delete an exercise",
-            description = "This endpoint is used to delete an exercise from a Grammar Rule Module")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Exercise deleted successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Exercise or Grammar Rule Module not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponseFormat<Void>> deleteExercise(
-            @PathVariable String id_module,
-            @PathVariable String id_grammarRuleModule,
-            @PathVariable String id) {
 
-        moduleService.grammarRuleModuleExistsInModule(id_module, id_grammarRuleModule);
-        contentManagerService.deleteContent(id, id_grammarRuleModule, ParentOfTheContent.GRAMMAR_RULE_MODULE);
-
-        return ResponseEntity.status(HttpStatus.OK)
-                .body(new ApiResponseFormat<>("Exercise deleted successfully", null));
-    }
 }
