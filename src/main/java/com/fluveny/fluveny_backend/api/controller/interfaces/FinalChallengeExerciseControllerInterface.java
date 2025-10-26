@@ -11,6 +11,7 @@ import com.fluveny.fluveny_backend.api.response.exercise.ExerciseConstructionPhr
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseResponse;
 import com.fluveny.fluveny_backend.api.response.exercise.ExerciseTranslatePhraseResponse;
 import com.fluveny.fluveny_backend.api.response.module.FinalChallengeReturnResponse;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentExerciseEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -399,7 +400,7 @@ public interface FinalChallengeExerciseControllerInterface {
             )
     })
     @GetMapping()
-    public ResponseEntity<ApiResponseFormat<List<String>>> getAllExercisesInFinalChallenge(
+    public ResponseEntity<ApiResponseFormat<List<ContentExerciseEntity>>> getAllExercisesInFinalChallenge(
             @Parameter(description = "ID of the module that stores the final challenge", required = true)
             @PathVariable String id_module);
 

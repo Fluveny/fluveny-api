@@ -5,12 +5,15 @@ import com.fluveny.fluveny_backend.api.controller.interfaces.FinalChallengeExerc
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
+import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseFinalChallengeMapper;
 import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseMapperFactory;
 import com.fluveny.fluveny_backend.business.service.ContentManagerService;
 import com.fluveny.fluveny_backend.business.service.ExerciseFinalChallengeService;
 import com.fluveny.fluveny_backend.business.service.ExerciseService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
@@ -36,6 +39,7 @@ public class FinalChallengeExerciseController implements FinalChallengeExerciseC
     private final ExerciseFinalChallengeService exerciseFinalChallengeService;
     private final ExerciseMapperFactory exerciseMapperFactory;
     private final ContentManagerService contentManagerService;
+    private final ExerciseFinalChallengeMapper exerciseFinalChallengeMapper;
 
     public ResponseEntity<ApiResponseFormat<ExerciseResponseDTO>> createExercise(
             @Valid @RequestBody ExerciseRequestDTO exerciseRequestDTO, @PathVariable String id_module){
@@ -68,7 +72,7 @@ public class FinalChallengeExerciseController implements FinalChallengeExerciseC
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Final Challenge updated successfully", exerciseList));
     }
 
-    public ResponseEntity<ApiResponseFormat<List<String>>> getAllExercisesInFinalChallenge(
+    public ResponseEntity<ApiResponseFormat<List<ContentExerciseEntity>>> getAllExercisesInFinalChallenge(
             @Parameter(description = "ID of the module that stores the final challenge", required = true)
             @PathVariable String id_module)
     {
@@ -76,7 +80,7 @@ public class FinalChallengeExerciseController implements FinalChallengeExerciseC
         if(module.getFinalChallenge().isEmpty()){
             throw new BusinessException("No Exercises was found for this Final Challenge.", HttpStatus.OK);
         }
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<String>>("Exercise in Final Challenge found successfully", module.getFinalChallenge()));
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentExerciseEntity>>("Exercise in Final Challenge found successfully", exerciseFinalChallengeMapper.toDTO(module.getFinalChallenge())));
     }
 
     public ResponseEntity<ApiResponseFormat<Void>> deleteExerciseFromFinalChallenge(
