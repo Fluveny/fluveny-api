@@ -119,7 +119,7 @@ public class SaveContentManager {
             return ExerciseStyle.TRANSLATE;
         }
         if(exerciseEntity.getClass() == ExerciseCompletePhraseEntity.class){
-            return ExerciseStyle.COMPLETE;
+            return ExerciseStyle.FILL_IN_THE_BLANK;
         }
 
         return null;

@@ -36,7 +36,7 @@ public class ExerciseMapperFactory {
             case ORGANIZE:
                 entity = exerciseConstructionPhraseMapper.toEntity((ExerciseConstructorPhraseRequestDTO) dto, id_grammarRuleModule);
                 break;
-            case COMPLETE:
+            case FILL_IN_THE_BLANK:
                 entity = exerciseCompletePhraseMapper.toEntity((ExerciseCompletePhraseRequestDTO) dto, id_grammarRuleModule);
                 break;
             default:

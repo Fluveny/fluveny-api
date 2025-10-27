@@ -22,7 +22,7 @@ public class ExerciseCompletePhraseMapper {
         exerciseCompletePhraseResponseDTO.setHeader(exerciseCompletePhraseEntity.getHeader());
         exerciseCompletePhraseResponseDTO.setPhrase(exerciseCompletePhraseEntity.getPhrase());
         exerciseCompletePhraseResponseDTO.setId(exerciseCompletePhraseEntity.getId());
-        exerciseCompletePhraseResponseDTO.setStyle(ExerciseStyle.COMPLETE);
+        exerciseCompletePhraseResponseDTO.setStyle(ExerciseStyle.FILL_IN_THE_BLANK);
         exerciseCompletePhraseResponseDTO.setGrammarRuleModuleId(parentId);
         return exerciseCompletePhraseResponseDTO;
     }

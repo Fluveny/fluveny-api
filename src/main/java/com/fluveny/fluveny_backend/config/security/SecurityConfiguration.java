@@ -77,8 +77,8 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.PUT, "/api/v1/modules/{id}").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/modules/{id}").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/student").hasRole("STUDENT")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/modules/student/search").hasRole("STUDENT")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id}/overview").hasRole("STUDENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/modules/student/search").hasAnyRole("STUDENT", "CONTENT_CREATOR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id}/overview").hasAnyRole("STUDENT", "CONTENT_CREATOR")
 
                         // Grammar Rule Modules
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id}/grammar-rule-modules/{id_grammarRuleModule}/contents").permitAll()

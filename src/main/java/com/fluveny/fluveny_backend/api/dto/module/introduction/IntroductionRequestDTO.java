@@ -15,6 +15,5 @@ import lombok.Setter;
 
 public class IntroductionRequestDTO {
     @NotNull(message= "Text block can not be null")
-    @NotBlank(message = "Text block is required")
     private TextBlockRequestDTO textBlock;
 }
