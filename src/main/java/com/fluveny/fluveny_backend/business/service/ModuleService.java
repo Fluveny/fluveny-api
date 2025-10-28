@@ -1,0 +1,432 @@
+package com.fluveny.fluveny_backend.business.service;
+
+import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleOverviewDTO;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleOverviewMapper;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
+import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
+import com.fluveny.fluveny_backend.infraestructure.entity.*;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudentId;
+import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
+import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+@Service
+public class ModuleService implements IntroductionService {
+
+    @Autowired
+    private ModuleRepository moduleRepository;
+
+    @Autowired
+    private GrammarRuleModuleService grammarRuleModuleService;
+
+    @Autowired
+    private TextBlockRepository textBlockRepository;
+
+    @Autowired
+    private GrammarRuleService grammarRuleService;
+
+    @Autowired
+    private ModuleStudentRepository moduleStudentRepository;
+
+    @Autowired
+    private ModuleOverviewMapper moduleOverviewMapper;
+
+    @Autowired
+    private ContentManagerService contentManagerService;
+
+    @Autowired
+    private ModuleSearchStudentMapper moduleSearchStudentMapper;
+
+    public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
+
+        Page<ModuleEntity> modulesPage = moduleRepository.findAll(
+                PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "level.title"))
+        );
+
+        List<ModuleStudent> moduleStudents = moduleStudentRepository
+                .findByIdStudentUserName(userEntity.getId());
+
+        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream()
+                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), Function.identity()));
+
+        return modulesPage.map(module ->
+        {
+            ModuleResponseStudentDTO dto = moduleSearchStudentMapper.toDTO(module);
+
+            ModuleStudent moduleStudent = moduleStudentMap.get(module.getId());
+            if (moduleStudent != null) {
+                dto.setProgress(moduleStudent.getProgress());
+                dto.setIsFavorite(moduleStudent.getIsFavorite());
+            }
+            return dto;
+        }
+        );
+    }
+
+    /**
+     * Checks if a GrammarRuleModule exists within a Module by their IDs.
+     * <p>
+     * Throws BusinessException with NOT_FOUND status if the module or rule module is not found.
+     *
+     * @param idModule the ID of the module
+     * @param idGrammarRuleModule the ID of the grammar rule module
+     * @throws BusinessException if module or grammar rule module does not exist
+     */
+    public void grammarRuleModuleExistsInModule(String idModule, String idGrammarRuleModule){
+
+        Optional<ModuleEntity> optionalModule = moduleRepository.findById(idModule);
+
+        if (optionalModule.isEmpty()) {
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        List<GrammarRuleModuleEntity> grammarRuleModules = optionalModule.get().getGrammarRuleModules();
+        if (grammarRuleModules.isEmpty()) {
+            throw new BusinessException("This module has no grammar rule modules", HttpStatus.NOT_FOUND);
+        }
+
+        boolean found = false;
+        for (GrammarRuleModuleEntity grm : grammarRuleModules) {
+            if (grm != null && idGrammarRuleModule.equals(grm.getId())) {
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            throw new BusinessException("This module has no grammar rule module with this id", HttpStatus.NOT_FOUND);
+        }
+    }
+
+    public List<GrammarRuleModuleEntity> getAllGrammarRulesModulesByIdModule (String id) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        return moduleFind.get().getGrammarRuleModules();
+    }
+
+    public ModuleEntity createModule(ModuleEntity moduleEntity) {
+
+        Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
+
+        if (titleConflict.isPresent()) {
+            throw new BusinessException("Another module with this title already exists", HttpStatus.BAD_REQUEST);
+        }
+
+        validateGrammarRules(moduleEntity);
+
+        ModuleEntity savedModuleEntity = moduleRepository.save(moduleEntity);
+        savedModuleEntity.setGrammarRuleModules(new ArrayList<>());
+
+        List<GrammarRuleEntity> grammarRules = moduleEntity.getGrammarRules();
+
+        for(GrammarRuleEntity grammarRule : grammarRules) {
+            savedModuleEntity.getGrammarRuleModules().add(setGrammarRuleModule(savedModuleEntity, grammarRule));
+        }
+
+        return moduleRepository.save(savedModuleEntity);
+    }
+
+    public ModuleEntity deleteModule (String id) {
+
+        Optional<ModuleEntity> module = moduleRepository.findById(id);
+
+        if (module.isEmpty()) {
+            throw new BusinessException("This module doesn't exist", HttpStatus.BAD_REQUEST);
+        }
+
+        if(module.get().getIntroduction() != null){
+            this.deleteIntroductionById(module.get().getId());
+        }
+
+        if(module.get().getGrammarRuleModules() != null) {
+            for (GrammarRuleModuleEntity grammarRuleModuleEntity : module.get().getGrammarRuleModules()) {
+                grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+            }
+        }
+
+        moduleRepository.deleteById(module.get().getId());
+
+        return module.get();
+    }
+
+    private GrammarRuleModuleEntity setGrammarRuleModule(ModuleEntity moduleEntity, GrammarRuleEntity grammarRuleEntity) {
+        GrammarRuleModuleEntity grammarRuleModuleEntity = new GrammarRuleModuleEntity();
+        grammarRuleModuleEntity.setModuleId(moduleEntity.getId());
+        grammarRuleModuleEntity.setGrammarRule(grammarRuleService.getGrammarRuleById(grammarRuleEntity.getId()));
+        return grammarRuleModuleService.createGrammarRuleModule(grammarRuleModuleEntity);
+    }
+
+    public ModuleEntity updateModule(ModuleEntity moduleEntity, String id) {
+
+        moduleEntity.setId(id);
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        moduleEntity.setIntroduction(existing.get().getIntroduction());
+
+        Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
+        if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
+            throw new BusinessException("Another module with this title already exists", HttpStatus.BAD_REQUEST);
+        }
+
+        validateGrammarRules(moduleEntity);
+
+        List<GrammarRuleModuleEntity> updatedGrammarRuleModules = new ArrayList<>(existing.get().getGrammarRuleModules());
+        moduleEntity.setGrammarRuleModules(updatedGrammarRuleModules);
+
+        syncGrammarRuleModules(moduleEntity, existing.get());
+        reorderGrammarRuleModules(moduleEntity);
+
+        return moduleRepository.save(moduleEntity);
+
+    }
+
+    /**
+     * Synchronizes the associations between grammar rules and the module.
+     * <p>
+     * Adds new associations from the module to rules not yet linked,
+     * removes associations that were removed in the new version,
+     * and updates the internal lists accordingly.
+     *
+     * @param newModule the module with the new list of grammar rules
+     * @param existingModule the current module to be updated
+     */
+    public void syncGrammarRuleModules(ModuleEntity newModule, ModuleEntity existingModule) {
+
+        List<GrammarRuleModuleEntity> toAdd = new ArrayList<>();
+        List<GrammarRuleModuleEntity> toRemove = new ArrayList<>();
+        List<GrammarRuleEntity> grammarRulesToRemove = new ArrayList<>();
+
+        for (GrammarRuleEntity rule : newModule.getGrammarRules()) {
+            if (!existingModule.getGrammarRules().contains(rule)) {
+                toAdd.add(setGrammarRuleModule(newModule, rule));
+            } else {
+                GrammarRuleModuleEntity gmr = grammarRuleModuleService.getGrammarRuleModuleByGrammarRuleId(existingModule.getId(), rule.getId());
+                toRemove.add(gmr);
+                grammarRulesToRemove.add(rule);
+            }
+        }
+
+        existingModule.getGrammarRuleModules().removeAll(toRemove);
+        existingModule.getGrammarRules().removeAll(grammarRulesToRemove);
+        newModule.getGrammarRuleModules().addAll(toAdd);
+
+        List<GrammarRuleModuleEntity> grammarRuleModuleEntities = existingModule.getGrammarRuleModules();
+
+        if (!grammarRuleModuleEntities.isEmpty()) {
+            List<GrammarRuleModuleEntity> GrammarRuleModulesToRemove = new ArrayList<>(grammarRuleModuleEntities);
+            for (GrammarRuleModuleEntity grammarRuleModuleEntity : GrammarRuleModulesToRemove) {
+                newModule.getGrammarRuleModules().remove(grammarRuleModuleEntity);
+                grammarRuleModuleService.deleteGrammarRuleModule(grammarRuleModuleEntity.getId());
+            }
+        }
+    }
+
+    /**
+     * Reorders the list of associations between grammar rules and the module
+     * to reflect the current order of grammar rules in the module.
+     *
+     * @param moduleEntity the module whose associations will be reordered
+     */
+    public void reorderGrammarRuleModules(ModuleEntity moduleEntity) {
+
+        Map<String, Integer> newPositions = new HashMap<>();
+
+        for (int i = 0; i < moduleEntity.getGrammarRules().size(); i++) {
+            newPositions.put(moduleEntity.getGrammarRules().get(i).getId(), i);
+        }
+
+        moduleEntity.getGrammarRuleModules().sort(
+                Comparator.comparingInt(grm -> newPositions.getOrDefault(grm.getGrammarRule().getId(), Integer.MAX_VALUE))
+        );
+
+    }
+
+    public List<ModuleEntity> getAllModules() {
+        return moduleRepository.findAll();
+    }
+
+    public ModuleEntity getModuleById(String id) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        return moduleFind.get();
+
+    }
+
+    public TextBlockEntity getIntroductionByEntityId(String id){
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        return existing.get().getIntroduction();
+    }
+
+    public TextBlockEntity createIntroduction(String id, TextBlockEntity textblockEntity) {
+
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        if(existing.get().getIntroduction() != null){
+            throw new BusinessException("This module already has an introduction.", HttpStatus.BAD_REQUEST);
+        }
+
+        existing.get().setIntroduction(textblockEntity);
+        moduleRepository.save(existing.get());
+
+        return textblockEntity;
+    }
+
+    public TextBlockEntity updateIntroduction(String id, TextBlockEntity textblockEntity) {
+
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        if(existing.get().getIntroduction() == null){
+            throw new BusinessException("This module doesn't have an introduction.", HttpStatus.NOT_FOUND);
+        }
+
+        textblockEntity.setId(existing.get().getIntroduction().getId());
+        existing.get().setIntroduction(textblockEntity);
+        moduleRepository.save(existing.get());
+
+        return textblockEntity;
+    }
+
+    public void deleteIntroductionById(String id) {
+
+        Optional<ModuleEntity> existing = moduleRepository.findById(id);
+
+        if (existing.isEmpty()) {
+            throw new BusinessException("No module with this ID was found.", HttpStatus.NOT_FOUND);
+        }
+
+        if (existing.get().getIntroduction() == null) {
+            throw new BusinessException("This module doesn't have an introduction.", HttpStatus.NOT_FOUND);
+        }
+
+        textBlockRepository.deleteById(existing.get().getIntroduction().getId());
+        existing.get().setIntroduction(null);
+        moduleRepository.save(existing.get());
+    }
+
+    public void validateGrammarRules(ModuleEntity moduleEntity){
+        if(moduleEntity.getGrammarRules().size() > 5){
+            throw new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    public ModuleOverviewDTO getModuleOverview(String moduleId, String studentUsername) {
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        ModuleStudentId moduleStudentId = new ModuleStudentId(moduleId, studentUsername);
+        Optional<ModuleStudent> moduleStudent = moduleStudentRepository.findById(moduleStudentId);
+
+        return moduleOverviewMapper.toDTO(moduleFind.get(), moduleStudent.orElse(null));
+    }
+
+    public List<String> updateFinalChallenge (FinalChallengeRequestDTO finalChallengeRequestDTO, String moduleId) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        Set<String> oldSet = new HashSet<>(moduleFind.get().getFinalChallenge());
+        Set<String> newSet = new HashSet<>(finalChallengeRequestDTO.getExerciseList());
+
+        for (String exercise : newSet) {
+            contentManagerService.verifyContentOwnership(ContentType.EXERCISE, exercise, moduleFind.get().getId(), ParentOfTheContent.FINAL_CHALLENGE);
+        }
+
+        if (!oldSet.equals(newSet) || moduleFind.get().getFinalChallenge().size() != newSet.size()) {
+            throw new BusinessException("There are different content types or content IDs in the grammar rule module.", HttpStatus.BAD_REQUEST);
+        }
+
+        moduleFind.get().setFinalChallenge(finalChallengeRequestDTO.getExerciseList());
+        this.updateModule(moduleFind.get(), moduleId);
+
+        return finalChallengeRequestDTO.getExerciseList();
+
+    }
+
+    public void exerciseExistInFinalChallenge(String idExercise, String moduleId){
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        boolean exists = false;
+
+        for (String exercise : moduleFind.get().getFinalChallenge()){
+            if (exercise.equals(idExercise)){
+                exists = true;
+                break;
+            }
+        }
+
+        if(!exists){
+            throw new BusinessException("No exercise with this ID in this Final Challenge was found.", HttpStatus.NOT_FOUND);
+        }
+
+    }
+
+    public void addExerciseToFinalChallenge (String id, ExerciseEntity exerciseEntity) {
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        moduleFind.get().getFinalChallenge().add(exerciseEntity.getId());
+        this.updateModule(moduleFind.get(), id);
+
+    }
+
+}

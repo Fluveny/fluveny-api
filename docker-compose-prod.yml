@@ -1,0 +1,39 @@
+services:
+  app-java:
+    build: .
+    container_name: fluveny-api
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    environment:
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - SERVER_PORT=${SERVER_PORT}
+      - MONGO_HOST=${MONGO_HOST}
+      - MONGO_PORT=${MONGO_PORT}
+      - MONGO_DB_NAME=${MONGO_DB_NAME}
+      - MONGO_USER=${MONGO_USER}
+      - MONGO_PASSWORD=${MONGO_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - ORIGIN_URL=${ORIGIN_URL}
+    depends_on:
+      - mongo-db-prod
+    networks:
+      - fluveny-network
+
+  mongo-db-prod:
+    image: mongo:latest
+    container_name: mongodb_prod_instance
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+    volumes:
+      - mongo_prod_data:/data/db
+    networks:
+      - fluveny-network
+
+networks:
+  fluveny-network:
+    driver: bridge
+
+volumes:
+  mongo_prod_data:
+    driver: local
