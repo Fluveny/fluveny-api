@@ -1,16 +1,16 @@
 package com.fluveny.fluveny_backend.api.controller.grammarRuleModule;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.GrammarRuleModuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.GrammarRuleModuleTinyDTO;
-import com.fluveny.fluveny_backend.api.mapper.GrammarRuleModuleMapper;
+import com.fluveny.fluveny_backend.api.dto.grammarrulemodule.GrammarRuleModuleRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.grammarrulemodule.GrammarRuleModuleTinyDTO;
+import com.fluveny.fluveny_backend.api.mapper.grammarrulemodule.GrammarRuleModuleMapper;
 import com.fluveny.fluveny_backend.api.response.module.ContentsResponse;
 import com.fluveny.fluveny_backend.api.response.module.GrammarRuleModulesTinyResponse;
 import com.fluveny.fluveny_backend.business.service.ContentManagerService;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
-import com.fluveny.fluveny_backend.business.service.ParentOfTheContent;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -38,7 +38,8 @@ public class GrammarRuleModuleController {
     private final ContentManagerService contentManagerService;
 
     @Operation(summary = "Get all contents associated with a specific grammar rule module ID",
-            description = "This endpoint is responsible for retrieving all contents of a grammar rule module by its ID")
+            description = "This endpoint is responsible for retrieving all contents of a grammar rule module by its ID",
+            tags = {"Grammar Rule Module"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Contents were successfully found or no contents were found for the given ID",
                     content = @Content(
@@ -66,7 +67,8 @@ public class GrammarRuleModuleController {
     }
 
     @Operation(summary = "Get all grammar rule modules associated with a specific module ID",
-            description = "This endpoint is responsible for retrieving all grammar rule modules of a module by its ID")
+            description = "This endpoint is responsible for retrieving all grammar rule modules of a module by its ID",
+            tags = {"Grammar Rule Module"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule modules were successfully found or no modules were found for the given ID",
                     content = @Content(
@@ -101,7 +103,8 @@ public class GrammarRuleModuleController {
     }
 
     @Operation(summary = "Update a grammar rule module by ID",
-            description = "This endpoint is used to update a grammar rule module by ID")
+            description = "This endpoint is used to update a grammar rule module by ID",
+            tags = {"Grammar Rule Module"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule module update successfully",
                     content = @Content(
@@ -148,16 +151,17 @@ public class GrammarRuleModuleController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<GrammarRuleModuleEntity>("Module updated successfully", grammarRuleModule));
     }
 
-    @Operation(summary = "Delete an exercise",
-            description = "This endpoint is used to delete an exercise from a Grammar Rule Module")
+    @Operation(summary = "Delete an content",
+            description = "This endpoint is used to delete an content from a Grammar Rule Module",
+            tags = {"Grammar Rule Module"})
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Exercise deleted successfully",
+            @ApiResponse(responseCode = "200", description = "Content deleted successfully",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)
                     )
             ),
-            @ApiResponse(responseCode = "404", description = "Exercise or Grammar Rule Module not found",
+            @ApiResponse(responseCode = "404", description = "Content or Grammar Rule Module not found",
                     content = @Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ApiResponseFormat.class)

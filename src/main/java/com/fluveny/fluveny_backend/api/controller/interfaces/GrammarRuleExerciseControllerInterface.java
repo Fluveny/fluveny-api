@@ -22,7 +22,8 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/v1/modules/{id_module}/grammar-rule-modules/{id_grammarRuleModule}/exercises")
 public interface GrammarRuleExerciseControllerInterface {
     @Operation(summary = "Create a new Exercise",
-            description = "This endpoint is used to create a new exercise")
+            description = "This endpoint is used to create a new exercise",
+            tags = {"Grammar Rule Module - Exercise"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Exercise created successfully",
                     content = @Content(
@@ -163,7 +164,8 @@ public interface GrammarRuleExerciseControllerInterface {
 
 
     @Operation(summary = "Return a exercise by id",
-            description = "This endpoint is used to return a exercise by id")
+            description = "This endpoint is used to return a exercise by id",
+            tags = {"Grammar Rule Module - Exercise"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exercise found successfully",
                     content = @Content(
@@ -195,7 +197,8 @@ public interface GrammarRuleExerciseControllerInterface {
             @PathVariable String id_grammarRuleModule, @PathVariable String id_module, @PathVariable String id);
 
     @Operation(summary = "Update a  Exercise",
-            description = "This endpoint is used to update a exercise")
+            description = "This endpoint is used to update a exercise",
+            tags = {"Grammar Rule Module - Exercise"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Exercise updated successfully",
                     content = @Content(

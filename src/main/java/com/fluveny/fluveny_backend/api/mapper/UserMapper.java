@@ -1,10 +1,10 @@
 package com.fluveny.fluveny_backend.api.mapper;
 
-import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.UserResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserResponseDTO;
 import com.fluveny.fluveny_backend.business.service.RoleService;
-import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;

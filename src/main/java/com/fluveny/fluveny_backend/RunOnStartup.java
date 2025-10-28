@@ -1,18 +1,17 @@
 package com.fluveny.fluveny_backend;
 
-import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserRequestDTO;
 import com.fluveny.fluveny_backend.api.mapper.UserMapper;
 import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.LevelRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.RoleRepository;
 import org.springframework.core.env.Profiles;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;

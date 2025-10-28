@@ -1,13 +1,13 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.GrammarRuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.GrammarRuleResponseDTO;
-import com.fluveny.fluveny_backend.api.mapper.GrammarRuleMapper;
+import com.fluveny.fluveny_backend.api.dto.grammarrulemodule.GrammarRuleRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.grammarrulemodule.GrammarRuleResponseDTO;
+import com.fluveny.fluveny_backend.api.mapper.grammarrulemodule.GrammarRuleMapper;
 import com.fluveny.fluveny_backend.api.response.grammarrule.GrammarRuleResponse;
 import com.fluveny.fluveny_backend.api.response.grammarrule.GrammarRulesResponse;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -33,7 +33,8 @@ public class GrammarRuleController {
     private final GrammarRuleMapper grammarRuleMapper;
 
     @Operation(summary = "Get all grammar rules",
-            description = "This endpoint is used to GET all the grammar rules")
+            description = "This endpoint is used to GET all the grammar rules",
+            tags = {"Grammar Rule"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "All grammar rules fetched successfully",
                     content = @Content(
@@ -79,7 +80,8 @@ public class GrammarRuleController {
     }
 
     @Operation(summary = "Get grammar rule by ID",
-            description = "This endpoint is used to GET a grammar rule by ID")
+            description = "This endpoint is used to GET a grammar rule by ID",
+            tags = {"Grammar Rule"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule fetched successfully",
                     content = @Content(
@@ -119,7 +121,8 @@ public class GrammarRuleController {
     }
 
     @Operation(summary = "Search grammar rules by title",
-            description = "This endpoint is used to search grammar rules by title")
+            description = "This endpoint is used to search grammar rules by title",
+            tags = {"Grammar Rule"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rules fetched successfully",
                     content = @Content(
@@ -161,7 +164,8 @@ public class GrammarRuleController {
     }
 
     @Operation(summary = "Create a new grammar rule",
-            description = "This endpoint is used to create a new grammar rule")
+            description = "This endpoint is used to create a new grammar rule",
+            tags = {"Grammar Rule"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Grammar rule created successfully",
                     content = @Content(
@@ -204,7 +208,8 @@ public class GrammarRuleController {
     }
 
     @Operation(summary = "Update an existing grammar rule",
-            description = "This endpoint is used to update an existing exercise")
+            description = "This endpoint is used to update an existing exercise",
+            tags = {"Grammar Rule"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule updated successfully",
                     content = @Content(
@@ -248,7 +253,8 @@ public class GrammarRuleController {
     }
 
     @Operation(summary = "Delete a grammar rule",
-            description = "This endpoint is used to delete a grammar rule")
+            description = "This endpoint is used to delete a grammar rule",
+            tags = {"Grammar Rule"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Grammar rule deleted successfully",
                     content = @Content(

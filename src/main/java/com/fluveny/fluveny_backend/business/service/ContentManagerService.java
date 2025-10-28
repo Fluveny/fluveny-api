@@ -1,13 +1,14 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ResolvedContent;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
+import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;

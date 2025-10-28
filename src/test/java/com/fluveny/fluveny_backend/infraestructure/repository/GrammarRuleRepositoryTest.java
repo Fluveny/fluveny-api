@@ -1,6 +1,6 @@
 package com.fluveny.fluveny_backend.infraestructure.repository;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
 import java.util.Optional;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 
 @DataMongoTest

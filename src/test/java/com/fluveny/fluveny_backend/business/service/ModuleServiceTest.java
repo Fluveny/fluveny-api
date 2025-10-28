@@ -1,11 +1,10 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
-import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import org.junit.jupiter.api.Assertions;
@@ -15,16 +14,12 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.util.ArrayList;
 import java.util.Optional;
 
 import static org.mockito.Mockito.doNothing;
-
-import java.util.ArrayList;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;

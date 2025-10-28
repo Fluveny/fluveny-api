@@ -1,6 +1,6 @@
 package com.fluveny.fluveny_backend.infraestructure.repository;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,7 +11,6 @@ import org.springframework.test.context.ActiveProfiles;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 
 @DataMongoTest
 @ActiveProfiles("test")

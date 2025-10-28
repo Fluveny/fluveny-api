@@ -38,7 +38,7 @@ public class ExerciseFinalChallengeMapper {
                 case ExerciseTranslateEntity exerciseTranslateEntity ->
                         contentExerciseEntity.setStyle(ExerciseStyle.TRANSLATE);
                 case ExerciseCompletePhraseEntity exerciseCompletePhraseEntity ->
-                        contentExerciseEntity.setStyle(ExerciseStyle.COMPLETE);
+                        contentExerciseEntity.setStyle(ExerciseStyle.FILL_IN_THE_BLANK);
                 case ExerciseConstructionPhraseEntity exerciseConstructionPhraseEntity ->
                         contentExerciseEntity.setStyle(ExerciseStyle.ORGANIZE);
                 default -> {

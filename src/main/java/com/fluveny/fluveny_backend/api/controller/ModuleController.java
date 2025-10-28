@@ -2,21 +2,21 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.controller.interfaces.IntroductionController;
-import com.fluveny.fluveny_backend.api.dto.*;
+import com.fluveny.fluveny_backend.api.controller.interfaces.ModuleInterfaceController;
+import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.*;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.*;
-import com.fluveny.fluveny_backend.api.mapper.exercise.ExerciseFinalChallengeMapper;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleMapper;
 import com.fluveny.fluveny_backend.api.response.module.*;
-import com.fluveny.fluveny_backend.business.service.GrammarRuleModuleService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.business.service.SearchStudentService;
 import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentExerciseEntity;
-import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -52,8 +52,7 @@ import java.util.List;
  */
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/modules")
-public class ModuleController implements IntroductionController {
+public class ModuleController implements IntroductionController, ModuleInterfaceController {
 
     private final ModuleService moduleService;
     private final ModuleMapper moduleMapper;
@@ -62,30 +61,6 @@ public class ModuleController implements IntroductionController {
     private final SearchStudentService searchStudentService;
     private final UserService userService;
 
-    @Operation(summary = "Search all modules modules by student",
-            description = "This endpoint is responsible for return all modules with students informations",
-            tags = {"Module - Student"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Modules found successfully or no modules found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModulesUserResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @GetMapping("/student")
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> getAllModulesByStudent(
             @RequestParam Integer pageNumber,
             @RequestParam Integer pageSize,
@@ -107,30 +82,6 @@ public class ModuleController implements IntroductionController {
 
     }
 
-    @Operation(summary = "Search for modules by user",
-            description = "This endpoint is responsible for search a modules by user",
-            tags = {"Module - Student"})
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Modules found successfully or no modules found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModulesUserResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @GetMapping("/student/search")
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchByStudent(
             @Parameter(description = "ID of the module to be updated", required = false)
             @RequestParam(required = false) String moduleName,
@@ -161,30 +112,6 @@ public class ModuleController implements IntroductionController {
 
     }
 
-    @Operation(summary = "Creating a new module",
-            description = "This endpoint is responsible for creating a new module")
-
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Module created successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModuleResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @PostMapping
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
             @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
@@ -192,35 +119,6 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created successfully", moduleMapper.toDTO(module)));
     }
 
-    @Operation(summary = "Update a module by ID",
-            description = "This endpoint is used to update a module by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Module update successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModuleResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Module not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @PutMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> updateModule(
             @Parameter(description = "ID of the module to be updated", required = true)
             @PathVariable String id,
@@ -235,106 +133,6 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
     }
 
-    @Operation(summary = "Update a final challenge module by ID",
-            description = "This endpoint is used to update a final challenge by module ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Final Challenge update successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = FinalChallengeReturnResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @PutMapping("/{id}/final-challenge")
-    public ResponseEntity<ApiResponseFormat<List<ContentExerciseEntity>>> updateFinalChallengeExerciseList(
-            @Parameter(description = "ID of the module that stores the final challenge", required = true)
-            @PathVariable String id,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    description = "New Final Challenge exercise list. It will update the content display position when loaded.",
-                    required = true,
-                    content = @Content(schema = @Schema(implementation = FinalChallengeRequestDTO.class))
-            )
-            @Valid @RequestBody FinalChallengeRequestDTO finalChallengeRequestDTO)
-    {
-        List<String> exerciseList = moduleService.updateFinalChallenge(finalChallengeRequestDTO, id);
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentExerciseEntity>>("Final Challenge updated successfully", exerciseFinalChallengeMapper.toDTO(exerciseList)));
-    }
-
-    @Operation(summary = "Get a Exercises in final challenge module by ID",
-            description = "This endpoint is used to get a exercises in final challenge by module ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Exercise in Final Challenge found successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = FinalChallengeReturnResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @GetMapping("/{id}/final-challenge")
-    public ResponseEntity<ApiResponseFormat<List<ContentExerciseEntity>>> getAllExercisesInFinalChallenge(
-            @Parameter(description = "ID of the module that stores the final challenge", required = true)
-            @PathVariable String id)
-    {
-        ModuleEntity module = moduleService.getModuleById(id);
-        if(module.getFinalChallenge().isEmpty()){
-            throw new BusinessException("No Exercises was found for this Final Challenge.", HttpStatus.OK);
-        }
-        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ContentExerciseEntity>>("Exercise in Final Challenge found successfully", exerciseFinalChallengeMapper.toDTO(module.getFinalChallenge())));
-    }
-  
-    @Operation(summary = "Get all modules",
-            description = "This endpoint is used to GET all module")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "All modules fetched successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModulesReponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Modules not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @GetMapping
     public ResponseEntity<ApiResponseFormat<List<ModuleResponseDTO>>> getAllModules(){
         List<ModuleResponseDTO> modulesDTO = moduleService.getAllModules()
                 .stream()
@@ -348,35 +146,6 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Modules found with successfully", modulesDTO));
     }
 
-    @Operation(summary = "Get module by ID",
-            description = "This endpoint is used to GET module by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Module fetched successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModulesReponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Module not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @GetMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> getModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
 
             ModuleResponseDTO moduleDTO = moduleMapper.toDTO(moduleService.getModuleById(id));
@@ -387,35 +156,6 @@ public class ModuleController implements IntroductionController {
 
     }
 
-    @Operation(summary = "Delete module by ID",
-            description = "This endpoint is used to DELETE module by ID")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Module fetched successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModulesReponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "400", description = "Bad request for application",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Module not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "500", description = "Server error",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> deleteModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id){
         ModuleEntity module = moduleService.deleteModule(id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("A module was delete with success", moduleMapper.toDTO(module)));
@@ -444,29 +184,6 @@ public class ModuleController implements IntroductionController {
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was deleted", null));
     }
 
-    @Operation(summary = "Get module overview for student",
-            description = "This endpoint returns complete module overview information for the student page")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Module overview fetched successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ModuleOverviewResponse.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "404", description = "Module not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            ),
-            @ApiResponse(responseCode = "401", description = "Unauthorized",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ApiResponseFormat.class)
-                    )
-            )
-    })
-    @GetMapping("/{id}/overview")
     public ResponseEntity<ApiResponseFormat<ModuleOverviewDTO>> getModuleOverview(
             @Parameter(description = "ID of the module", required = true)
             @PathVariable String id,

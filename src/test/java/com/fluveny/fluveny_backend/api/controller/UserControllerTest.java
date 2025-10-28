@@ -1,17 +1,13 @@
 package com.fluveny.fluveny_backend.api.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fluveny.fluveny_backend.api.dto.ModuleRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.ModuleResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.UserRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.UserResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.auth.UserResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.UserMapper;
-import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.exception.GlobalExceptionHandler;
-import com.fluveny.fluveny_backend.infraestructure.entity.ModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,8 +21,6 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.util.Arrays;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;

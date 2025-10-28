@@ -23,7 +23,7 @@ import lombok.Setter;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ExerciseTranslateRequestDTO.class, name = "TRANSLATE"),
         @JsonSubTypes.Type(value = ExerciseConstructorPhraseRequestDTO.class, name = "ORGANIZE"),
-        @JsonSubTypes.Type(value = ExerciseCompletePhraseRequestDTO.class, name = "COMPLETE")
+        @JsonSubTypes.Type(value = ExerciseCompletePhraseRequestDTO.class, name = "FILL_IN_THE_BLANK")
 })
 public abstract class ExerciseRequestDTO {
     private ExerciseStyle style;

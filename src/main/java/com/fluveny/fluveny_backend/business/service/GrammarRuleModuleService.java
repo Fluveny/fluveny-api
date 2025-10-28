@@ -1,8 +1,9 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.*;
 import com.fluveny.fluveny_backend.infraestructure.entity.content.ContentEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

@@ -1,8 +1,8 @@
 package com.fluveny.fluveny_backend.infraestructure.repository;
 
 
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

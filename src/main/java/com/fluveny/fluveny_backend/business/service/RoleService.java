@@ -1,7 +1,7 @@
 package com.fluveny.fluveny_backend.business.service;
 
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.RoleEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.RoleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;

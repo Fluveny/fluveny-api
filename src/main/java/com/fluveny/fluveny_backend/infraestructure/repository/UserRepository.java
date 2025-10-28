@@ -1,6 +1,6 @@
 package com.fluveny.fluveny_backend.infraestructure.repository;
 
-import com.fluveny.fluveny_backend.infraestructure.entity.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import org.springframework.data.mongodb.repository.MongoRepository;
 
 import java.util.Optional;

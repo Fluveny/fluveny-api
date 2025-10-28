@@ -1,8 +1,7 @@
 package com.fluveny.fluveny_backend.api.response.role;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.UserResponseDTO;
-import com.fluveny.fluveny_backend.infraestructure.entity.RoleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.RoleEntity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 

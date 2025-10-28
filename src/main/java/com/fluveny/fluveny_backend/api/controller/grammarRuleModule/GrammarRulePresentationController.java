@@ -1,15 +1,14 @@
 package com.fluveny.fluveny_backend.api.controller.grammarRuleModule;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.PresentationRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.PresentationResponseDTO;
+import com.fluveny.fluveny_backend.api.dto.presentation.PresentationRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.presentation.PresentationResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.PresentationMapper;
 import com.fluveny.fluveny_backend.api.response.presentation.PresentationResponse;
 import com.fluveny.fluveny_backend.business.service.ContentManagerService;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
-import com.fluveny.fluveny_backend.business.service.ParentOfTheContent;
 import com.fluveny.fluveny_backend.business.service.PresentationService;
-import com.fluveny.fluveny_backend.infraestructure.entity.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.PresentationEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,7 +38,8 @@ public class GrammarRulePresentationController {
     private final ContentManagerService contentManagerService;
 
     @Operation(summary = "Create a new presentation",
-            description = "This endpoint is used to create a new presentation")
+            description = "This endpoint is used to create a new presentation",
+            tags = {"Grammar Rule Module - Presentation"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Presentation created successfully",
                     content = @Content(
@@ -88,7 +88,8 @@ public class GrammarRulePresentationController {
     }
 
     @Operation(summary = "Return a presentation by id",
-            description = "This endpoint is used to return a presentation by id")
+            description = "This endpoint is used to return a presentation by id",
+            tags = {"Grammar Rule Module - Presentation"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Presentation found successfully",
                     content = @Content(
@@ -124,7 +125,8 @@ public class GrammarRulePresentationController {
     }
 
     @Operation(summary = "Update a  Presentation",
-            description = "This endpoint is used to update a presentation")
+            description = "This endpoint is used to update a presentation",
+            tags = {"Grammar Rule Module - Presentation"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Presentation updated successfully",
                     content = @Content(
