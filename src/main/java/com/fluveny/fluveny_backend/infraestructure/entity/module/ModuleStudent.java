@@ -1,11 +1,12 @@
 package com.fluveny.fluveny_backend.infraestructure.entity.module;
 
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "fl_moduleStudent")
 @Getter
@@ -15,7 +16,9 @@ import org.springframework.data.mongodb.core.mapping.Document;
 public class ModuleStudent {
 
     @Id
-    private ModuleStudentId id;
+    private String id;
+    private String moduleId;
+    private String studentId;
     private Boolean isVisible;
     private Boolean isFavorite;
     private Float progress;

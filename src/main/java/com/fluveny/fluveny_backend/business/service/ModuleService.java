@@ -1,12 +1,31 @@
 package com.fluveny.fluveny_backend.business.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
 import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.LinkStudentToModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleOverviewDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleOverviewMapper;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.*;
+import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
@@ -19,14 +38,7 @@ import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import com.fluveny.fluveny_backend.infraestructure.repository.UserRepository;
 
 @Service
 public class ModuleService implements IntroductionService {
@@ -55,6 +67,9 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private ModuleSearchStudentMapper moduleSearchStudentMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
     public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
 
         Page<ModuleEntity> modulesPage = moduleRepository.findAll(
@@ -65,7 +80,7 @@ public class ModuleService implements IntroductionService {
                 .findByIdStudentUserName(userEntity.getId());
 
         Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream()
-                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), Function.identity()));
+                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getModuleId(), Function.identity()));
 
         return modulesPage.map(module ->
         {
@@ -426,6 +441,43 @@ public class ModuleService implements IntroductionService {
 
         moduleFind.get().getFinalChallenge().add(exerciseEntity.getId());
         this.updateModule(moduleFind.get(), id);
+
+    }
+
+    public ModuleEntity linkModuleToStudent(LinkStudentToModuleRequestDTO linkStudentToModuleRequestDTO) {
+
+        Optional<ModuleEntity> startedModule = moduleRepository.findById(linkStudentToModuleRequestDTO.getModuleId());
+
+        if(startedModule.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        ModuleEntity moduleEntity = startedModule.get();
+
+        Optional<UserEntity> student = userRepository.findById(linkStudentToModuleRequestDTO.getStudentId());
+
+        if(student.isEmpty()){
+            throw new BusinessException("A student with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        UserEntity studentEntity = student.get();
+
+        Optional<ModuleStudent> existingLink = moduleStudentRepository.findLinkModuleStudent(studentEntity.getId(), moduleEntity.getId());
+
+        if (existingLink.isPresent()) {
+            throw new BusinessException("This student is already linked to this module", HttpStatus.BAD_REQUEST);
+        }
+
+        ModuleStudent moduleStudent = new ModuleStudent();
+        moduleStudent.setStudentId(studentEntity.getId());
+        moduleStudent.setModuleId(moduleEntity.getId());
+        moduleStudent.setIsVisible(true);
+        moduleStudent.setIsFavorite(false);
+        moduleStudent.setProgress(0f);
+
+        moduleStudentRepository.save(moduleStudent);
+
+        return moduleEntity;
 
     }
 
