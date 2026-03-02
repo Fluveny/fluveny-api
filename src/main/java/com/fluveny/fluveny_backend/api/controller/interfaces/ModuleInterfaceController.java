@@ -119,7 +119,8 @@ public interface ModuleInterfaceController {
     @PostMapping
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
-            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO);
+            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO,
+            Authentication authentication);
 
     @Operation(summary = "Update a module by ID",
             description = "This endpoint is used to update a module by ID",
@@ -160,7 +161,8 @@ public interface ModuleInterfaceController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = ModuleRequestDTO.class))
             )
-            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO);
+            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO,
+            Authentication authentication);
 
 
     @Operation(summary = "Get all modules",

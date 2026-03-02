@@ -114,8 +114,13 @@ public class ModuleController implements IntroductionController, ModuleInterface
 
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
-            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
-        ModuleEntity module = moduleService.createModule(moduleMapper.toEntity(moduleRequestDTO));
+            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO,
+            Authentication authentication) {
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+
+        ModuleEntity module = moduleService.createModule(moduleMapper.toEntity(moduleRequestDTO, username));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created successfully", moduleMapper.toDTO(module)));
     }
 
@@ -128,8 +133,13 @@ public class ModuleController implements IntroductionController, ModuleInterface
                     required = true,
                     content = @Content(schema = @Schema(implementation = ModuleRequestDTO.class))
             )
-            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO){
-        ModuleEntity module = moduleService.updateModule(moduleMapper.toEntity(moduleRequestDTO), id);
+            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO,
+            Authentication authentication) {
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+
+        ModuleEntity module = moduleService.updateModule(moduleMapper.toEntity(moduleRequestDTO, username), id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
     }
 
