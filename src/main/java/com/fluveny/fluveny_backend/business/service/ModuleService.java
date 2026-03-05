@@ -24,6 +24,7 @@ import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -189,6 +190,7 @@ public class ModuleService implements IntroductionService {
         }
 
         moduleEntity.setIntroduction(existing.get().getIntroduction());
+        this.updateLastModified(moduleEntity.getId());
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
         if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
@@ -307,6 +309,7 @@ public class ModuleService implements IntroductionService {
         }
 
         existing.get().setIntroduction(textblockEntity);
+        this.updateLastModified(existing.get().getId());
         moduleRepository.save(existing.get());
 
         return textblockEntity;
@@ -326,6 +329,7 @@ public class ModuleService implements IntroductionService {
 
         textblockEntity.setId(existing.get().getIntroduction().getId());
         existing.get().setIntroduction(textblockEntity);
+        this.updateLastModified(existing.get().getId());
         moduleRepository.save(existing.get());
 
         return textblockEntity;
@@ -344,6 +348,7 @@ public class ModuleService implements IntroductionService {
         }
 
         textBlockRepository.deleteById(existing.get().getIntroduction().getId());
+        this.updateLastModified(existing.get().getId());
         existing.get().setIntroduction(null);
         moduleRepository.save(existing.get());
     }
@@ -387,6 +392,7 @@ public class ModuleService implements IntroductionService {
         }
 
         moduleFind.get().setFinalChallenge(finalChallengeRequestDTO.getExerciseList());
+        this.updateLastModified(moduleFind.get().getId());
         this.updateModule(moduleFind.get(), moduleId);
 
         return finalChallengeRequestDTO.getExerciseList();
@@ -423,9 +429,22 @@ public class ModuleService implements IntroductionService {
         if(moduleFind.isEmpty()){
             throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
         }
-
+        this.updateLastModified(moduleFind.get().getId());
         moduleFind.get().getFinalChallenge().add(exerciseEntity.getId());
         this.updateModule(moduleFind.get(), id);
+
+    }
+
+    public void updateLastModified(String moduleId){
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        moduleFind.get().setLastModified(LocalDateTime.now());
+        moduleRepository.save(moduleFind.get());
 
     }
 

@@ -10,13 +10,16 @@ import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseConst
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 /**
@@ -29,6 +32,27 @@ public class SaveContentManager {
 
     @Autowired
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
+
+    @Autowired
+    private ModuleRepository moduleRepository;
+
+    public void updateLastModified(String grammarRuleModuleId){
+        Optional <GrammarRuleModuleEntity> grammarRuleModuleEntity = grammarRuleModuleRepository.findById(grammarRuleModuleId);
+
+        if(grammarRuleModuleEntity.isEmpty()){
+            throw new BusinessException("A Grammar Rule Module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(grammarRuleModuleEntity.get().getModuleId());
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        moduleFind.get().setLastModified(LocalDateTime.now());
+        moduleRepository.save(moduleFind.get());
+
+    }
 
     public void presentationExistInGrammarRuleModule(String idPresentation, String idGrammarRuleModule){
 

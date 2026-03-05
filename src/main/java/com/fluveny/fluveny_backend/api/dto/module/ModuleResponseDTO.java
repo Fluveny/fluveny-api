@@ -3,11 +3,13 @@ package com.fluveny.fluveny_backend.api.dto.module;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
+import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Setter
@@ -23,4 +25,7 @@ public class ModuleResponseDTO {
     private List<GrammarRuleEntity> grammarRules;
     private List<GrammarRuleModuleEntity> grammarRulesModule;
     private List<String> finalChallenge;
+    private String authorUsername;
+    private LocalDateTime lastModified;
+    private ModuleStatus status;
 }
