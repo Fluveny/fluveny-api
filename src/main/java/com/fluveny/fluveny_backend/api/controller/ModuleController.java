@@ -62,8 +62,8 @@ public class ModuleController implements IntroductionController, ModuleInterface
     private final UserService userService;
 
     public ResponseEntity<ApiResponseFormat<List<ModuleResponseDTO>>> getAllDraftsByAuthor (
-            @RequestParam Integer quantity,
-            @RequestParam Boolean sortedByDate,
+            @RequestParam(required = false) Integer quantity,
+            @RequestParam(required = false) Boolean sortedByDate,
             Authentication authentication
     ){
 
