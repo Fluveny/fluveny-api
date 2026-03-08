@@ -36,27 +36,6 @@ Para rodar, certifique-se de ter, em sua máquina:
 - **Maven** 
 - **Docker-Compose**
 
-### Execução
-Para executar, basta utilizar um dos comandos, na pasta raiz, de acordo com seu sistema operacional: 
-
-- Linux
-
-Execute o seguinte comando no terminal, na raiz do projeto:
-
-```bash
-./run.sh
-
-```
-
-- Windows
-
-Execute o seguinte comando no Poweshell, na raiz do projeto:
-```
-./run.ps1
-```
-
-Ambos os comandos irão buildar o jar com maven, subir os conteineres e iniciar a aplicação.
-
 ## Ambiente de Desenvolvimento
 O Ambiente de Desenvolvimento destina-se a quem deseja rodar a aplicação para poder realizar modificações ou desenvolvimento. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
 
