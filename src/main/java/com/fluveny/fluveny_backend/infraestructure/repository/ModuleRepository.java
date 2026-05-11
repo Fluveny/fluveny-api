@@ -11,6 +11,7 @@ import java.util.Optional;
 
 public interface ModuleRepository extends MongoRepository<ModuleEntity, String> {
     Optional<ModuleEntity> findByTitle(String title);
+    List<ModuleEntity> findByAuthorUsername(String authorUsername);
     @Query("{ " +
             "'title':          ?#{ [0] == null || [0].isEmpty() ? { $exists: true } : { $regex: '.*' + [0] + '.*', $options: 'i' } }, " +
             "'level.id':       ?#{ [1] == null || [1].isEmpty() ? { $exists: true } : { $in: [1] } }, " +

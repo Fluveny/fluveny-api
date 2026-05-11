@@ -107,7 +107,7 @@ class ModuleControllerTest {
         ModuleEntity moduleEntity = new ModuleEntity();
 
         when(moduleMapper.toDTO(moduleEntity)).thenReturn(responseDTO);
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), "username")).thenReturn(moduleEntity);
         when(moduleService.createModule(moduleEntity)).thenReturn(moduleEntity);
 
         mockMvc.perform(post("/api/v1/modules")
@@ -119,7 +119,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data.title").value("Test - The day in the office"))
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleMapper, times(1)).toDTO(any());
         verify(moduleService, times(1)).createModule(any());
     }
@@ -140,7 +140,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(0)).toEntity(any());
+        verify(moduleMapper, times(0)).toEntity(any(), any());
         verify(moduleService, times(0)).createModule(any());
     }
 
@@ -152,7 +152,7 @@ class ModuleControllerTest {
         restartRequestDTO();
         requestDTO.setId_grammarRules(Arrays.asList("1234", rule2.getId()));
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenThrow(new BusinessException("Grammar rule not found: 1234", HttpStatus.NOT_FOUND));
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenThrow(new BusinessException("Grammar rule not found: 1234", HttpStatus.NOT_FOUND));
 
         mockMvc.perform(post("/api/v1/modules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -163,7 +163,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
     }
 
     @Test
@@ -173,7 +173,7 @@ class ModuleControllerTest {
         restartRequestDTO();
         requestDTO.setId_level("1234");
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenThrow(new BusinessException("Level not found: 1234", HttpStatus.NOT_FOUND));
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenThrow(new BusinessException("Level not found: 1234", HttpStatus.NOT_FOUND));
 
         mockMvc.perform(post("/api/v1/modules")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -184,7 +184,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
     }
 
     @Test
@@ -196,7 +196,7 @@ class ModuleControllerTest {
 
         ModuleEntity moduleEntity = new ModuleEntity();
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenReturn(moduleEntity);
         when(moduleService.createModule(moduleEntity)).thenThrow(new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST));
 
         mockMvc.perform(post("/api/v1/modules")
@@ -208,7 +208,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleService, times(1)).createModule(any());
     }
 
@@ -220,7 +220,7 @@ class ModuleControllerTest {
 
         ModuleEntity moduleEntity = new ModuleEntity();
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenReturn(moduleEntity);
         when(moduleService.createModule(moduleEntity)).thenThrow(new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT));
 
         mockMvc.perform(post("/api/v1/modules")
@@ -232,7 +232,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleService, times(1)).createModule(any());
     }
 
@@ -252,7 +252,7 @@ class ModuleControllerTest {
         moduleEntity.setId("moduleTest");
 
         when(moduleMapper.toDTO(moduleEntity)).thenReturn(responseDTO);
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenReturn(moduleEntity);
         when(moduleService.updateModule(moduleEntity, moduleEntity.getId())).thenReturn(moduleEntity);
 
         mockMvc.perform(put("/api/v1/modules/{id}", moduleEntity.getId())
@@ -264,7 +264,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data.title").value("Test - The day in the office"))
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleMapper, times(1)).toDTO(any());
         verify(moduleService, times(1)).updateModule(any(), any());
     }
@@ -278,7 +278,7 @@ class ModuleControllerTest {
         ModuleEntity moduleEntity = new ModuleEntity();
         moduleEntity.setId("moduleTest");
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenReturn(moduleEntity);
         when(moduleService.updateModule(moduleEntity, moduleEntity.getId())).thenThrow(new BusinessException("Module with this id not found", HttpStatus.NOT_FOUND));
 
         mockMvc.perform(put("/api/v1/modules/{id}", moduleEntity.getId())
@@ -290,7 +290,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleService, times(1)).updateModule(any(), any());
 
     }
@@ -311,7 +311,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(0)).toEntity(any());
+        verify(moduleMapper, times(0)).toEntity(any(), any());
         verify(moduleService, times(0)).updateModule(any(), any());
     }
 
@@ -322,7 +322,7 @@ class ModuleControllerTest {
         restartRequestDTO();
         requestDTO.setId_grammarRules(Arrays.asList("1234", rule2.getId()));
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenThrow(new BusinessException("Grammar rule not found: 1234", HttpStatus.NOT_FOUND));
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenThrow(new BusinessException("Grammar rule not found: 1234", HttpStatus.NOT_FOUND));
 
         mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -333,7 +333,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
     }
 
     @Test
@@ -343,7 +343,7 @@ class ModuleControllerTest {
         restartRequestDTO();
         requestDTO.setId_level("1234");
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenThrow(new BusinessException("Level not found: 1234", HttpStatus.NOT_FOUND));
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenThrow(new BusinessException("Level not found: 1234", HttpStatus.NOT_FOUND));
 
         mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -354,7 +354,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
     }
 
     @Test
@@ -366,7 +366,7 @@ class ModuleControllerTest {
 
         ModuleEntity moduleEntity = new ModuleEntity();
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenReturn(moduleEntity);
         when(moduleService.updateModule(eq(moduleEntity), eq("moduleTest"))).thenThrow(new BusinessException("A module cannot have more than 5 grammar rules", HttpStatus.BAD_REQUEST));
 
         mockMvc.perform(put("/api/v1/modules/{id}", "moduleTest")
@@ -378,7 +378,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleService, times(1)).updateModule(any(), any());
     }
 
@@ -390,7 +390,7 @@ class ModuleControllerTest {
 
         ModuleEntity moduleEntity = new ModuleEntity();
 
-        when(moduleMapper.toEntity(any(ModuleRequestDTO.class))).thenReturn(moduleEntity);
+        when(moduleMapper.toEntity(any(ModuleRequestDTO.class), any())).thenReturn(moduleEntity);
         when(moduleService.updateModule(eq(moduleEntity), eq("moduleTest")))
                 .thenThrow(new BusinessException("Another module with this title already exists", HttpStatus.CONFLICT));
 
@@ -403,7 +403,7 @@ class ModuleControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty())
                 .andReturn();
 
-        verify(moduleMapper, times(1)).toEntity(any());
+        verify(moduleMapper, times(1)).toEntity(any(), any());
         verify(moduleService, times(1)).updateModule(any(), any());
     }
 

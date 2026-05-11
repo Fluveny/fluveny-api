@@ -61,6 +61,27 @@ public class ModuleController implements IntroductionController, ModuleInterface
     private final SearchStudentService searchStudentService;
     private final UserService userService;
 
+    public ResponseEntity<ApiResponseFormat<List<ModuleResponseDTO>>> getAllDraftsByAuthor (
+            @RequestParam(required = false) Integer quantity,
+            @RequestParam(required = false) Boolean sortedByDate,
+            Authentication authentication
+    ){
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        List<ModuleResponseDTO> modulesDTO = moduleService.getAllDraftModule(userDetails.getUsername(), quantity, sortedByDate)
+                .stream()
+                .map(moduleMapper::toDTO)
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Drafts modules found successfully", modulesDTO));
+
+    }
+
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> getAllModulesByStudent(
             @RequestParam Integer pageNumber,
             @RequestParam Integer pageSize,
@@ -114,8 +135,13 @@ public class ModuleController implements IntroductionController, ModuleInterface
 
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> createModule(
             @Parameter(description = "Object containing module data", required = true)
-            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO) {
-        ModuleEntity module = moduleService.createModule(moduleMapper.toEntity(moduleRequestDTO));
+            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO,
+            Authentication authentication) {
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+
+        ModuleEntity module = moduleService.createModule(moduleMapper.toEntity(moduleRequestDTO, username));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module created successfully", moduleMapper.toDTO(module)));
     }
 
@@ -128,8 +154,13 @@ public class ModuleController implements IntroductionController, ModuleInterface
                     required = true,
                     content = @Content(schema = @Schema(implementation = ModuleRequestDTO.class))
             )
-            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO){
-        ModuleEntity module = moduleService.updateModule(moduleMapper.toEntity(moduleRequestDTO), id);
+            @Valid @RequestBody ModuleRequestDTO moduleRequestDTO,
+            Authentication authentication) {
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String username = userDetails.getUsername();
+
+        ModuleEntity module = moduleService.updateModule(moduleMapper.toEntity(moduleRequestDTO, username), id);
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<ModuleResponseDTO>("Module updated successfully", moduleMapper.toDTO(module)));
     }
 

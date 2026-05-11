@@ -71,6 +71,7 @@ public class GrammarRuleModuleService {
 
         contentManagerService.deleteAllContents(existing.get().getContentList());
         grammarRuleModuleRepository.deleteById(id);
+        contentManagerService.updateLastModified(existing.get().getModuleId());
 
         return existing.get();
     }
@@ -99,6 +100,7 @@ public class GrammarRuleModuleService {
             throw new BusinessException("There are different content types or content IDs in the grammar rule module.", HttpStatus.BAD_REQUEST);
         }
 
+        contentManagerService.updateLastModified(existing.get().getModuleId());
         return grammarRuleModuleRepository.save(grammarRuleModule);
 
     }

@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,6 +35,19 @@ public class ContentManagerService {
     private GrammarRuleModuleRepository grammarRuleModuleRepository;
     @Autowired
     private ModuleRepository moduleRepository;
+
+    public void updateLastModified(String moduleId){
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        moduleFind.get().setLastModified(LocalDateTime.now());
+        moduleRepository.save(moduleFind.get());
+
+    }
 
     public ResolvedContent getContentById (ContentEntity contentEntity) {
         if (contentEntity.getType() == ContentType.PRESENTATION) {

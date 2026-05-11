@@ -37,25 +37,10 @@ Para rodar, certifique-se de ter, em sua máquina:
 - **Docker-Compose**
 
 ### Execução
-Para executar, basta utilizar um dos comandos, na pasta raiz, de acordo com seu sistema operacional: 
-
-- Linux
-
-Execute o seguinte comando no terminal, na raiz do projeto:
-
-```bash
-./run.sh
-
+Para executar, é necessário que você suba o conteinere do docker-compose-prod, com o seguinte comando:
 ```
-
-- Windows
-
-Execute o seguinte comando no Poweshell, na raiz do projeto:
+docker-compose -f docker-compose-prod.yml up -d
 ```
-./run.ps1
-```
-
-Ambos os comandos irão buildar o jar com maven, subir os conteineres e iniciar a aplicação.
 
 ## Ambiente de Desenvolvimento
 O Ambiente de Desenvolvimento destina-se a quem deseja rodar a aplicação para poder realizar modificações ou desenvolvimento. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
@@ -69,26 +54,9 @@ Para rodar, certifique-se de ter, em sua máquina:
 ### Execução
 Para executar, é necessário que você suba o conteinere do docker-compose.dev, com o seguinte comando:
 ```
-docker-compose -f docker-compose.dev.yml up -d
+docker-compose -f docker-compose-dev.yml up -d
 ```
 Após isso, basta mudar sua variável de perfil do intelliJ para **dev** e rodar a aplicação normalmente.
-
-## Ambiente de Testes
-
-O Ambiente de Testes destina-se a quem deseja rodar a aplicação para poder realizar os Testes e os Modificar. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
-
-### Dependências
-Para rodar, certifique-se de ter, em sua máquina:
-- **JDK 21** ou superior
-- **IntelliJ IDEA**
-- **Docker-Compose**
-
-### Execução
-Para executar, é necessário que você suba o conteinere do docker-compose.dev, com o seguinte comando:
-```
-docker-compose -f docker-compose.test.yml up -d
-```
-Após isso, basta mudar sua variável de perfil do intelliJ para **test** e rodar a aplicação normalmente.
 
 ## Documentação do projeto
 
