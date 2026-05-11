@@ -61,6 +61,27 @@ public class ModuleController implements IntroductionController, ModuleInterface
     private final SearchStudentService searchStudentService;
     private final UserService userService;
 
+    public ResponseEntity<ApiResponseFormat<List<ModuleResponseDTO>>> getAllDraftsByAuthor (
+            @RequestParam(required = false) Integer quantity,
+            @RequestParam(required = false) Boolean sortedByDate,
+            Authentication authentication
+    ){
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+
+        List<ModuleResponseDTO> modulesDTO = moduleService.getAllDraftModule(userDetails.getUsername(), quantity, sortedByDate)
+                .stream()
+                .map(moduleMapper::toDTO)
+                .toList();
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<List<ModuleResponseDTO>>("Drafts modules found successfully", modulesDTO));
+
+    }
+
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> getAllModulesByStudent(
             @RequestParam Integer pageNumber,
             @RequestParam Integer pageSize,

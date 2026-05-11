@@ -15,6 +15,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudentId;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
+import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
@@ -55,6 +56,31 @@ public class ModuleService implements IntroductionService {
 
     @Autowired
     private ModuleSearchStudentMapper moduleSearchStudentMapper;
+
+    public List<ModuleEntity> getAllDraftModule (String userName, Integer quantity, Boolean sortedByDate) {
+
+        List<ModuleEntity> returnedModulesByAuthor = moduleRepository.findByAuthorUsername(userName);
+
+        if (returnedModulesByAuthor.isEmpty()){
+            throw new BusinessException("Doesn't exits modules for this username", HttpStatus.OK);
+        }
+
+        List<ModuleEntity> modulesByAuthor = new ArrayList<>();
+
+        for (ModuleEntity moduleEntity : returnedModulesByAuthor){
+            if (moduleEntity.getStatus() == ModuleStatus.DRAFT){
+                modulesByAuthor.add(moduleEntity);
+            }
+        }
+
+        if (sortedByDate != null && sortedByDate){
+            modulesByAuthor.sort(Comparator.comparing(ModuleEntity::getLastModified).reversed());
+        }
+        if (quantity != null){
+            modulesByAuthor = modulesByAuthor.subList(0, Math.min(modulesByAuthor.size(), quantity));
+        }
+        return modulesByAuthor;
+    }
 
     public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
 

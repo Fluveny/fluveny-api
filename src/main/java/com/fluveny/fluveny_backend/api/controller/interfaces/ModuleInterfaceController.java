@@ -55,6 +55,36 @@ public interface ModuleInterfaceController {
             Authentication authentication
     );
 
+    @Operation(summary = "Search all draft modules by content creator",
+            description = "This endpoint is responsible for return all draft modules by content creators",
+            tags = {"Module - Student"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "Modules found successfully or no modules found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesUserResponse.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "400", description = "Bad request for application",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "500", description = "Server error",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @GetMapping("/drafts")
+    public ResponseEntity<ApiResponseFormat<List<ModuleResponseDTO>>> getAllDraftsByAuthor (
+            @RequestParam Integer quantity,
+            @RequestParam Boolean sortedByDate,
+            Authentication authentication
+    );
+
     @Operation(summary = "Search for modules by user",
             description = "This endpoint is responsible for search a modules by user",
             tags = {"Module - Student"})
