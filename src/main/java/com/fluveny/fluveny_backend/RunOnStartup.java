@@ -27,7 +27,7 @@ public class RunOnStartup implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final UserService userService;
     private final UserMapper userMapper;
-    private final Environment environment; // Injetando o Environment
+    private final Environment environment;
 
     public RunOnStartup(LevelRepository levelRepository, GrammarRuleRepository grammarRuleRepository,
                         RoleRepository roleRepository, UserService userService,
@@ -52,7 +52,6 @@ public class RunOnStartup implements CommandLineRunner {
             roleRepository.saveAll(roles);
         }
 
-        if (environment.acceptsProfiles(Profiles.of("dev"))) {
             try {
                 userService.getUserByEmail("test@fluveny-br.com");
             } catch (BusinessException e) {
@@ -68,7 +67,6 @@ public class RunOnStartup implements CommandLineRunner {
 
                 userService.createUser(user);
             }
-        }
 
 
         if (levelRepository.count() < 5) {
