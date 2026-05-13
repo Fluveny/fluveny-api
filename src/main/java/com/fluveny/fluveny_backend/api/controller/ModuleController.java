@@ -3,6 +3,7 @@ package com.fluveny.fluveny_backend.api.controller;
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.controller.interfaces.IntroductionController;
 import com.fluveny.fluveny_backend.api.controller.interfaces.ModuleInterfaceController;
+import com.fluveny.fluveny_backend.api.dto.auth.UserResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.*;
 import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionRequestDTO;
@@ -16,6 +17,7 @@ import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -229,6 +231,15 @@ public class ModuleController implements IntroductionController, ModuleInterface
 
         return ResponseEntity.status(HttpStatus.OK)
                 .body(new ApiResponseFormat<>("Module overview retrieved successfully", moduleOverview));
+    }
+
+
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> linkModuleToStudent(
+            @Parameter(description = "Object containing user data", required = true)
+            @Valid @RequestBody LinkStudentToModuleRequestDTO linkStudentToModuleRequestDTO
+    ){
+        ModuleEntity moduleEntity = moduleService.linkModuleToStudent(linkStudentToModuleRequestDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module linked to student successfully", moduleMapper.toDTO(moduleEntity)));
     }
 
 }

@@ -1,14 +1,11 @@
 package com.fluveny.fluveny_backend.business.service;
 
-import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
-import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
-import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
-import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
-import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
-import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
-import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
-import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -17,8 +14,15 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
+import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 
 @Service
 public class SearchStudentService {
@@ -50,7 +54,7 @@ public class SearchStudentService {
         // Finding user modules
         Set<String> moduleIds = moduleResponseStudentDTOList.stream().map(ModuleResponseStudentDTO::getId).collect(Collectors.toSet());
         List<ModuleStudent> moduleStudents = moduleStudentRepository
-                .findByIdStudentUserNameAndIdModuleIdIn(userEntity.getId(), moduleIds);
+                .findByStudentIdAndModuleIdIn(userEntity.getId(), moduleIds);
 
         // If I need some filter that comes from the user, filter
         if(searchModuleStudentDTO.getStatus() != null && !searchModuleStudentDTO.getStatus().isEmpty()) {
@@ -58,7 +62,7 @@ public class SearchStudentService {
         }
 
         // I put the information in the DTO regarding the user
-        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream().collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), moduleStudent -> moduleStudent));
+        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream().collect(Collectors.toMap(moduleStudent -> moduleStudent.getModuleId(), moduleStudent -> moduleStudent));
         for (ModuleResponseStudentDTO dto : moduleResponseStudentDTOList) {
             ModuleStudent correspondingModuleStudent = moduleStudentMap.get(dto.getId());
             if (correspondingModuleStudent != null) {
@@ -74,7 +78,7 @@ public class SearchStudentService {
     public List<ModuleResponseStudentDTO> filterByStudent (List<ModuleStudent> moduleStudents, SearchModuleStudentDTO searchModuleStudentDTO, List<ModuleResponseStudentDTO> moduleResponseStudentDTOList) {
 
         Set<String> studentModuleIdsBeforeFilter = moduleStudents.stream()
-                .map(s -> s.getId().getModuleId())
+                .map(s -> s.getModuleId())
                 .collect(Collectors.toSet());
 
         moduleStudents = moduleStudents.stream().filter(moduleStudent -> {
@@ -101,7 +105,7 @@ public class SearchStudentService {
         }).toList();
 
         Set<String> studentModuleIds = moduleStudents.stream()
-                .map(s -> s.getId().getModuleId())
+                .map(s -> s.getModuleId())
                 .collect(Collectors.toSet());
 
         moduleResponseStudentDTOList.removeIf(module -> {

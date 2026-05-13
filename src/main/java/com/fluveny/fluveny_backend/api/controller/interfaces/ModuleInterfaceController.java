@@ -1,13 +1,31 @@
 package com.fluveny.fluveny_backend.api.controller.interfaces;
 
+import java.util.List;
+
+import org.springframework.data.domain.Page;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
-import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.LinkStudentToModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleOverviewDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
-import com.fluveny.fluveny_backend.api.response.module.*;
+import com.fluveny.fluveny_backend.api.response.module.ModuleOverviewResponse;
+import com.fluveny.fluveny_backend.api.response.module.ModuleResponse;
+import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
+import com.fluveny.fluveny_backend.api.response.module.ModulesUserResponse;
 import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -15,12 +33,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RequestMapping("/api/v1/modules")
 public interface ModuleInterfaceController {
@@ -319,4 +331,34 @@ public interface ModuleInterfaceController {
             @Parameter(description = "ID of the module", required = true)
             @PathVariable String id,
             Authentication authentication);
+
+
+    @Operation(summary = "Link student to module",
+            description = "This endpoint links a student to a module",
+            tags = {"Module - Student"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Module linked to student successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModuleResponseDTO.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "404", description = "Module or student not found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            ),
+            @ApiResponse(responseCode = "401", description = "Unauthorized",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ApiResponseFormat.class)
+                    )
+            )
+    })
+    @PostMapping("/link")
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> linkModuleToStudent(
+            @Parameter(description = "Object containing user data", required = true)
+            @Valid @RequestBody LinkStudentToModuleRequestDTO linkStudentToModuleRequestDTO
+    );
 }
