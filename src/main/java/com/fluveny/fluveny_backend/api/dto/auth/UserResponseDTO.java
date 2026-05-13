@@ -11,5 +11,14 @@ import lombok.Setter;
 @AllArgsConstructor
 public class UserResponseDTO {
     private String username;
+    private String name;
     private String email;
+    private String role;
+    private String avatar;
+    private String background;
+    private Integer level;
+    private Long xp;
+    private Long maxXp;
+    private Boolean soundEnabled;
+    private Boolean requiresPasswordReset;
 }

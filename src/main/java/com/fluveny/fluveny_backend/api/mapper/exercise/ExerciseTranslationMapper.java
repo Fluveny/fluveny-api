@@ -1,17 +1,10 @@
 package com.fluveny.fluveny_backend.api.mapper.exercise;
 
-import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseConstructorPhraseRequestDTO;
-import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseConstructorPhraseResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.exercise.ExerciseTranslateResponseDTO;
-import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseConstructionPhraseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 @Component
 public class ExerciseTranslationMapper {

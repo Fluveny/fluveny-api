@@ -6,8 +6,6 @@ import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseConst
 import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 @Component

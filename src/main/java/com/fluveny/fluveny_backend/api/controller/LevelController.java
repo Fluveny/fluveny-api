@@ -2,7 +2,6 @@ package com.fluveny.fluveny_backend.api.controller;
 
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.response.level.LevelsResponse;
-import com.fluveny.fluveny_backend.api.response.module.ModulesReponse;
 import com.fluveny.fluveny_backend.business.service.LevelService;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 

@@ -17,6 +17,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -57,6 +58,11 @@ public class AuthorizationService {
         }
 
         UserEntity user = userOpt.get();
+        
+        if (user.getIsActive() != null && !user.getIsActive()) {
+            throw new BusinessException("Conta desativada", HttpStatus.FORBIDDEN);
+        }
+
         String canonicalUsername = user.getUsername();
 
         Optional<LoginAttemptEntity> attemptOpt = loginAttemptRepository.findByUsernameAndIpAddress(canonicalUsername, ipAddress);
@@ -77,9 +83,25 @@ public class AuthorizationService {
         loginAttempt.resetAttempts();
         loginAttemptRepository.save(loginAttempt);
 
+        user.setLastLoginAt(LocalDateTime.now());
+        userRepository.save(user);
+
         String token = jwtUtil.generateToken(user);
 
-        return new LoginResultDTO(user.getUsername(), user.getEmail(), user.getRole().getName(), token);
+        return new LoginResultDTO(
+                user.getUsername(), 
+                user.getName(),
+                user.getEmail(), 
+                user.getRole().getName(), 
+                user.getAvatar(), 
+                user.getBackground(), 
+                user.getLevel(), 
+                user.getXp(), 
+                user.getMaxXp(), 
+                user.getSoundEnabled(), 
+                user.getRequiresPasswordReset(),
+                token
+        );
     }
 
     /**

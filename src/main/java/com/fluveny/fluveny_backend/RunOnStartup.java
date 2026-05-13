@@ -11,7 +11,6 @@ import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.repository.GrammarRuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.LevelRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.RoleRepository;
-import org.springframework.core.env.Profiles;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
@@ -62,6 +61,22 @@ public class RunOnStartup implements CommandLineRunner {
 
                 UserEntity user = userMapper.toEntity(userRequestDTO);
                 Optional<RoleEntity> role = roleRepository.findByName("CONTENT_CREATOR");
+
+                role.ifPresent(user::setRole);
+
+                userService.createUser(user);
+            }
+
+            try {
+                userService.getUserByEmail("testadmin@fluveny-br.com");
+            } catch (BusinessException e) {
+                UserRequestDTO userRequestDTO = new UserRequestDTO();
+                userRequestDTO.setUsername("admin_tester");
+                userRequestDTO.setPassword("testPassword1234_");
+                userRequestDTO.setEmail("testadmin@fluveny-br.com");
+
+                UserEntity user = userMapper.toEntity(userRequestDTO);
+                Optional<RoleEntity> role = roleRepository.findByName("ADMIN");
 
                 role.ifPresent(user::setRole);
 

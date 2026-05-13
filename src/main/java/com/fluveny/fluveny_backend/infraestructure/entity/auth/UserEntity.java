@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Document(collection = "fl_user")
 @Getter
@@ -25,7 +26,17 @@ public class UserEntity implements UserDetails {
     private String username;
     private String password;
     private String email;
+    private String name;
+    private Boolean requiresPasswordReset = false;
+    private Boolean isActive = true;
+    private LocalDateTime lastLoginAt;
     private RoleEntity role;
+    private String avatar;
+    private String background;
+    private Integer level;
+    private Long xp;
+    private Long maxXp;
+    private Boolean soundEnabled;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -22,6 +22,7 @@ import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestD
 import com.fluveny.fluveny_backend.api.dto.module.LinkStudentToModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleOverviewDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleOverviewMapper;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
@@ -32,7 +33,6 @@ import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRul
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
-import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudentId;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
 import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
@@ -40,15 +40,9 @@ import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 @Service
 public class ModuleService implements IntroductionService {
@@ -111,11 +105,10 @@ public class ModuleService implements IntroductionService {
                 PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "level.title"))
         );
 
-        List<ModuleStudent> moduleStudents = moduleStudentRepository
-                .findByIdStudentUserName(userEntity.getId());
+        List<ModuleStudent> moduleStudents = moduleStudentRepository.findByStudentId(userEntity.getId());
 
         Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream()
-                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getModuleId(), Function.identity()));
+                .collect(Collectors.toMap(ModuleStudent::getModuleId, Function.identity()));
 
         return modulesPage.map(module ->
         {
@@ -129,6 +122,51 @@ public class ModuleService implements IntroductionService {
             return dto;
         }
         );
+    }
+
+    public ModuleEntity publishModule(String id, String username) {
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        ModuleEntity module = moduleFind.get();
+
+        if (module.getAuthorUsername() == null || !module.getAuthorUsername().equals(username)) {
+            throw new BusinessException("You don't have permission to publish this module", HttpStatus.FORBIDDEN);
+        }
+
+        if (module.getIntroduction() == null) {
+            throw new BusinessException("O módulo precisa ter uma introdução para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (module.getGrammarRules() == null || module.getGrammarRules().isEmpty()) {
+            throw new BusinessException("O módulo precisa ter pelo menos uma regra de gramática para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (module.getFinalChallenge() == null || module.getFinalChallenge().isEmpty()) {
+            throw new BusinessException("O módulo precisa ter pelo menos um exercício no desafio final para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        module.setStatus(ModuleStatus.PUBLISHED);
+        module.setLastModified(LocalDateTime.now());
+        return moduleRepository.save(module);
+    }
+
+    public Page<ModuleResponseStudentDTO> searchModulesByAuthorAndStatus(String authorUsername, ModuleStatus status, SearchModuleStudentDTO searchModuleStudentDTO, Integer pageSize, Integer pageNumber) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "LastModified"));
+
+        Page<ModuleEntity> moduleEntities = moduleRepository.searchByAuthorAndStatusWithFilters(
+                authorUsername,
+                status,
+                searchModuleStudentDTO.getModuleName(),
+                searchModuleStudentDTO.getLevelId(),
+                searchModuleStudentDTO.getGrammarRulesId(),
+                pageable
+        );
+
+        return moduleEntities.map(moduleSearchStudentMapper::toDTO);
     }
 
     /**
@@ -408,15 +446,14 @@ public class ModuleService implements IntroductionService {
         }
     }
 
-    public ModuleOverviewDTO getModuleOverview(String moduleId, String studentUsername) {
+public ModuleOverviewDTO getModuleOverview(String moduleId, String studentUsername) {
         Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
 
         if(moduleFind.isEmpty()){
             throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
         }
 
-        ModuleStudentId moduleStudentId = new ModuleStudentId(moduleId, studentUsername);
-        Optional<ModuleStudent> moduleStudent = moduleStudentRepository.findById(moduleStudentId);
+        Optional<ModuleStudent> moduleStudent = moduleStudentRepository.findLinkModuleStudent(studentUsername, moduleId);
 
         return moduleOverviewMapper.toDTO(moduleFind.get(), moduleStudent.orElse(null));
     }

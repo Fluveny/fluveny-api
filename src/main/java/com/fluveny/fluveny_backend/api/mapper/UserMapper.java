@@ -33,7 +33,18 @@ public class UserMapper {
     public UserResponseDTO toDTO(UserEntity userEntity) {
         UserResponseDTO userDTO = new UserResponseDTO();
         userDTO.setUsername(userEntity.getUsername());
+        userDTO.setName(userEntity.getName());
         userDTO.setEmail(userEntity.getEmail());
+        if(userEntity.getRole() != null) {
+            userDTO.setRole(userEntity.getRole().getName());
+        }
+        userDTO.setAvatar(userEntity.getAvatar());
+        userDTO.setBackground(userEntity.getBackground());
+        userDTO.setLevel(userEntity.getLevel());
+        userDTO.setXp(userEntity.getXp());
+        userDTO.setMaxXp(userEntity.getMaxXp());
+        userDTO.setSoundEnabled(userEntity.getSoundEnabled());
+        userDTO.setRequiresPasswordReset(userEntity.getRequiresPasswordReset());
         return userDTO;
     }
 }

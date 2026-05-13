@@ -135,6 +135,65 @@ public interface ModuleInterfaceController {
             Authentication authentication
     );
 
+    @Operation(summary = "Search for drafts by author",
+            description = "This endpoint is responsible for searching a content creator's draft modules",
+            tags = {"Module - Author"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Modules found successfully or no modules found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesUserResponse.class)
+                    )
+            )
+    })
+    @GetMapping("/author/drafts/search")
+    public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchDraftsByAuthor(
+            @RequestParam(required = false) String moduleName,
+            @RequestParam(required = false) List<String> grammarRulesId,
+            @RequestParam(required = false) List<String> levelsId,
+            @RequestParam Integer pageNumber,
+            @RequestParam Integer pageSize,
+            Authentication authentication
+    );
+
+    @Operation(summary = "Search for published modules by author",
+            description = "This endpoint is responsible for searching a content creator's published modules",
+            tags = {"Module - Author"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Modules found successfully or no modules found",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModulesUserResponse.class)
+                    )
+            )
+    })
+    @GetMapping("/author/published/search")
+    public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchPublishedByAuthor(
+            @RequestParam(required = false) String moduleName,
+            @RequestParam(required = false) List<String> grammarRulesId,
+            @RequestParam(required = false) List<String> levelsId,
+            @RequestParam Integer pageNumber,
+            @RequestParam Integer pageSize,
+            Authentication authentication
+    );
+
+    @Operation(summary = "Publish a module",
+            description = "This endpoint transforms a draft module to published",
+            tags = {"Module - Author"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Module published successfully",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ModuleResponse.class)
+                    )
+            )
+    })
+    @org.springframework.web.bind.annotation.PatchMapping("/{id}/publish")
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> publishModule(
+            @PathVariable String id,
+            Authentication authentication
+    );
+
     @Operation(summary = "Creating a new module",
             description = "This endpoint is responsible for creating a new module",
             tags = {"Module"})
@@ -303,7 +362,7 @@ public interface ModuleInterfaceController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> deleteModuleById(@Parameter(description = "ID of the module to be requested", required = true) @PathVariable String id);
 
-    @Operation(summary = "Get module overview for student",
+@Operation(summary = "Get module overview for student",
             description = "This endpoint returns complete module overview information for the student page",
             tags = {"Module - Student"})
     @ApiResponses(value = {

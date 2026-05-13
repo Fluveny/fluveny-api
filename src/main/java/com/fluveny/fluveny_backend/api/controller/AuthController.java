@@ -6,6 +6,8 @@ import com.fluveny.fluveny_backend.api.dto.auth.LoginResponseDTO;
 import com.fluveny.fluveny_backend.api.dto.auth.LoginResultDTO;
 import com.fluveny.fluveny_backend.business.service.AuthorizationService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -89,7 +91,21 @@ public class AuthController {
                 .map(r -> r.replace("ROLE_", ""))
                 .orElse("USER");
 
-        LoginResponseDTO response = new LoginResponseDTO(userDetails.getUsername(), email, role);
+        UserEntity userEntity = (UserEntity) userDetails;
+        
+        LoginResponseDTO response = new LoginResponseDTO(
+                userEntity.getUsername(), 
+                userEntity.getName(),
+                email, 
+                role,
+                userEntity.getAvatar(),
+                userEntity.getBackground(),
+                userEntity.getLevel(),
+                userEntity.getXp(),
+                userEntity.getMaxXp(),
+                userEntity.getSoundEnabled(),
+                userEntity.getRequiresPasswordReset()
+        );
 
         return ResponseEntity.ok(new ApiResponseFormat<>("User authenticated", response));
     }

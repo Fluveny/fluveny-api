@@ -1,8 +1,5 @@
 package com.fluveny.fluveny_backend.api.dto.exercise;
 
-import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

@@ -11,8 +11,16 @@ import lombok.Setter;
 @AllArgsConstructor
 public class LoginResultDTO {
     private String username;
+    private String name;
     private String email;
     private String role;
+    private String avatar;
+    private String background;
+    private Integer level;
+    private Long xp;
+    private Long maxXp;
+    private Boolean soundEnabled;
+    private Boolean requiresPasswordReset;
     private String token;
 }
 

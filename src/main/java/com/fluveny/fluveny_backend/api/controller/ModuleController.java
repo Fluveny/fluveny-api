@@ -3,28 +3,21 @@ package com.fluveny.fluveny_backend.api.controller;
 import com.fluveny.fluveny_backend.api.ApiResponseFormat;
 import com.fluveny.fluveny_backend.api.controller.interfaces.IntroductionController;
 import com.fluveny.fluveny_backend.api.controller.interfaces.ModuleInterfaceController;
-import com.fluveny.fluveny_backend.api.dto.auth.UserResponseDTO;
-import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.*;
 import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.introduction.IntroductionResponseDTO;
 import com.fluveny.fluveny_backend.api.mapper.*;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleMapper;
-import com.fluveny.fluveny_backend.api.response.module.*;
 import com.fluveny.fluveny_backend.business.service.ModuleService;
 import com.fluveny.fluveny_backend.business.service.SearchStudentService;
 import com.fluveny.fluveny_backend.business.service.UserService;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -217,7 +210,7 @@ public class ModuleController implements IntroductionController, ModuleInterface
         return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Introduction was deleted", null));
     }
 
-    public ResponseEntity<ApiResponseFormat<ModuleOverviewDTO>> getModuleOverview(
+public ResponseEntity<ApiResponseFormat<ModuleOverviewDTO>> getModuleOverview(
             @Parameter(description = "ID of the module", required = true)
             @PathVariable String id,
             Authentication authentication) {
@@ -240,6 +233,58 @@ public class ModuleController implements IntroductionController, ModuleInterface
     ){
         ModuleEntity moduleEntity = moduleService.linkModuleToStudent(linkStudentToModuleRequestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<ModuleResponseDTO>("Module linked to student successfully", moduleMapper.toDTO(moduleEntity)));
+    }
+
+    public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchDraftsByAuthor(
+            @RequestParam(required = false) String moduleName,
+            @RequestParam(required = false) List<String> grammarRulesId,
+            @RequestParam(required = false) List<String> levelsId,
+            @RequestParam Integer pageNumber,
+            @RequestParam Integer pageSize,
+            Authentication authentication
+    ){
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        SearchModuleStudentDTO filters = new SearchModuleStudentDTO(moduleName, grammarRulesId, levelsId, null);
+        Page<ModuleResponseStudentDTO> modules = moduleService.searchModulesByAuthorAndStatus(userDetails.getUsername(), com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus.DRAFT, filters, pageSize, pageNumber);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Draft modules found successfully", modules));
+    }
+
+    public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> searchPublishedByAuthor(
+            @RequestParam(required = false) String moduleName,
+            @RequestParam(required = false) List<String> grammarRulesId,
+            @RequestParam(required = false) List<String> levelsId,
+            @RequestParam Integer pageNumber,
+            @RequestParam Integer pageSize,
+            Authentication authentication
+    ){
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        SearchModuleStudentDTO filters = new SearchModuleStudentDTO(moduleName, grammarRulesId, levelsId, null);
+        Page<ModuleResponseStudentDTO> modules = moduleService.searchModulesByAuthorAndStatus(userDetails.getUsername(), com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus.PUBLISHED, filters, pageSize, pageNumber);
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Published modules found successfully", modules));
+    }
+
+    public ResponseEntity<ApiResponseFormat<ModuleResponseDTO>> publishModule(
+            @PathVariable String id,
+            Authentication authentication
+    ){
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        ModuleEntity module = moduleService.publishModule(id, userDetails.getUsername());
+
+        return ResponseEntity.status(HttpStatus.OK).body(new ApiResponseFormat<>("Module published successfully", moduleMapper.toDTO(module)));
     }
 
 }

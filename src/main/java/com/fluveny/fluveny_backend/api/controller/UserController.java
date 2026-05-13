@@ -25,8 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fluveny.fluveny_backend.api.dto.module.LinkStudentToModuleRequestDTO;
-
 @RestController
 @RequestMapping("/api/v1/users")
 public class UserController {
@@ -68,5 +66,44 @@ public class UserController {
     ){
         UserEntity userEntity = userService.createUser(userMapper.toEntity(userRequestDTO));
         return ResponseEntity.status(HttpStatus.CREATED).body(new ApiResponseFormat<UserResponseDTO>("User created successfully", userMapper.toDTO(userEntity)));
+    }
+
+    @Operation(summary = "Update user profile",
+            description = "This endpoint is responsible for updating the user profile (username, avatar, background)",
+            tags = {"User"})
+    @org.springframework.web.bind.annotation.PutMapping("/profile")
+    public ResponseEntity<ApiResponseFormat<UserResponseDTO>> updateProfile(
+            @Valid @RequestBody com.fluveny.fluveny_backend.api.dto.auth.UpdateProfileRequestDTO updateProfileDTO,
+            org.springframework.security.core.Authentication authentication
+    ){
+        UserEntity currentUser = (UserEntity) authentication.getPrincipal();
+        UserEntity updatedUser = userService.updateUserProfile(currentUser.getId(), updateProfileDTO);
+        return ResponseEntity.ok(new ApiResponseFormat<UserResponseDTO>("Profile updated successfully", userMapper.toDTO(updatedUser)));
+    }
+
+    @Operation(summary = "Update user settings",
+            description = "This endpoint is responsible for updating the user settings (e.g. soundEnabled)",
+            tags = {"User"})
+    @org.springframework.web.bind.annotation.PutMapping("/settings")
+    public ResponseEntity<ApiResponseFormat<UserResponseDTO>> updateSettings(
+            @Valid @RequestBody com.fluveny.fluveny_backend.api.dto.auth.UpdateSettingsRequestDTO updateSettingsDTO,
+            org.springframework.security.core.Authentication authentication
+    ){
+        UserEntity currentUser = (UserEntity) authentication.getPrincipal();
+        UserEntity updatedUser = userService.updateUserSettings(currentUser.getId(), updateSettingsDTO);
+        return ResponseEntity.ok(new ApiResponseFormat<UserResponseDTO>("Settings updated successfully", userMapper.toDTO(updatedUser)));
+    }
+
+    @Operation(summary = "Reset password",
+            description = "Endpoint for users to redefine their password (e.g. forced password reset on first login)",
+            tags = {"User"})
+    @org.springframework.web.bind.annotation.PutMapping("/password")
+    public ResponseEntity<ApiResponseFormat<String>> resetPassword(
+            @Valid @RequestBody com.fluveny.fluveny_backend.api.dto.auth.ResetPasswordRequestDTO resetPasswordDTO,
+            org.springframework.security.core.Authentication authentication
+    ){
+        UserEntity currentUser = (UserEntity) authentication.getPrincipal();
+        userService.resetPassword(currentUser.getId(), resetPasswordDTO.getNewPassword());
+        return ResponseEntity.ok(new ApiResponseFormat<>("Password reset successfully", null));
     }
 }
