@@ -16,6 +16,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
+import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -39,8 +42,27 @@ public class SearchStudentService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
 
-        var queryResult = moduleRepository.searchByModuleNameLevelOrGrammarRules(searchModuleStudentDTO.getModuleName(),searchModuleStudentDTO.getLevelId(),searchModuleStudentDTO.getGrammarRulesId(),pageable);
-        List<ModuleEntity> moduleEntities = queryResult.getContent();
+        Query query = new Query();
+        List<Criteria> criteriaList = new ArrayList<>();
+                if (searchModuleStudentDTO.getModuleName() != null && !searchModuleStudentDTO.getModuleName().isEmpty()) {
+                criteriaList.add(Criteria.where("title").regex(".*" + searchModuleStudentDTO.getModuleName() + ".*", "i"));
+            }
+        if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
+                List<ObjectId> levelObjectIds = searchModuleStudentDTO.getLevelId().stream().map(ObjectId::new).toList();
+                criteriaList.add(Criteria.where("level._id").in(levelObjectIds));
+            }
+        if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
+                List<ObjectId> grammarObjectIds = searchModuleStudentDTO.getGrammarRulesId().stream().map(ObjectId::new).toList();
+                criteriaList.add(Criteria.where("grammarRules._id").in(grammarObjectIds));
+            }
+        if (!criteriaList.isEmpty()) {
+                query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+            }
+                long total = mongoTemplate.count(query, ModuleEntity.class);
+        query.with(pageable);
+        List<ModuleEntity> moduleEntities = mongoTemplate.find(query, ModuleEntity.class);
+
+
         // Transforming modules into DTOS
         List<ModuleResponseStudentDTO> moduleResponseStudentDTOList = new ArrayList<>();
         for (ModuleEntity moduleEntity : moduleEntities) {
@@ -67,7 +89,7 @@ public class SearchStudentService {
             }
         }
 
-        return new PageImpl<>(moduleResponseStudentDTOList, pageable, queryResult.getTotalElements());
+        return new PageImpl<>(moduleResponseStudentDTOList, pageable, total);
 
     }
 

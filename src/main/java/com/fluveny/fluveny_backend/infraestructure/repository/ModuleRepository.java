@@ -13,8 +13,8 @@ public interface ModuleRepository extends MongoRepository<ModuleEntity, String> 
     Optional<ModuleEntity> findByTitle(String title);
     @Query("{ " +
             "'title':          ?#{ [0] == null || [0].isEmpty() ? { $exists: true } : { $regex: '.*' + [0] + '.*', $options: 'i' } }, " +
-            "'level.id':       ?#{ [1] == null || [1].isEmpty() ? { $exists: true } : { $in: [1] } }, " +
-            "'grammarRules.id':?#{ [2] == null || [2].isEmpty() ? { $exists: true } : { $all: [2] } } " +
+            "'level._id':       ?#{ [1] == null || [1].isEmpty() ? { $exists: true } : { $in: [1] } }, " +
+            "'grammarRules._id':?#{ [2] == null || [2].isEmpty() ? { $exists: true } : { $in: [2] } } " +
             "}")
     Page<ModuleEntity> searchByModuleNameLevelOrGrammarRules(String moduleName, List<String> levelIds, List<String> grammarRulesIds, Pageable pageable);
 }

@@ -95,7 +95,10 @@ public class ModuleController implements IntroductionController, ModuleInterface
             @RequestParam Integer pageSize,
             Authentication authentication
     ){
-        System.out.println();
+        System.out.println("moduleName: " + moduleName);
+        System.out.println("grammarRulesId: " + grammarRulesId);
+        System.out.println("levelsId: " + levelsId);
+        System.out.println("status: " + status);
 
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new BusinessException("No valid session found", HttpStatus.UNAUTHORIZED);
