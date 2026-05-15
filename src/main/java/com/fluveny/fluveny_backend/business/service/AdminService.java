@@ -56,7 +56,7 @@ public class AdminService {
             throw new BusinessUserException("Invalid Registration Data", userRequestErrorDTO, HttpStatus.BAD_REQUEST);
         }
 
-        String generatedPassword = generateRandomPassword(12);
+        String generatedPassword = generateRandomPassword(50);
 
         UserEntity userEntity = new UserEntity();
         userEntity.setUsername(requestDTO.getUsername());
