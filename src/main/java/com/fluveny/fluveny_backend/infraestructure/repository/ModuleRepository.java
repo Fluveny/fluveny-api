@@ -18,14 +18,6 @@ public interface ModuleRepository extends MongoRepository<ModuleEntity, String> 
             "'grammarRules._id':?#{ [2] == null || [2].isEmpty() ? { $exists: true } : { $in: [2] } } " +
             "}")
     Page<ModuleEntity> searchByModuleNameLevelOrGrammarRules(String moduleName, List<String> levelIds, List<String> grammarRulesIds, Pageable pageable);
-    @Query("{ " +
-            "'authorUsername': ?0, " +
-            "'status': ?1, " +
-            "'title':          ?#{ [2] == null || [2].isEmpty() ? { $exists: true } : { $regex: '.*' + [2] + '.*', $options: 'i' } }, " +
-            "'level.id':       ?#{ [3] == null || [3].isEmpty() ? { $exists: true } : { $in: [3] } }, " +
-            "'grammarRules.id':?#{ [4] == null || [4].isEmpty() ? { $exists: true } : { $all: [4] } } " +
-            "}")
-    Page<ModuleEntity> searchByAuthorAndStatusWithFilters(String authorUsername, com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus status, String moduleName, List<String> levelIds, List<String> grammarRulesIds, Pageable pageable);
 
     long countByAuthorUsername(String authorUsername);
 }

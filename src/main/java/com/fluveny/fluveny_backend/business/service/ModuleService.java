@@ -17,6 +17,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.bson.types.ObjectId;
+import org.springframework.data.domain.PageImpl;
 
 import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.LinkStudentToModuleRequestDTO;
@@ -49,6 +54,9 @@ public class ModuleService implements IntroductionService {
 
     @Autowired
     private ModuleRepository moduleRepository;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Autowired
     private GrammarRuleModuleService grammarRuleModuleService;
@@ -157,16 +165,35 @@ public class ModuleService implements IntroductionService {
     public Page<ModuleResponseStudentDTO> searchModulesByAuthorAndStatus(String authorUsername, ModuleStatus status, SearchModuleStudentDTO searchModuleStudentDTO, Integer pageSize, Integer pageNumber) {
         Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "LastModified"));
 
-        Page<ModuleEntity> moduleEntities = moduleRepository.searchByAuthorAndStatusWithFilters(
-                authorUsername,
-                status,
-                searchModuleStudentDTO.getModuleName(),
-                searchModuleStudentDTO.getLevelId(),
-                searchModuleStudentDTO.getGrammarRulesId(),
-                pageable
-        );
+        Query query = new Query();
+        List<Criteria> criteriaList = new ArrayList<>();
+        
+        criteriaList.add(Criteria.where("authorUsername").is(authorUsername));
+        criteriaList.add(Criteria.where("status").is(status));
 
-        return moduleEntities.map(moduleSearchStudentMapper::toDTO);
+        if (searchModuleStudentDTO.getModuleName() != null && !searchModuleStudentDTO.getModuleName().isEmpty()) {
+            criteriaList.add(Criteria.where("title").regex(".*" + searchModuleStudentDTO.getModuleName() + ".*", "i"));
+        }
+        if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
+            List<ObjectId> levelObjectIds = searchModuleStudentDTO.getLevelId().stream().map(ObjectId::new).toList();
+            criteriaList.add(Criteria.where("level._id").in(levelObjectIds));
+        }
+        if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
+            List<ObjectId> grammarObjectIds = searchModuleStudentDTO.getGrammarRulesId().stream().map(ObjectId::new).toList();
+            criteriaList.add(Criteria.where("grammarRules._id").in(grammarObjectIds));
+        }
+
+        query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+
+        long total = mongoTemplate.count(query, ModuleEntity.class);
+        query.with(pageable);
+        List<ModuleEntity> moduleEntities = mongoTemplate.find(query, ModuleEntity.class);
+
+        List<ModuleResponseStudentDTO> dtos = moduleEntities.stream()
+                .map(moduleSearchStudentMapper::toDTO)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, total);
     }
 
     /**
