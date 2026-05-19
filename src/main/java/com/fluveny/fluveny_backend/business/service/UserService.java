@@ -70,6 +70,7 @@ public class UserService {
         user.setName(dto.getName());
         user.setAvatar(dto.getAvatar());
         user.setBackground(dto.getBackground());
+        user.setRequiresProfileSetup(false);
 
         return userRepository.save(user);
     }
