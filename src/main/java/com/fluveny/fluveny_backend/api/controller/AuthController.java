@@ -104,7 +104,8 @@ public class AuthController {
                 userEntity.getXp(),
                 userEntity.getMaxXp(),
                 userEntity.getSoundEnabled(),
-                userEntity.getRequiresPasswordReset()
+                userEntity.getRequiresPasswordReset(),
+                userEntity.getRequiresProfileSetup()
         );
 
         return ResponseEntity.ok(new ApiResponseFormat<>("User authenticated", response));

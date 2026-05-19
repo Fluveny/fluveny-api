@@ -45,6 +45,7 @@ public class UserMapper {
         userDTO.setMaxXp(userEntity.getMaxXp());
         userDTO.setSoundEnabled(userEntity.getSoundEnabled());
         userDTO.setRequiresPasswordReset(userEntity.getRequiresPasswordReset());
+        userDTO.setRequiresProfileSetup(userEntity.getRequiresProfileSetup());
         return userDTO;
     }
 }

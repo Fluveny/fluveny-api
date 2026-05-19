@@ -69,6 +69,7 @@ public class AdminService {
         userEntity.setRole(role);
         
         userEntity.setRequiresPasswordReset(true);
+        userEntity.setRequiresProfileSetup(true);
 
         userRepository.save(userEntity);
 
@@ -84,7 +85,7 @@ public class AdminService {
         String upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
         String lower = "abcdefghijklmnopqrstuvwxyz";
         String digits = "0123456789";
-        String specials = "!@#$%";
+        String specials = "@$!%*?&_-";
         String allChars = upper + lower + digits + specials;
 
         StringBuilder password = new StringBuilder();

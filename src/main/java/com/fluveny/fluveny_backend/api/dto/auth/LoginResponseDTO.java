@@ -21,6 +21,7 @@ public class LoginResponseDTO {
     private Long maxXp;
     private Boolean soundEnabled;
     private Boolean requiresPasswordReset;
+    private Boolean requiresProfileSetup;
 
     /**
      * Creates a LoginResponseDTO from a LoginResultDTO.
@@ -42,7 +43,8 @@ public class LoginResponseDTO {
                 result.getXp(),
                 result.getMaxXp(),
                 result.getSoundEnabled(),
-                result.getRequiresPasswordReset()
+                result.getRequiresPasswordReset(),
+                result.getRequiresProfileSetup()
         );
     }
 }

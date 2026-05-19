@@ -21,6 +21,7 @@ public class LoginResultDTO {
     private Long maxXp;
     private Boolean soundEnabled;
     private Boolean requiresPasswordReset;
+    private Boolean requiresProfileSetup;
     private String token;
 }
 

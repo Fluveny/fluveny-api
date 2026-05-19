@@ -100,6 +100,7 @@ public class AuthorizationService {
                 user.getMaxXp(), 
                 user.getSoundEnabled(), 
                 user.getRequiresPasswordReset(),
+                user.getRequiresProfileSetup(),
                 token
         );
     }
