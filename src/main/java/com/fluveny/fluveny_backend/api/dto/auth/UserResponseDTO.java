@@ -21,4 +21,5 @@ public class UserResponseDTO {
     private Long maxXp;
     private Boolean soundEnabled;
     private Boolean requiresPasswordReset;
+    private Boolean requiresProfileSetup;
 }

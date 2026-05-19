@@ -37,6 +37,7 @@ public class UserEntity implements UserDetails {
     private Long xp;
     private Long maxXp;
     private Boolean soundEnabled;
+    private Boolean requiresProfileSetup = false;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
