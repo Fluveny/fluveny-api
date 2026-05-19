@@ -63,7 +63,6 @@ public interface ModuleInterfaceController {
     @GetMapping("/student")
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> getAllModulesByStudent(
             @RequestParam Integer pageNumber,
-            @RequestParam Integer pageSize,
             Authentication authentication
     );
 
