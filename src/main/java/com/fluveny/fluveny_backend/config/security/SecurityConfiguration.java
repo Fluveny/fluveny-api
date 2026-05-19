@@ -100,6 +100,9 @@ public class SecurityConfiguration {
                                 "/swagger-ui.html"
                         ).permitAll()
 
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/password").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/profile").authenticated()
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(securityFilter, UsernamePasswordAuthenticationFilter.class)
