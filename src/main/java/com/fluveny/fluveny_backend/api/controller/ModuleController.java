@@ -79,7 +79,6 @@ public class ModuleController implements IntroductionController, ModuleInterface
 
     public ResponseEntity<ApiResponseFormat<Page<ModuleResponseStudentDTO>>> getAllModulesByStudent(
             @RequestParam Integer pageNumber,
-            @RequestParam Integer pageSize,
             Authentication authentication
     ){
 
@@ -88,7 +87,7 @@ public class ModuleController implements IntroductionController, ModuleInterface
         }
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        Page<ModuleResponseStudentDTO> moduleResponseStudentDTOS = moduleService.getAllModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), pageSize, pageNumber);
+        Page<ModuleResponseStudentDTO> moduleResponseStudentDTOS = moduleService.getAllModuleByStudent(userService.getUserByUsername(userDetails.getUsername()), pageNumber);
 
         if(moduleResponseStudentDTOS.isEmpty()){
             throw new BusinessException("No modules found", HttpStatus.OK);
