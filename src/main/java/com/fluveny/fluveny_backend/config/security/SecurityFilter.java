@@ -12,6 +12,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 
 import java.io.IOException;
 
@@ -24,19 +25,67 @@ public class SecurityFilter extends OncePerRequestFilter {
     UserService userService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)  throws ServletException, IOException {
-        var token = this.recoveryToken(request);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
+            throws ServletException, IOException {
 
-        if("OPTIONS".equalsIgnoreCase(request.getMethod())){
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        if(token != null && jwtUtil.validateToken(token)){
-            UserDetails user = userService.getUserByEmail(jwtUtil.extractClaim(token, "email"));
-            if(SecurityContextHolder.getContext().getAuthentication() == null && user != null){
-                var auth = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        var token = this.recoveryToken(request);
+
+        if (token != null && jwtUtil.validateToken(token)) {
+            UserDetails userDetails = userService.getUserByEmail(jwtUtil.extractClaim(token, "email"));
+
+            if (SecurityContextHolder.getContext().getAuthentication() == null && userDetails != null) {
+                var auth = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 SecurityContextHolder.getContext().setAuthentication(auth);
+            }
+
+            UserEntity user = (UserEntity) userDetails;
+            String path = request.getRequestURI();
+
+            boolean isPublicPath = path.startsWith("/api/v1/auth/")
+                    || path.startsWith("/swagger-ui")
+                    || path.startsWith("/v3/api-docs");
+
+            if (!isPublicPath) {
+
+                if (Boolean.TRUE.equals(user.getRequiresPasswordReset())) {
+                    boolean isPasswordResetPath = path.equals("/api/v1/users/password");
+                    if (!isPasswordResetPath) {
+                        String origin = request.getHeader("Origin");
+                        if (origin != null) {
+                            response.setHeader("Access-Control-Allow-Origin", origin);
+                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                        }
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json");
+                        response.getWriter().write(
+                                "{\"message\":\"Password reset required before continuing.\",\"data\":null}"
+                        );
+                        return;
+                    }
+                }
+
+                if (Boolean.FALSE.equals(user.getRequiresPasswordReset())
+                        && Boolean.TRUE.equals(user.getRequiresProfileSetup())) {
+                    boolean isProfileSetupPath = path.equals("/api/v1/users/profile");
+                    if (!isProfileSetupPath) {
+                        String origin = request.getHeader("Origin");
+                        if (origin != null) {
+                            response.setHeader("Access-Control-Allow-Origin", origin);
+                            response.setHeader("Access-Control-Allow-Credentials", "true");
+                        }
+                        response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                        response.setContentType("application/json");
+                        response.getWriter().write(
+                                "{\"message\":\"Profile setup required before continuing.\",\"data\":null}"
+                        );
+                        return;
+                    }
+                }
             }
         }
 
