@@ -26,6 +26,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
 import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
+import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 
 @Service
 public class SearchStudentService {
@@ -48,6 +49,7 @@ public class SearchStudentService {
 
         Query query = new Query();
         List<Criteria> criteriaList = new ArrayList<>();
+        criteriaList.add(Criteria.where("status").is(ModuleStatus.PUBLISHED));
                 if (searchModuleStudentDTO.getModuleName() != null && !searchModuleStudentDTO.getModuleName().isEmpty()) {
                 criteriaList.add(Criteria.where("title").regex(".*" + searchModuleStudentDTO.getModuleName() + ".*", "i"));
             }

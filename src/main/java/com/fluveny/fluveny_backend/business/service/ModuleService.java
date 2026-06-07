@@ -107,10 +107,10 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private UserRepository userRepository;
 
-    public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
-
-        Page<ModuleEntity> modulesPage = moduleRepository.findAll(
-                PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "level.title"))
+    public Page<ModuleResponseStudentDTO> getAllModuleByStudent(UserEntity userEntity, Integer pageNumber) {
+        Page<ModuleEntity> modulesPage = moduleRepository.findByStatus(
+                ModuleStatus.PUBLISHED,
+                PageRequest.of(pageNumber, 6, Sort.by(Sort.Direction.ASC, "level.title"))
         );
 
         List<ModuleStudent> moduleStudents = moduleStudentRepository.findByStudentId(userEntity.getId());
@@ -141,6 +141,10 @@ public class ModuleService implements IntroductionService {
 
         ModuleEntity module = moduleFind.get();
 
+        if (module.getStatus() == ModuleStatus.PUBLISHED) {
+            throw new BusinessException("Este módulo já está publicado.", HttpStatus.BAD_REQUEST);
+        }
+
         if (module.getAuthorUsername() == null || !module.getAuthorUsername().equals(username)) {
             throw new BusinessException("You don't have permission to publish this module", HttpStatus.FORBIDDEN);
         }
@@ -151,6 +155,17 @@ public class ModuleService implements IntroductionService {
 
         if (module.getGrammarRules() == null || module.getGrammarRules().isEmpty()) {
             throw new BusinessException("O módulo precisa ter pelo menos uma regra de gramática para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (module.getGrammarRuleModules() != null) {
+            for (GrammarRuleModuleEntity grm : module.getGrammarRuleModules()) {
+                if (grm.getContentList() == null || grm.getContentList().isEmpty()) {
+                    throw new BusinessException(
+                            "Todas as regras gramaticais precisam ter pelo menos um conteúdo para o módulo ser publicado.",
+                            HttpStatus.BAD_REQUEST
+                    );
+                }
+            }
         }
 
         if (module.getFinalChallenge() == null || module.getFinalChallenge().isEmpty()) {
