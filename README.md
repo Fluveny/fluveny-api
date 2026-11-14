@@ -1,272 +1,60 @@
-# Fluveny | Back-End
+# Fluveny | API
 
-Repositório destinado ao desenvolvimento do back-end da plataforma **Fluveny**.  
+API do Fluveny: monólito modular em Java 25, Spring Boot 4.1 e Spring Modulith 2.1, sobre MongoDB. As decisões de arquitetura ficam no repositório de planejamento ([Fluveny/fluveny-planejamento](https://github.com/Fluveny/fluveny-planejamento)).
 
-- ![Java](https://img.shields.io/badge/Java-21-blue?logo=java)
-- ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=springboot)
-- ![MongoDB](https://img.shields.io/badge/MongoDB-6.x-green?logo=mongodb) 
-- ![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker) 
-- ![Swagger](https://img.shields.io/badge/Swagger-UI-yellow?logo=swagger) 
-- ![JUnit](https://img.shields.io/badge/JUnit-5-red?logo=java) 
-  
-Caso queira executar a aplicação em sua máquina, você poderá escolher alguma das opções:
+## Requisitos
 
-- [Ambiente de Execução](#ambiente-de-execução) 
-- [Ambiente de Desenvolvimento](#ambiente-de-desenvolvimento)
-- [Ambiente de Testes](#ambiente-de-testes)
+- **JDK 25** (por exemplo, `brew install --cask temurin@25`). O Maven vem pelo wrapper (`./mvnw`).
+- **Docker** ligado, para os testes de integração (Testcontainers) e para gerar a imagem.
 
-A aplicação roda na porta 8080. 
-
-🔗 Acesse a documentação da API via Swagger:  
-[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-
-🔗 Para acessar a documentação da aplicação: 
-```bash
-mvn javadoc:javadoc
-
-```
-Após isso, basta acessar: target/site/index.html
-
-## Ambiente de Execução
-O Ambiente de Execução destina-se a quem deseja rodar a aplicação em sua máquina sem realizar modificações ou desenvolvimento. Para facilitar esse processo, dockerizamos tanto a API quanto o banco de dados MongoDB, garantindo que a criação e execução sejam mais simples, rápidas e controladas.
-
-### Dependências
-Para rodar, certifique-se de ter, em sua máquina:
-- **JDK 21** ou superior
-- **Maven** 
-- **Docker-Compose**
-
-### Execução
-Para executar, basta utilizar um dos comandos, na pasta raiz, de acordo com seu sistema operacional: 
-
-- Linux
-
-Execute o seguinte comando no terminal, na raiz do projeto:
+Sem JDK 25 na máquina, dá para rodar o build num container:
 
 ```bash
-./run.sh
-
+docker run --rm -v "$PWD:/w" -w /w \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --add-host=host.docker.internal:host-gateway \
+  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  maven:3-eclipse-temurin-25 ./mvnw -B -ntp verify
 ```
 
-- Windows
+## Módulos
 
-Execute o seguinte comando no Poweshell, na raiz do projeto:
-```
-./run.ps1
-```
+O código fica em `src/main/java/com/fluveny/fluveny_backend/`, um pacote por módulo: `account`, `auth`, `team`, `content`, `learning`, `metrics`, `survey`, `mail` e `platform`. As dependências permitidas entre eles ficam no `package-info.java` de cada um e seguem o grafo da AD-3. O `ModularityTest` falha o build em caso de ciclo ou acesso fora do grafo.
 
-Ambos os comandos irão buildar o jar com maven, subir os conteineres e iniciar a aplicação.
+## Build e testes
 
-## Ambiente de Desenvolvimento
-O Ambiente de Desenvolvimento destina-se a quem deseja rodar a aplicação para poder realizar modificações ou desenvolvimento. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
-
-### Dependências
-Para rodar, certifique-se de ter, em sua máquina:
-- **JDK 21** ou superior
-- **IntelliJ IDEA**
-- **Docker-Compose**
-
-### Execução
-Para executar, é necessário que você suba o conteinere do docker-compose.dev, com o seguinte comando:
-```
-docker-compose -f docker-compose.dev.yml up -d
-```
-Após isso, basta mudar sua variável de perfil do intelliJ para **dev** e rodar a aplicação normalmente.
-
-## Ambiente de Testes
-
-O Ambiente de Testes destina-se a quem deseja rodar a aplicação para poder realizar os Testes e os Modificar. Para facilitar esse processo, optamos apenas por dockerizar o banco de dados (para que não seja necessário o criar com todas as credencias em sua máquina). 
-
-### Dependências
-Para rodar, certifique-se de ter, em sua máquina:
-- **JDK 21** ou superior
-- **IntelliJ IDEA**
-- **Docker-Compose**
-
-### Execução
-Para executar, é necessário que você suba o conteinere do docker-compose.dev, com o seguinte comando:
-```
-docker-compose -f docker-compose.test.yml up -d
-```
-Após isso, basta mudar sua variável de perfil do intelliJ para **test** e rodar a aplicação normalmente.
-
-## Documentação do projeto
-
-### Entidades principais
-
-<table>
-  <thead>
-    <tr>
-      <th>Nome</th>
-      <th>Descrição</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>Module</td>
-      <td>Macroentidade da aplicação, que agrupa todas as outras. Responsável por ditar qual é o tema de cada aula.</td>
-    </tr>
-    <tr>
-      <td>Introduction</td>
-      <td>Seção inicial de um módulo, onde terá uma explicação breve do que o mesmo se trata.</td>
-    </tr>
-    <tr>
-      <td>Grammar Rule</td>
-      <td>Entidade das regras gramaticais, que ditará quais destas serão abordadas dentro de um módulo</td>
-    </tr>
-    <tr>
-      <td>Grammar Rule Exercise</td>
-      <td>Entidade de um exercicio de uma regra gramatical, parte prática do módulo.</td>
-    </tr>
-    <tr>
-      <td>Grammar Rule Presentation</td>
-      <td>Entidade de um apresentação de uma regra gramatical, parte explicativa do módulo.</td>
-    </tr>
-    <tr>
-      <td>Grammar Rule Presentation</td>
-      <td>Entidade de um apresentação de uma regra gramatical, parte explicativa do módulo.</td>
-    </tr>
-    <tr>
-      <td>Level</td>
-      <td>Entidade que compõe parte da gamificação da aplicação, que terá informações como "experiência ganha" por terminar determinados níveis do curso.</td>
-    </tr>
-  </tbody>
-</table>
-
-
-
-### Main
-
-Afim de facilitar a leitura desta documentação, considere o caminho **src/main/java/com/fluveny/fluveny_backend/** como o diretório base para essa parte.
-
-
-#### Api
-
-Seção do código onde se encontram os controllers (gerenciadores de endpoints), DTOs de Response e Request e seus respectivos mappers.
-```
-.
-api
-├── ApiResponseFormat.java
-├── controller
-│   ├── GrammarRuleController.java
-│   ├── GrammarRuleExerciseController.java
-│   ├── GrammarRulePresentationController.java
-│   ├── IntroductionController.java
-│   ├── LevelController.java
-│   └── ModuleController.java
-├── dto
-│   ├── ContentResponseDTO.java
-│   ├── ExerciseRequestDTO.java
-│   ├── ExerciseResponseDTO.java
-│   ├── GrammarRuleModuleRequestDTO.java
-│   ├── GrammarRuleModuleResponseDTO.java
-│   ├── GrammarRuleModuleTinyDTO.java
-│   ├── GrammarRuleRequestDTO.java
-│   ├── GrammarRuleResponseDTO.java
-│   ├── IntroductionRequestDTO.java
-│   ├── IntroductionResponseDTO.java
-│   ├── ModuleRequestDTO.java
-│   ├── ModuleResponseDTO.java
-│   ├── PresentationRequestDTO.java
-│   ├── PresentationResponseDTO.java
-│   ├── TextBlockRequestDTO.java
-│   └── TextBlockResponseDTO.java
-├── mapper
-│   ├── ContentMapper.java
-│   ├── ExerciseMapper.java
-│   ├── GrammarRuleMapper.java
-│   ├── GrammarRuleModuleMapper.java
-│   ├── IntroductionMapper.java
-│   ├── ModuleMapper.java
-│   └── PresentationMapper.java
-└── response
-    ├── exercise
-    │   └── ExerciseResponse.java
-    ├── grammarrule
-    │   ├── GrammarRuleResponse.java
-    │   └── GrammarRulesResponse.java
-    ├── level
-    │   └── LevelsResponse.java
-    ├── module
-    │   ├── ContentsResponse.java
-    │   ├── GrammarRuleModulesResponse.java
-    │   ├── GrammarRuleModulesTinyResponse.java
-    │   ├── IntroductionResponse.java
-    │   ├── ModuleResponse.java
-    │   └── ModulesReponse.java
-    └── presentation
-        └── PresentationResponse.java
-
+```bash
+./mvnw -B -ntp verify
 ```
 
-#### Business
+- Unitários (`*Test`, surefire), incluindo o `ModularityTest`, que também gera a documentação dos módulos em `target/spring-modulith-docs`.
+- Integração (`*IT`, failsafe), contra um `mongo:8` do Testcontainers, sem precisar de nenhuma variável de ambiente:
+  - o `ApplicationIT` sobe o contexto via `@ServiceConnection`;
+  - o `MongoUriBindingIT` passa a URI do container como `SPRING_DATA_MONGODB_URI` e confirma que a API conecta por ela.
 
-Seção do código responsável por aplicar as regras de negócio do sistema. Nela, estão todos os services utilizados na aplicação.
+> **Docker Desktop recente:** o `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), e os ITs falham com "Container exited with code 1". Na CI eles rodam normalmente. Para rodar só os unitários (incluindo o `ModularityTest`), use `./mvnw -B -ntp test`.
 
-```
-business
-└── service
-├── ContentManagerService.java
-├── ExerciseService.java
-├── GrammarRuleModuleService.java
-├── GrammarRuleService.java
-├── IntroductionService.java
-├── LevelService.java
-├── ModuleService.java
-├── PresentationService.java
-└── SaveContentManager.java
-```
+## Variáveis de ambiente
 
-#### Infrastructure
+Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
 
-Seção do código responsável por mapear as entidades da aplicação no banco não-relacional MongoDB. Nela, estão descritas as entidades e os repositórios de cada uma delas.
-```
-infraestructure/
-├── entity
-│   ├── ContentEntity.java
-│   ├── ExerciseEntity.java
-│   ├── GrammarRuleEntity.java
-│   ├── GrammarRuleModuleEntity.java
-│   ├── LevelEntity.java
-│   ├── ModuleEntity.java
-│   ├── PresentationEntity.java
-│   ├── ResolvedContent.java
-│   └── TextBlockEntity.java
-├── enums
-│   └── ContentType.java
-└── repository
-    ├── ExerciseRepository.java
-    ├── GrammarRuleModuleRepository.java
-    ├── GrammarRuleRepository.java
-    ├── LevelRepository.java
-    ├── ModuleRepository.java
-    ├── PresentationRepository.java
-    └── TextBlockRepository.java
+| Variável | Uso |
+| --- | --- |
+| `SPRING_DATA_MONGODB_URI` | URI do MongoDB, com credenciais e o nome do banco. Obrigatória para rodar a API fora dos testes. É lida em `spring.mongodb.uri`, porque o Boot 4 ignora a `spring.data.mongodb.uri`. |
+
+## Imagem
+
+```bash
+docker build -t fluveny-api:local .
+docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... fluveny-api:local
 ```
 
-### Test
+A API escuta na porta 8080 e roda com um usuário sem root. Em todo PR a CI constrói a imagem sem publicar. A cada merge na `main`, publica `ghcr.io/fluveny/fluveny-api:main` e `ghcr.io/fluveny/fluveny-api:sha-<sha>`.
 
-De forma análoga ao diretório main da aplicação, considere o caminho base para a parte destes o caminho **src/test/java/com/fluveny/fluveny_backend**
+Até a história 1.2, que traz a segurança da `platform`, toda rota exige o basic auth padrão do Spring Security: usuário `user` e uma senha gerada a cada partida, impressa no log.
 
-Os arquivos descritos abaixo possuem testes de unidade para cada endpoint, regra de negócio e queries do sistema.
+A documentação da API fica no Swagger UI, em http://localhost:8080/swagger-ui/index.html, e o OpenAPI em `/v3/api-docs`, também atrás do basic auth padrão até a 1.2.
 
-```
-.
-├── api
-│   └── controller
-│       ├── GrammarRuleExerciseControllerTest.java
-│       ├── IntroductionControllerTest.java
-│       └── ModuleControllerTest.java
-├── business
-│   └── service
-│       ├── ExerciseServiceTest.java
-│       ├── GrammarRuleModuleServiceTest.java
-│       └── ModuleServiceTest.java
-├── FluvenyBackendApplicationTests.java
-└── infraestructure
-    └── repository
-        ├── GrammarRuleModuleRepositoryTest.java
-        ├── GrammarRuleRepositoryTest.java
-        └── ModuleRepositoryTest.java
+## Ambiente local
 
-```
+O ambiente local (Mongo em replica set, perfil `local` e dados de desenvolvimento) chega com a história 1.4. Até lá, não há compose nem script de partida neste repositório.

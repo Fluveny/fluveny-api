@@ -1,6 +1,5 @@
-# CI mínima: build e testes em todo PR e em todo push na main.
-# A história 1.1 completa esta CI: Java 25, Testcontainers, verificação do
-# Spring Modulith e publicação da imagem no GHCR.
+# CI: segredos, build, testes e build da imagem em todo PR e em todo push na
+# main. A imagem só é publicada no GHCR em push na main.
 name: CI
 
 on:
@@ -26,8 +25,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      # Só os commits novos: o histórico antigo tem uma credencial de teste
-      # conhecida, que a história 1.1 remove (NFR1).
+      # Só os commits novos; qualquer achado falha. O achado antigo do histórico
+      # fica listado por fingerprint na .gitleaksignore.
       - name: Gitleaks nos commits novos
         env:
           RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
@@ -39,31 +38,56 @@ jobs:
     name: Build e testes
     runs-on: ubuntu-latest
     timeout-minutes: 20
-
-    services:
-      mongo:
-        image: mongo:8
-        ports:
-          - 27017:27017
-        options: >-
-          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
-
-    env:
-      # Mongo de CI sem autenticação. A variável de ambiente vence os
-      # .properties, então nenhuma credencial precisa existir aqui.
-      SPRING_DATA_MONGODB_URI: mongodb://localhost:27017/fluvenydb_test
-
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '25'
           cache: maven
 
+      # Unitários (surefire), verificação do Spring Modulith (ModularityTest) e
+      # integração (failsafe, *IT). O Mongo dos ITs vem do Testcontainers.
       - name: Build e testes
         run: ./mvnw -B -ntp verify
+
+  image:
+    name: Imagem
+    needs: [secrets, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    env:
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      # Login só para publicar. Em PR a imagem é construída, sem push.
+      - if: env.PUBLISH == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/fluveny/fluveny-api
+          tags: |
+            type=raw,value=main
+            type=sha,format=long
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
