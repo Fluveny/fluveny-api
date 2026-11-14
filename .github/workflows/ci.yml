@@ -1,4 +1,4 @@
-# CI: segredos, build, testes e build da imagem em todo PR e em todo push na
+# CI: segredos, build, testes, contrato (oasdiff) e build da imagem em todo PR e em todo push na
 # main. A imagem só é publicada no GHCR em push na main.
 name: CI
 
@@ -27,10 +27,17 @@ jobs:
 
       # Só os commits novos; qualquer achado falha. O achado antigo do histórico
       # fica listado por fingerprint na .gitleaksignore.
+      # Se o commit anterior do push não está no clone (primeiro push, force
+      # push), varre o histórico inteiro e avisa.
       - name: Gitleaks nos commits novos
         env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
           RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
         run: |
+          if ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "::warning::Commit base $BASE fora do clone; varrendo o histórico inteiro."
+            RANGE="HEAD"
+          fi
           docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 \
             git /repo --log-opts="$RANGE" --redact --verbose --no-banner
 
@@ -52,9 +59,37 @@ jobs:
       - name: Build e testes
         run: ./mvnw -B -ntp verify
 
+  contract:
+    name: Contrato
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Só mudanças aditivas no /api/v1 (AD-11). Em PR, compara com a main; na
+      # main, com o commit anterior (HEAD~1 se o `before` não está no clone).
+      # Sem contrato na base (o PR que cria o arquivo), não há o que comparar. O OpenApiContractTest, no job de build,
+      # garante que o arquivo é o /v3/api-docs do código.
+      - name: oasdiff breaking
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          if ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
+            echo "::warning::Commit base $BASE fora do clone; comparando com o commit anterior (HEAD~1)."
+            BASE="HEAD~1"
+          fi
+          if ! git show "$BASE:openapi/openapi.json" > "$RUNNER_TEMP/base-openapi.json" 2>/dev/null; then
+            echo "::notice::Sem openapi/openapi.json em $BASE; nada a comparar."
+            exit 0
+          fi
+          docker run --rm -v "$RUNNER_TEMP:/base" -v "$PWD/openapi:/head" tufin/oasdiff:v1.38.0 \
+            breaking /base/base-openapi.json /head/openapi.json --fail-on ERR
+
   image:
     name: Imagem
-    needs: [secrets, build]
+    needs: [secrets, build, contract]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:

@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fluveny.fluveny_backend.platform.security.PublicRoute;
 
 import io.sentry.Sentry;
+import io.swagger.v3.oas.annotations.Hidden;
 
 /**
  * Substitui o {@code BasicErrorController} do Boot: o que chega ao
@@ -30,9 +31,13 @@ import io.sentry.Sentry;
  * <li>sem status de erro (um {@code GET /error} direto): 404, porque não há erro a mostrar;</li>
  * <li>caminho que falta ou não é uma URI válida: o {@code instance} sai vazio.</li>
  * </ul>
+ *
+ * Fica fora do contrato ({@code @Hidden}): não é rota do {@code /api/v1}, e os
+ * vários métodos HTTP gerariam {@code operationId} instáveis no OpenAPI.
  */
 @RestController
 @PublicRoute
+@Hidden
 class ProblemErrorController implements ErrorController {
 
 	private static final Logger log = LoggerFactory.getLogger(ProblemErrorController.class);

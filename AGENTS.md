@@ -29,6 +29,7 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 - Toda rota declara `@PublicRoute` ou `@RequiresRole(Role.X)` no método ou na classe (o método vence). Sem declaração a rota é negada e o `RouteDeclarationScanTest` falha o build. A hierarquia `ADMIN > CONTENT_CREATOR` mora só no `RoleHierarchyConfig`; `STUDENT` fica fora.
 - Os módulos usam a `platform` pelas named interfaces `web`, `security` e `meta`, e declaram `"platform :: *"` em `allowedDependencies`. `platform.config` e `platform.observability` são internos.
 - Sem `SPRING_PROFILES_ACTIVE` o perfil é `prod`, que exige `SPRING_DATA_MONGODB_URI`. Variáveis opcionais: `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `FLUVENY_MIN_APP_VERSION`. Teste `@SpringBootTest` sem Mongo passa uma URI local falsa (veja `PlatformWebTest`); o cliente não conecta na partida.
+- O contrato é o `openapi/openapi.json` (AD-11), e o App gera os tipos dele. Mudou rota ou DTO, gere de novo com `./mvnw -B -ntp test -Dtest=OpenApiContractTest -Dopenapi.write=true` e commite junto; nunca edite o arquivo nem resolva conflito nele à mão. No `/api/v1`, só mudança aditiva: o job `Contrato` (`oasdiff breaking` contra a `main`) falha em remoção de rota ou de campo obrigatório da resposta, troca de tipo, campo obrigatório novo na requisição e valor novo de `enum` na resposta. Remover campo opcional da resposta passa (info no oasdiff 1.38), então o App trata opcional como opcional.
 - Logs em JSON (ECS). Não logue corpo de requisição, cabeçalhos de autenticação nem PII.
 
 ## Known pitfalls

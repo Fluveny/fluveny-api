@@ -1,0 +1,74 @@
+{
+  "components" : {
+    "schemas" : {
+      "ActivityTypeSupport" : {
+        "properties" : {
+          "sinceAppVersion" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "type" ],
+        "type" : "object"
+      },
+      "ApiResponseMeta" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/Meta"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
+      "Meta" : {
+        "properties" : {
+          "activityTypes" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityTypeSupport"
+            },
+            "type" : "array"
+          },
+          "minAppVersion" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityTypes", "minAppVersion" ],
+        "type" : "object"
+      }
+    }
+  },
+  "info" : {
+    "title" : "Fluveny API",
+    "version" : "v1"
+  },
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/api/v1/meta" : {
+      "get" : {
+        "operationId" : "getMeta",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseMeta"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "meta" ]
+      }
+    }
+  },
+  "servers" : [ {
+    "description" : "Mesma origem da API",
+    "url" : "/"
+  } ]
+}

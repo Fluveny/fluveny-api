@@ -59,6 +59,22 @@ Os logs saem no console em JSON (ECS), sem corpo de requisição nem cabeçalhos
 - `GET /api/v1/meta` é público e devolve `minAppVersion` e `activityTypes`. Cada história de Tipo de Atividade registra um bean `ActivityTypeSource`.
 - Termo de busca digitado pelo usuário passa por `SearchTerms.literal(term)` e entra só como valor do critério.
 
+### Contrato OpenAPI
+
+O contrato da API é o OpenAPI 3.1 commitado em [`openapi/openapi.json`](openapi/openapi.json) (AD-11). O App copia esse arquivo, num sha da `main`, e gera os tipos dele.
+
+- O `OpenApiContractTest` lê o `/v3/api-docs` e compara com o arquivo. A saída é estável: chaves ordenadas, `servers` fixo (`/`) e `application/json` como media type padrão.
+- Mudou um controller ou um DTO? Gere o arquivo de novo e commite junto:
+
+  ```bash
+  ./mvnw -B -ntp test -Dtest=OpenApiContractTest -Dopenapi.write=true
+  ```
+
+  Ninguém edita o arquivo nem resolve conflito nele à mão: rebaseie e gere de novo. Rodar o comando sem mudar o código não produz diff.
+- Dentro de `/api/v1`, só mudanças aditivas. O job `Contrato` da CI roda o `oasdiff breaking` entre o arquivo da `main` (em push, o do commit anterior) e o do PR, e falha em quebra.
+  - **Permitido:** rota nova, campo novo na resposta, campo opcional novo na requisição, valor novo de `enum` na requisição e remover um campo **opcional** da resposta (o oasdiff 1.38 classifica `response-optional-property-removed` como info). Por isso o App trata todo campo opcional da resposta como opcional de verdade.
+  - **Quebra (error no oasdiff, falha a CI):** remover rota, remover ou renomear campo **obrigatório** da resposta, mudar o tipo de um campo, tornar obrigatório um campo da requisição e valor novo de `enum` na resposta (`response-property-enum-value-added`; o App instalado não conhece o valor).
+
 ## Autorização
 
 Toda rota é negada, a não ser que o handler declare quem pode chamá-la (deny-by-default, AD-12):
