@@ -69,6 +69,7 @@ public class SecurityConfiguration {
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id}").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/modules").hasRole("CONTENT_CREATOR")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/modules/drafts").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/modules/{id_module}/final-challenge").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.GET, "/api/v1/modules/{id_module}/final-challenge/{id_exercise}").hasRole("CONTENT_CREATOR")
                         .requestMatchers(HttpMethod.PUT, "/api/v1/modules/{id_module}/final-challenge/{id_exercise}").hasRole("CONTENT_CREATOR")
@@ -98,6 +99,9 @@ public class SecurityConfiguration {
                                 "/swagger-ui/**",
                                 "/swagger-ui.html"
                         ).permitAll()
+
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/password").authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/users/profile").authenticated()
 
                         .anyRequest().authenticated()
                 )

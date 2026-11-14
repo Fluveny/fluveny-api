@@ -6,14 +6,9 @@ import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseCompl
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseConstructionPhraseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseTranslateEntity;
-import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 @Component
 public class ExerciseMapperFactory {

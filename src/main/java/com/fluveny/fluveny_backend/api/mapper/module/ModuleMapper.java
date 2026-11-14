@@ -4,12 +4,16 @@ import com.fluveny.fluveny_backend.api.dto.module.ModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseDTO;
 import com.fluveny.fluveny_backend.business.service.GrammarRuleService;
 import com.fluveny.fluveny_backend.business.service.LevelService;
+import com.fluveny.fluveny_backend.business.service.UserService;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,8 +24,12 @@ public class ModuleMapper {
     public LevelService levelService;
     @Autowired
     public GrammarRuleService grammarRuleService;
+    @Autowired
+    public UserService userService;
 
-    public ModuleEntity toEntity(ModuleRequestDTO moduleRequestDTO) {
+    public ModuleEntity toEntity(ModuleRequestDTO moduleRequestDTO, String username) {
+
+        UserEntity content_creator =  userService.getUserByUsername(username);
 
         ModuleEntity moduleEntity = new ModuleEntity();
         moduleEntity.setTitle(moduleRequestDTO.getTitle());
@@ -42,6 +50,10 @@ public class ModuleMapper {
 
         moduleEntity.setGrammarRules(grammarRules);
 
+        moduleEntity.setAuthorUsername(content_creator.getUsername());
+        moduleEntity.setStatus(ModuleStatus.DRAFT);
+        moduleEntity.setLastModified(LocalDateTime.now());
+
         return moduleEntity;
     }
 
@@ -56,6 +68,9 @@ public class ModuleMapper {
         moduleResponseDTO.setId(moduleEntity.getId());
         moduleResponseDTO.setFinalChallenge(moduleEntity.getFinalChallenge());
         moduleResponseDTO.setGrammarRulesModule(moduleEntity.getGrammarRuleModules());
+        moduleResponseDTO.setAuthorUsername(moduleEntity.getAuthorUsername());
+        moduleResponseDTO.setStatus(moduleEntity.getStatus());
+        moduleResponseDTO.setLastModified(moduleEntity.getLastModified());
 
         return moduleResponseDTO;
     }

@@ -52,6 +52,7 @@ public class ExerciseService {
         }
 
         saveContentManager.exerciseExistInGrammarRuleModule(id, idGrammarRuleModule);
+        saveContentManager.updateLastModified(exerciseEntity.get().getGrammarRuleModuleId());
         exercise.setId(id);
 
         return exerciseRepository.save(exercise);
@@ -64,7 +65,7 @@ public class ExerciseService {
         if(exerciseEntity.isEmpty()) {
             throw new BusinessException("No Exercise with this ID was found.", HttpStatus.NOT_FOUND);
         }
-
+        saveContentManager.updateLastModified(exerciseEntity.get().getGrammarRuleModuleId());
         exerciseRepository.deleteById(id);
 
     }
@@ -72,6 +73,7 @@ public class ExerciseService {
     public ExerciseEntity saveExercise(ExerciseEntity exerciseEntity) {
         ExerciseEntity savedExercise = exerciseRepository.save(exerciseEntity);
         saveContentManager.addExerciseToGrammarRuleModule(exerciseEntity.getGrammarRuleModuleId(), savedExercise);
+        saveContentManager.updateLastModified(savedExercise.getGrammarRuleModuleId());
         return savedExercise;
     }
 }

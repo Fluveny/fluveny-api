@@ -1,4 +1,4 @@
-FROM openjdk:21-jdk-slim AS builder
+FROM openjdk:26-ea-21-jdk-slim AS builder
 
 WORKDIR /api
 

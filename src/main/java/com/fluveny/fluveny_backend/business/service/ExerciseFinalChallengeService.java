@@ -41,6 +41,7 @@ public class ExerciseFinalChallengeService {
         }
 
         moduleService.exerciseExistInFinalChallenge(id, idModule);
+        moduleService.updateLastModified(idModule);
         exercise.setId(id);
         return exerciseRepository.save(exercise);
     }
@@ -66,7 +67,7 @@ public class ExerciseFinalChallengeService {
         if (exerciseEntity.isEmpty()) {
             throw new BusinessException("No Exercise with this ID was found.", HttpStatus.NOT_FOUND);
         }
-
+        moduleService.updateLastModified(idModule);
         exerciseRepository.deleteById(idExercise);
     }
 

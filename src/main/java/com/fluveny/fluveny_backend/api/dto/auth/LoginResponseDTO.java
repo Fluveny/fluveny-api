@@ -11,8 +11,17 @@ import lombok.Setter;
 @AllArgsConstructor
 public class LoginResponseDTO {
     private String username;
+    private String name;
     private String email;
     private String role;
+    private String avatar;
+    private String background;
+    private Integer level;
+    private Long xp;
+    private Long maxXp;
+    private Boolean soundEnabled;
+    private Boolean requiresPasswordReset;
+    private Boolean requiresProfileSetup;
 
     /**
      * Creates a LoginResponseDTO from a LoginResultDTO.
@@ -25,8 +34,17 @@ public class LoginResponseDTO {
     public static LoginResponseDTO from(LoginResultDTO result) {
         return new LoginResponseDTO(
                 result.getUsername(),
+                result.getName(),
                 result.getEmail(),
-                result.getRole()
+                result.getRole(),
+                result.getAvatar(),
+                result.getBackground(),
+                result.getLevel(),
+                result.getXp(),
+                result.getMaxXp(),
+                result.getSoundEnabled(),
+                result.getRequiresPasswordReset(),
+                result.getRequiresProfileSetup()
         );
     }
 }

@@ -1,38 +1,62 @@
 package com.fluveny.fluveny_backend.business.service;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.bson.types.ObjectId;
+import org.springframework.data.domain.PageImpl;
+
 import com.fluveny.fluveny_backend.api.dto.finalchallenge.FinalChallengeRequestDTO;
+import com.fluveny.fluveny_backend.api.dto.module.LinkStudentToModuleRequestDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleOverviewDTO;
 import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleOverviewMapper;
 import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
 import com.fluveny.fluveny_backend.exception.BusinessException.BusinessException;
-import com.fluveny.fluveny_backend.infraestructure.entity.*;
+import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.exercise.ExerciseEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
-import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudentId;
 import com.fluveny.fluveny_backend.infraestructure.enums.ContentType;
+import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 import com.fluveny.fluveny_backend.infraestructure.enums.ParentOfTheContent;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 import com.fluveny.fluveny_backend.infraestructure.repository.TextBlockRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.fluveny.fluveny_backend.infraestructure.repository.UserRepository;
 import org.springframework.data.domain.*;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
 
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.time.LocalDateTime;
 
 @Service
 public class ModuleService implements IntroductionService {
 
     @Autowired
     private ModuleRepository moduleRepository;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Autowired
     private GrammarRuleModuleService grammarRuleModuleService;
@@ -55,17 +79,44 @@ public class ModuleService implements IntroductionService {
     @Autowired
     private ModuleSearchStudentMapper moduleSearchStudentMapper;
 
+    public List<ModuleEntity> getAllDraftModule (String userName, Integer quantity, Boolean sortedByDate) {
+
+        List<ModuleEntity> returnedModulesByAuthor = moduleRepository.findByAuthorUsername(userName);
+
+        if (returnedModulesByAuthor.isEmpty()){
+            throw new BusinessException("Doesn't exits modules for this username", HttpStatus.OK);
+        }
+
+        List<ModuleEntity> modulesByAuthor = new ArrayList<>();
+
+        for (ModuleEntity moduleEntity : returnedModulesByAuthor){
+            if (moduleEntity.getStatus() == ModuleStatus.DRAFT){
+                modulesByAuthor.add(moduleEntity);
+            }
+        }
+
+        if (sortedByDate != null && sortedByDate){
+            modulesByAuthor.sort(Comparator.comparing(ModuleEntity::getLastModified).reversed());
+        }
+        if (quantity != null){
+            modulesByAuthor = modulesByAuthor.subList(0, Math.min(modulesByAuthor.size(), quantity));
+        }
+        return modulesByAuthor;
+    }
+
+    @Autowired
+    private UserRepository userRepository;
+
     public Page<ModuleResponseStudentDTO> getAllModuleByStudent (UserEntity userEntity, Integer pageSize, Integer pageNumber) {
 
         Page<ModuleEntity> modulesPage = moduleRepository.findAll(
                 PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.ASC, "level.title"))
         );
 
-        List<ModuleStudent> moduleStudents = moduleStudentRepository
-                .findByIdStudentUserName(userEntity.getId());
+        List<ModuleStudent> moduleStudents = moduleStudentRepository.findByStudentId(userEntity.getId());
 
         Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream()
-                .collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), Function.identity()));
+                .collect(Collectors.toMap(ModuleStudent::getModuleId, Function.identity()));
 
         return modulesPage.map(module ->
         {
@@ -79,6 +130,70 @@ public class ModuleService implements IntroductionService {
             return dto;
         }
         );
+    }
+
+    public ModuleEntity publishModule(String id, String username) {
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(id);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        ModuleEntity module = moduleFind.get();
+
+        if (module.getAuthorUsername() == null || !module.getAuthorUsername().equals(username)) {
+            throw new BusinessException("You don't have permission to publish this module", HttpStatus.FORBIDDEN);
+        }
+
+        if (module.getIntroduction() == null) {
+            throw new BusinessException("O módulo precisa ter uma introdução para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (module.getGrammarRules() == null || module.getGrammarRules().isEmpty()) {
+            throw new BusinessException("O módulo precisa ter pelo menos uma regra de gramática para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        if (module.getFinalChallenge() == null || module.getFinalChallenge().isEmpty()) {
+            throw new BusinessException("O módulo precisa ter pelo menos um exercício no desafio final para ser publicado.", HttpStatus.BAD_REQUEST);
+        }
+
+        module.setStatus(ModuleStatus.PUBLISHED);
+        module.setLastModified(LocalDateTime.now());
+        return moduleRepository.save(module);
+    }
+
+    public Page<ModuleResponseStudentDTO> searchModulesByAuthorAndStatus(String authorUsername, ModuleStatus status, SearchModuleStudentDTO searchModuleStudentDTO, Integer pageSize, Integer pageNumber) {
+        Pageable pageable = PageRequest.of(pageNumber, pageSize, Sort.by(Sort.Direction.DESC, "LastModified"));
+
+        Query query = new Query();
+        List<Criteria> criteriaList = new ArrayList<>();
+        
+        criteriaList.add(Criteria.where("authorUsername").is(authorUsername));
+        criteriaList.add(Criteria.where("status").is(status));
+
+        if (searchModuleStudentDTO.getModuleName() != null && !searchModuleStudentDTO.getModuleName().isEmpty()) {
+            criteriaList.add(Criteria.where("title").regex(".*" + searchModuleStudentDTO.getModuleName() + ".*", "i"));
+        }
+        if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
+            List<ObjectId> levelObjectIds = searchModuleStudentDTO.getLevelId().stream().map(ObjectId::new).toList();
+            criteriaList.add(Criteria.where("level._id").in(levelObjectIds));
+        }
+        if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
+            List<ObjectId> grammarObjectIds = searchModuleStudentDTO.getGrammarRulesId().stream().map(ObjectId::new).toList();
+            criteriaList.add(Criteria.where("grammarRules._id").in(grammarObjectIds));
+        }
+
+        query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+
+        long total = mongoTemplate.count(query, ModuleEntity.class);
+        query.with(pageable);
+        List<ModuleEntity> moduleEntities = mongoTemplate.find(query, ModuleEntity.class);
+
+        List<ModuleResponseStudentDTO> dtos = moduleEntities.stream()
+                .map(moduleSearchStudentMapper::toDTO)
+                .collect(Collectors.toList());
+
+        return new PageImpl<>(dtos, pageable, total);
     }
 
     /**
@@ -189,6 +304,7 @@ public class ModuleService implements IntroductionService {
         }
 
         moduleEntity.setIntroduction(existing.get().getIntroduction());
+        this.updateLastModified(moduleEntity.getId());
 
         Optional<ModuleEntity> titleConflict = moduleRepository.findByTitle(moduleEntity.getTitle());
         if (titleConflict.isPresent() && !titleConflict.get().getId().equals(id)) {
@@ -307,6 +423,7 @@ public class ModuleService implements IntroductionService {
         }
 
         existing.get().setIntroduction(textblockEntity);
+        this.updateLastModified(existing.get().getId());
         moduleRepository.save(existing.get());
 
         return textblockEntity;
@@ -326,6 +443,7 @@ public class ModuleService implements IntroductionService {
 
         textblockEntity.setId(existing.get().getIntroduction().getId());
         existing.get().setIntroduction(textblockEntity);
+        this.updateLastModified(existing.get().getId());
         moduleRepository.save(existing.get());
 
         return textblockEntity;
@@ -344,6 +462,7 @@ public class ModuleService implements IntroductionService {
         }
 
         textBlockRepository.deleteById(existing.get().getIntroduction().getId());
+        this.updateLastModified(existing.get().getId());
         existing.get().setIntroduction(null);
         moduleRepository.save(existing.get());
     }
@@ -354,15 +473,14 @@ public class ModuleService implements IntroductionService {
         }
     }
 
-    public ModuleOverviewDTO getModuleOverview(String moduleId, String studentUsername) {
+public ModuleOverviewDTO getModuleOverview(String moduleId, String studentUsername) {
         Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
 
         if(moduleFind.isEmpty()){
             throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
         }
 
-        ModuleStudentId moduleStudentId = new ModuleStudentId(moduleId, studentUsername);
-        Optional<ModuleStudent> moduleStudent = moduleStudentRepository.findById(moduleStudentId);
+        Optional<ModuleStudent> moduleStudent = moduleStudentRepository.findLinkModuleStudent(studentUsername, moduleId);
 
         return moduleOverviewMapper.toDTO(moduleFind.get(), moduleStudent.orElse(null));
     }
@@ -387,6 +505,7 @@ public class ModuleService implements IntroductionService {
         }
 
         moduleFind.get().setFinalChallenge(finalChallengeRequestDTO.getExerciseList());
+        this.updateLastModified(moduleFind.get().getId());
         this.updateModule(moduleFind.get(), moduleId);
 
         return finalChallengeRequestDTO.getExerciseList();
@@ -423,9 +542,59 @@ public class ModuleService implements IntroductionService {
         if(moduleFind.isEmpty()){
             throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
         }
-
+        this.updateLastModified(moduleFind.get().getId());
         moduleFind.get().getFinalChallenge().add(exerciseEntity.getId());
         this.updateModule(moduleFind.get(), id);
+
+    }
+
+    public ModuleEntity linkModuleToStudent(LinkStudentToModuleRequestDTO linkStudentToModuleRequestDTO) {
+
+        Optional<ModuleEntity> startedModule = moduleRepository.findById(linkStudentToModuleRequestDTO.getModuleId());
+
+        if(startedModule.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        ModuleEntity moduleEntity = startedModule.get();
+
+        Optional<UserEntity> student = userRepository.findById(linkStudentToModuleRequestDTO.getStudentId());
+
+        if(student.isEmpty()){
+            throw new BusinessException("A student with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        UserEntity studentEntity = student.get();
+
+        Optional<ModuleStudent> existingLink = moduleStudentRepository.findLinkModuleStudent(studentEntity.getId(), moduleEntity.getId());
+
+        if (existingLink.isPresent()) {
+            throw new BusinessException("This student is already linked to this module", HttpStatus.BAD_REQUEST);
+        }
+
+        ModuleStudent moduleStudent = new ModuleStudent();
+        moduleStudent.setStudentId(studentEntity.getId());
+        moduleStudent.setModuleId(moduleEntity.getId());
+        moduleStudent.setIsVisible(true);
+        moduleStudent.setIsFavorite(false);
+        moduleStudent.setProgress(0f);
+
+        moduleStudentRepository.save(moduleStudent);
+
+        return moduleEntity;
+
+    }
+
+    public void updateLastModified(String moduleId){
+
+        Optional<ModuleEntity> moduleFind = moduleRepository.findById(moduleId);
+
+        if(moduleFind.isEmpty()){
+            throw new BusinessException("A module with that id was not found", HttpStatus.NOT_FOUND);
+        }
+
+        moduleFind.get().setLastModified(LocalDateTime.now());
+        moduleRepository.save(moduleFind.get());
 
     }
 

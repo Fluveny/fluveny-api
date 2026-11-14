@@ -1,14 +1,11 @@
 package com.fluveny.fluveny_backend.business.service;
 
-import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
-import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
-import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
-import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
-import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
-import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
-import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
-import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
-import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -16,9 +13,19 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Service;
+import org.bson.types.ObjectId;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import com.fluveny.fluveny_backend.api.dto.module.ModuleResponseStudentDTO;
+import com.fluveny.fluveny_backend.api.dto.module.SearchModuleStudentDTO;
+import com.fluveny.fluveny_backend.api.mapper.module.ModuleSearchStudentMapper;
+import com.fluveny.fluveny_backend.infraestructure.entity.auth.UserEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.entity.module.ModuleStudent;
+import com.fluveny.fluveny_backend.infraestructure.enums.StatusDTOEnum;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleRepository;
+import com.fluveny.fluveny_backend.infraestructure.repository.ModuleStudentRepository;
 
 @Service
 public class SearchStudentService {
@@ -39,8 +46,27 @@ public class SearchStudentService {
         Pageable pageable = PageRequest.of(pageNumber, pageSize);
 
 
-        var queryResult = moduleRepository.searchByModuleNameLevelOrGrammarRules(searchModuleStudentDTO.getModuleName(),searchModuleStudentDTO.getLevelId(),searchModuleStudentDTO.getGrammarRulesId(),pageable);
-        List<ModuleEntity> moduleEntities = queryResult.getContent();
+        Query query = new Query();
+        List<Criteria> criteriaList = new ArrayList<>();
+                if (searchModuleStudentDTO.getModuleName() != null && !searchModuleStudentDTO.getModuleName().isEmpty()) {
+                criteriaList.add(Criteria.where("title").regex(".*" + searchModuleStudentDTO.getModuleName() + ".*", "i"));
+            }
+        if (searchModuleStudentDTO.getLevelId() != null && !searchModuleStudentDTO.getLevelId().isEmpty()) {
+                List<ObjectId> levelObjectIds = searchModuleStudentDTO.getLevelId().stream().map(ObjectId::new).toList();
+                criteriaList.add(Criteria.where("level._id").in(levelObjectIds));
+            }
+        if (searchModuleStudentDTO.getGrammarRulesId() != null && !searchModuleStudentDTO.getGrammarRulesId().isEmpty()) {
+                List<ObjectId> grammarObjectIds = searchModuleStudentDTO.getGrammarRulesId().stream().map(ObjectId::new).toList();
+                criteriaList.add(Criteria.where("grammarRules._id").in(grammarObjectIds));
+            }
+        if (!criteriaList.isEmpty()) {
+                query.addCriteria(new Criteria().andOperator(criteriaList.toArray(new Criteria[0])));
+            }
+                long total = mongoTemplate.count(query, ModuleEntity.class);
+        query.with(pageable);
+        List<ModuleEntity> moduleEntities = mongoTemplate.find(query, ModuleEntity.class);
+
+
         // Transforming modules into DTOS
         List<ModuleResponseStudentDTO> moduleResponseStudentDTOList = new ArrayList<>();
         for (ModuleEntity moduleEntity : moduleEntities) {
@@ -50,7 +76,7 @@ public class SearchStudentService {
         // Finding user modules
         Set<String> moduleIds = moduleResponseStudentDTOList.stream().map(ModuleResponseStudentDTO::getId).collect(Collectors.toSet());
         List<ModuleStudent> moduleStudents = moduleStudentRepository
-                .findByIdStudentUserNameAndIdModuleIdIn(userEntity.getId(), moduleIds);
+                .findByStudentIdAndModuleIdIn(userEntity.getId(), moduleIds);
 
         // If I need some filter that comes from the user, filter
         if(searchModuleStudentDTO.getStatus() != null && !searchModuleStudentDTO.getStatus().isEmpty()) {
@@ -58,7 +84,7 @@ public class SearchStudentService {
         }
 
         // I put the information in the DTO regarding the user
-        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream().collect(Collectors.toMap(moduleStudent -> moduleStudent.getId().getModuleId(), moduleStudent -> moduleStudent));
+        Map<String, ModuleStudent> moduleStudentMap = moduleStudents.stream().collect(Collectors.toMap(moduleStudent -> moduleStudent.getModuleId(), moduleStudent -> moduleStudent));
         for (ModuleResponseStudentDTO dto : moduleResponseStudentDTOList) {
             ModuleStudent correspondingModuleStudent = moduleStudentMap.get(dto.getId());
             if (correspondingModuleStudent != null) {
@@ -67,14 +93,14 @@ public class SearchStudentService {
             }
         }
 
-        return new PageImpl<>(moduleResponseStudentDTOList, pageable, queryResult.getTotalElements());
+        return new PageImpl<>(moduleResponseStudentDTOList, pageable, total);
 
     }
 
     public List<ModuleResponseStudentDTO> filterByStudent (List<ModuleStudent> moduleStudents, SearchModuleStudentDTO searchModuleStudentDTO, List<ModuleResponseStudentDTO> moduleResponseStudentDTOList) {
 
         Set<String> studentModuleIdsBeforeFilter = moduleStudents.stream()
-                .map(s -> s.getId().getModuleId())
+                .map(s -> s.getModuleId())
                 .collect(Collectors.toSet());
 
         moduleStudents = moduleStudents.stream().filter(moduleStudent -> {
@@ -101,7 +127,7 @@ public class SearchStudentService {
         }).toList();
 
         Set<String> studentModuleIds = moduleStudents.stream()
-                .map(s -> s.getId().getModuleId())
+                .map(s -> s.getModuleId())
                 .collect(Collectors.toSet());
 
         moduleResponseStudentDTOList.removeIf(module -> {

@@ -1,6 +1,5 @@
 package com.fluveny.fluveny_backend.api.dto.exercise;
 
-import com.fluveny.fluveny_backend.infraestructure.enums.ExerciseStyle;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

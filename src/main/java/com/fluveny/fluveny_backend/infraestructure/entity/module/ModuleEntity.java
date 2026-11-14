@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.infraestructure.entity.LevelEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.TextBlockEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleEntity;
 import com.fluveny.fluveny_backend.infraestructure.entity.grammarrule.GrammarRuleModuleEntity;
+import com.fluveny.fluveny_backend.infraestructure.enums.ModuleStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -12,7 +13,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 @Document(collection = "fl_module")
@@ -30,6 +33,11 @@ public class ModuleEntity {
     private List<GrammarRuleEntity> grammarRules;
     private TextBlockEntity introduction;
     private List<String> finalChallenge = new ArrayList<>();
+
+    private String authorUsername;
+    private LocalDateTime LastModified;
+    private ModuleStatus status;
+
     @DBRef
     private List<GrammarRuleModuleEntity> grammarRuleModules;
 

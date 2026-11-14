@@ -1,7 +1,6 @@
 package com.fluveny.fluveny_backend.api.dto.module.introduction;
 
 import com.fluveny.fluveny_backend.api.dto.module.TextBlockRequestDTO;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

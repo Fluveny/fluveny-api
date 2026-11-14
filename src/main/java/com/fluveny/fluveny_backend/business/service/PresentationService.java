@@ -43,7 +43,7 @@ public class PresentationService {
         if(presentationEntity.isEmpty()) {
             throw new BusinessException("No Presentation with this ID was found.", HttpStatus.NOT_FOUND);
         }
-
+        saveContentManager.updateLastModified(presentationEntity.get().getGrammarRuleModuleId());
         presentationRepository.deleteById(id);
 
     }
@@ -56,6 +56,7 @@ public class PresentationService {
         }
 
         saveContentManager.presentationExistInGrammarRuleModule(id, idGrammarRuleModule);
+        saveContentManager.updateLastModified(presentationEntity.get().getGrammarRuleModuleId());
         presentation.setId(id);
 
         return presentationRepository.save(presentation);
@@ -64,6 +65,7 @@ public class PresentationService {
     public PresentationEntity createPresentation(PresentationEntity presentationEntity) {
         PresentationEntity presentationEntitySaved = presentationRepository.save(presentationEntity);
         saveContentManager.addPresentationToGrammarRuleModule(presentationEntity.getGrammarRuleModuleId(), presentationEntitySaved);
+        saveContentManager.updateLastModified(presentationEntitySaved.getGrammarRuleModuleId());
         return presentationEntitySaved;
     }
 }
