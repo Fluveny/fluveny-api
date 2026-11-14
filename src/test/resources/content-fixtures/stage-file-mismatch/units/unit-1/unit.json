@@ -1,0 +1,28 @@
+{
+  "unitKey": "unit-1",
+  "order": 1,
+  "schemaVersion": 1,
+  "title": "Unit 1: Hello!",
+  "stages": [
+    "s1-meet-alex",
+    "s3-numbers"
+  ],
+  "usefulExpressions": [
+    {
+      "expressionKey": "nice-to-meet-you",
+      "term": "Nice to meet you",
+      "meaning": "Prazer em conhecer você",
+      "examples": [
+        "**Nice to meet you**, {name}!"
+      ]
+    },
+    {
+      "expressionKey": "be-from",
+      "term": "Be from",
+      "meaning": "Ser de",
+      "examples": [
+        "I am from {country}."
+      ]
+    }
+  ]
+}

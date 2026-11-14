@@ -1,0 +1,13 @@
+{
+  "type": "choice",
+  "items": [
+    {
+      "itemKey": "s1-greetings-hello",
+      "optionKey": "nice-to-meet-you-too"
+    },
+    {
+      "itemKey": "s1-greetings-pronoun",
+      "optionKey": "no"
+    }
+  ]
+}

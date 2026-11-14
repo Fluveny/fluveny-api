@@ -1,0 +1,9 @@
+{
+  "type": "choice",
+  "items": [
+    {
+      "itemKey": "s2-flags-brazil",
+      "optionKey": "brazil"
+    }
+  ]
+}

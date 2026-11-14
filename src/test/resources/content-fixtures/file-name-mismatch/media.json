@@ -1,0 +1,11 @@
+{
+  "flag-brazil": {
+    "kind": "image",
+    "source": "bundled"
+  },
+  "flag-japan": {
+    "kind": "image",
+    "source": "remote",
+    "url": "https://cdn.example.com/flags/japan.png"
+  }
+}

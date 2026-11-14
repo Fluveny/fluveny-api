@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/text.schema.json",
+  "title": "Texto do conteúdo",
+  "description": "Uma string ou as variantes de pronome {he, she, they}, as três obrigatórias (AD-8). A formatação aceita é só **negrito** e [[texto|expressionKey]]. Os placeholders seguem a gramática de x-fluveny-placeholder: {name}, {country}, {avatar.<campo>} e {likes.<item>}. O ContentValidator confere a formatação e os placeholders.",
+  "x-fluveny-text": true,
+  "x-fluveny-placeholder": "^(name|country|avatar\\.[a-z][a-zA-Z0-9]*|likes\\.[a-z][a-zA-Z0-9]*)$",
+  "oneOf": [
+    {
+      "type": "string",
+      "minLength": 1
+    },
+    {
+      "$ref": "#/$defs/pronounVariants"
+    }
+  ],
+  "$defs": {
+    "pronounVariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["he", "she", "they"],
+      "properties": {
+        "he": { "type": "string", "minLength": 1 },
+        "she": { "type": "string", "minLength": 1 },
+        "they": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

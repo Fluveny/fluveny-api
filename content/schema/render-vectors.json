@@ -1,0 +1,194 @@
+{
+  "description": "Vetores de renderização do texto do conteúdo (AD-8). Rodados pela suíte Java (ContentRendererTest) e pela do App. pronoun: he, she, they ou null (sem escolha, vale they). vars: valores por placeholder, sem as chaves; ausente ou null vale sem variáveis.",
+  "vectors": [
+    {
+      "name": "texto simples sem placeholder",
+      "text": "Hello, how are you?",
+      "vars": {},
+      "pronoun": null,
+      "expected": "Hello, how are you?"
+    },
+    {
+      "name": "variante padrão they, sem pronome escolhido",
+      "text": {
+        "he": "He is {name}.",
+        "she": "She is {name}.",
+        "they": "They are {name}."
+      },
+      "vars": {
+        "name": "Ana"
+      },
+      "pronoun": null,
+      "expected": "They are Ana."
+    },
+    {
+      "name": "variante he",
+      "text": {
+        "he": "He is from {country}.",
+        "she": "She is from {country}.",
+        "they": "They are from {country}."
+      },
+      "vars": {
+        "country": "Brazil"
+      },
+      "pronoun": "he",
+      "expected": "He is from Brazil."
+    },
+    {
+      "name": "variante she",
+      "text": {
+        "he": "He likes it.",
+        "she": "She likes it.",
+        "they": "They like it."
+      },
+      "vars": {},
+      "pronoun": "she",
+      "expected": "She likes it."
+    },
+    {
+      "name": "variante they escolhida",
+      "text": {
+        "he": "He likes it.",
+        "she": "She likes it.",
+        "they": "They like it."
+      },
+      "vars": {},
+      "pronoun": "they",
+      "expected": "They like it."
+    },
+    {
+      "name": "placeholders name e country",
+      "text": "My name is {name} and I am from {country}.",
+      "vars": {
+        "name": "Lucas",
+        "country": "Brazil"
+      },
+      "pronoun": null,
+      "expected": "My name is Lucas and I am from Brazil."
+    },
+    {
+      "name": "placeholder de avatar",
+      "text": "Your avatar has {avatar.hair} hair.",
+      "vars": {
+        "avatar.hair": "curly"
+      },
+      "pronoun": null,
+      "expected": "Your avatar has curly hair."
+    },
+    {
+      "name": "placeholder de likes",
+      "text": "You like {likes.food}.",
+      "vars": {
+        "likes.food": "pizza"
+      },
+      "pronoun": null,
+      "expected": "You like pizza."
+    },
+    {
+      "name": "placeholder sem valor fica como está",
+      "text": "Hi, {name}! You are from {country}.",
+      "vars": {
+        "name": "Bia"
+      },
+      "pronoun": null,
+      "expected": "Hi, Bia! You are from {country}."
+    },
+    {
+      "name": "placeholder repetido",
+      "text": "{name}, {name}!",
+      "vars": {
+        "name": "Leo"
+      },
+      "pronoun": null,
+      "expected": "Leo, Leo!"
+    },
+    {
+      "name": "negrito preservado",
+      "text": "I am **{name}**.",
+      "vars": {
+        "name": "Ana"
+      },
+      "pronoun": null,
+      "expected": "I am **Ana**."
+    },
+    {
+      "name": "expressão útil preservada",
+      "text": "[[Nice to meet you|nice-to-meet-you]], {name}!",
+      "vars": {
+        "name": "Ana"
+      },
+      "pronoun": null,
+      "expected": "[[Nice to meet you|nice-to-meet-you]], Ana!"
+    },
+    {
+      "name": "maiúsculas e conjugação não mudam",
+      "text": {
+        "he": "{name} plays.",
+        "she": "{name} plays.",
+        "they": "{name} play."
+      },
+      "vars": {
+        "name": "alex"
+      },
+      "pronoun": null,
+      "expected": "alex play."
+    },
+    {
+      "name": "valor com caracteres especiais entra literal",
+      "text": "Hello, {name}.",
+      "vars": {
+        "name": "$1 {country} \\o/"
+      },
+      "pronoun": null,
+      "expected": "Hello, $1 {country} \\o/."
+    },
+    {
+      "name": "variante com formatação e placeholder",
+      "text": {
+        "he": "**He** is [[from|be-from]] {country}.",
+        "she": "**She** is [[from|be-from]] {country}.",
+        "they": "**They** are [[from|be-from]] {country}."
+      },
+      "vars": {
+        "country": "Japan"
+      },
+      "pronoun": "she",
+      "expected": "**She** is [[from|be-from]] Japan."
+    },
+    {
+      "name": "texto simples ignora o pronome escolhido",
+      "text": "Hello, {name}.",
+      "vars": {
+        "name": "Ana"
+      },
+      "pronoun": "he",
+      "expected": "Hello, Ana."
+    },
+    {
+      "name": "placeholder dentro do rótulo da expressão útil",
+      "text": "[[{name}|be-from]] is here.",
+      "vars": {
+        "name": "Ana"
+      },
+      "pronoun": null,
+      "expected": "[[Ana|be-from]] is here."
+    },
+    {
+      "name": "vars ausente",
+      "text": "Hi, {name}!",
+      "pronoun": null,
+      "expected": "Hi, {name}!"
+    },
+    {
+      "name": "vars null",
+      "text": {
+        "he": "He is {name}.",
+        "she": "She is {name}.",
+        "they": "They are {name}."
+      },
+      "vars": null,
+      "pronoun": "she",
+      "expected": "She is {name}."
+    }
+  ]
+}

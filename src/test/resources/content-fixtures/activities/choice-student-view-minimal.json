@@ -1,0 +1,22 @@
+{
+  "activityKey": "s2-flags",
+  "type": "choice",
+  "title": "Flags",
+  "items": [
+    {
+      "itemKey": "q",
+      "question": "Pick one.",
+      "options": [
+        {
+          "optionKey": "a",
+          "text": "A"
+        },
+        {
+          "optionKey": "b",
+          "text": "B"
+        }
+      ]
+    }
+  ],
+  "xp": 5
+}

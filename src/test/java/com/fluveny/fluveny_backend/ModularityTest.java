@@ -28,7 +28,7 @@ class ModularityTest {
 			"auth", Set.of("account", "mail", PLATFORM),
 			"team", Set.of("account", "auth", PLATFORM),
 			"content", Set.of(PLATFORM),
-			"learning", Set.of("content", "account", "metrics", PLATFORM),
+			"learning", Set.of("content", "content :: activity", "content :: render", "account", "metrics", PLATFORM),
 			"metrics", Set.of(PLATFORM),
 			"survey", Set.of("metrics", PLATFORM),
 			"mail", Set.of(PLATFORM),
@@ -41,7 +41,7 @@ class ModularityTest {
 					"mail", "platform");
 	}
 
-	// Os módulos ainda estão vazios, então o verify() aceitaria qualquer
+	// Os módulos ainda quase não se chamam, então o verify() aceitaria qualquer
 	// allowedDependencies. Este teste prende a declaração ao grafo da spine.
 	@Test
 	void declaresTheSpineGraph() throws ClassNotFoundException {
@@ -54,6 +54,14 @@ class ModularityTest {
 			assertThat(annotation.allowedDependencies()).as(entry.getKey())
 				.containsExactlyInAnyOrderElementsOf(entry.getValue());
 		}
+	}
+
+	// AD-3: content expõe as famílias da AD-6 (activity) e o renderer da AD-8 (render).
+	@Test
+	void contentExposesTheActivityAndRenderNamedInterfaces() {
+		var interfaces = modules.getModuleByName("content").orElseThrow().getNamedInterfaces();
+		assertThat(interfaces.getByName("activity")).isPresent();
+		assertThat(interfaces.getByName("render")).isPresent();
 	}
 
 	@Test
