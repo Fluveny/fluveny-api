@@ -10,11 +10,17 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fluveny.fluveny_backend.platform.security.PublicRoute;
 import com.fluveny.fluveny_backend.platform.web.ApiResponse;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 /**
  * {@code GET /api/v1/meta}: versão mínima do App e Tipos de Atividade
  * suportados (AD-11). Público.
  */
 @RestController
+@Tag(name = "meta")
 @EnableConfigurationProperties(MetaProperties.class)
 class MetaController {
 
@@ -28,6 +34,7 @@ class MetaController {
 	}
 
 	@PublicRoute
+	@Operation(operationId = "getMeta")
 	@GetMapping("/api/v1/meta")
 	ApiResponse<Meta> meta() {
 		List<ActivityTypeSupport> types = this.sources.orderedStream()
@@ -36,7 +43,8 @@ class MetaController {
 		return ApiResponse.of(new Meta(this.properties.minVersion(), types));
 	}
 
-	record Meta(String minAppVersion, List<ActivityTypeSupport> activityTypes) {
+	record Meta(@Schema(requiredMode = RequiredMode.REQUIRED) String minAppVersion,
+			@Schema(requiredMode = RequiredMode.REQUIRED) List<ActivityTypeSupport> activityTypes) {
 	}
 
 }
