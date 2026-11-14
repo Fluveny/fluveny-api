@@ -1,7 +1,11 @@
-# Achados antigos do gitleaks, um fingerprint por linha (história 1.1, NFR1).
-# São credenciais de exemplo já removidas da árvore e sem uso. Reescrever o
-# histórico está fora de escopo, então elas ficam listadas aqui. Qualquer
-# achado novo continua bloqueando a CI.
+# Achado antigo do gitleaks, um fingerprint por linha (história 1.1, NFR1).
+# É uma credencial de exemplo já removida da árvore e sem uso. Reescrever o
+# histórico está fora de escopo, então ela fica listada aqui. Qualquer achado
+# novo continua bloqueando a CI.
+#
+# O commit já é ancestral da main, então fica fora do range que a CI varre.
+# Esta lista serve para varreduras do histórico inteiro (gitleaks git sem
+# --log-opts). Os commits da sprint9 não geraram achados.
 
 # .env.example (commit 0dfe1dc, "docker: dockerization the api"): senha e
 # segredo JWT de exemplo do compose dev. Arquivo apagado na 1.1.

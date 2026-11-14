@@ -1,5 +1,7 @@
 package com.fluveny.fluveny_backend;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
 import org.springframework.modulith.docs.Documenter;
@@ -11,6 +13,13 @@ import org.springframework.modulith.docs.Documenter;
 class ModularityTest {
 
 	private final ApplicationModules modules = ApplicationModules.of(FluvenyBackendApplication.class);
+
+	@Test
+	void detectsTheNineModules() {
+		assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
+			.containsExactlyInAnyOrder("account", "auth", "team", "content", "learning", "metrics", "survey",
+					"mail", "platform");
+	}
 
 	@Test
 	void verifiesModularStructure() {

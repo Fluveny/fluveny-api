@@ -10,7 +10,7 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 - Nunca dê push na `main`. Trabalhe numa branch curta, abra PR e faça squash na `main`. O merge exige CI verde e 1 aprovação humana (AD-2). Nada no GitHub obriga isso ainda, então a regra vale pela palavra.
 - Não estenda, não conserte nem porte o domínio legado: Módulo, GrammarRule, exercícios, JWT, `RunOnStartup`, login por username e coleções `fl_*` (AD-17).
 - Trabalho novo vai num dos 9 pacotes de módulo (`account`, `auth`, `team`, `content`, `learning`, `metrics`, `survey`, `mail`, `platform`). As dependências permitidas ficam no `package-info.java` de cada módulo e seguem o grafo da AD-3; mudar o grafo é mudar a spine.
-- Nunca grave segredo, senha ou token em código, `.properties` ou `docker-compose`. A URI do Mongo vem só de `SPRING_DATA_MONGODB_URI`. Achados antigos do gitleaks ficam na `.gitleaksignore`; não acrescente achados novos lá, remova o segredo.
+- Nunca grave segredo, senha ou token em código, `.properties` ou `docker-compose`. A URI do Mongo vem só de `SPRING_DATA_MONGODB_URI`, lida em `spring.mongodb.uri` (o Boot 4 ignora a `spring.data.mongodb.uri`); o `MongoUriBindingIT` prova o caminho. Achados antigos do gitleaks ficam na `.gitleaksignore`; não acrescente achados novos lá, remova o segredo.
 - Implemente histórias com `bmad-build <número>` e revise com `bmad-code-review` num contexto novo. Depois do merge, a história muda de status em `../_bmad-output/implementation-artifacts/sprint-status.yaml` e no card do [Project](https://github.com/orgs/Fluveny/projects/12).
 
 ## Running and verifying
