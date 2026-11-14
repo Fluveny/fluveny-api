@@ -1,0 +1,51 @@
+# CI mínima: build e testes em todo PR e em todo push na main.
+# A história 1.1 completa esta CI: Java 25, Testcontainers, verificação do
+# Spring Modulith e publicação da imagem no GHCR.
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  build:
+    name: Build e testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # Mongo de CI sem autenticação. A variável de ambiente vence os
+      # .properties, então nenhuma credencial precisa existir aqui.
+      SPRING_DATA_MONGODB_URI: mongodb://localhost:27017/fluvenydb_test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build e testes
+        run: ./mvnw -B -ntp verify
