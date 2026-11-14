@@ -21,6 +21,7 @@ class LocalSeedPasswordTest {
         assertThatIllegalStateException()
                 .isThrownBy(() -> new LocalSeedPassword(new MockEnvironment()).value())
                 .withMessageContaining("LOCAL_SEED_PASSWORD")
+                .withMessageContaining("variável de ambiente")
                 .withMessageContaining(".env.local.example");
     }
 }

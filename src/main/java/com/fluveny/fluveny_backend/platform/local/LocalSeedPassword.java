@@ -32,7 +32,9 @@ public class LocalSeedPassword {
         if (!StringUtils.hasText(password)) {
             throw new IllegalStateException(
                     VARIABLE
-                            + " vazia: copie o .env.local.example para .env.local e preencha a"
+                            + " vazia: defina a variável de ambiente "
+                            + VARIABLE
+                            + " ou copie o .env.local.example para .env.local e preencha a"
                             + " senha.");
         }
         return password;

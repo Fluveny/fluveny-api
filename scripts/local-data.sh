@@ -17,13 +17,14 @@ base_url="${FLUVENY_API_URL:-http://localhost:8080}"
 body="$(mktemp)"
 trap 'rm -f "$body"' EXIT
 
-if ! status="$(curl -sS -o "$body" -w '%{http_code}' -X POST "$base_url/local/$action" 2>/dev/null)"; then
+if ! status="$(curl -sS --max-time 120 -o "$body" -w '%{http_code}' -X POST "$base_url/local/$action" 2>/dev/null)"; then
   echo "A API não está no ar em $base_url. Suba com \`mise run up\` em outro terminal e rode de novo." >&2
   exit 1
 fi
 
-if [ "$status" = "404" ]; then
-  echo "A API em $base_url respondeu 404: ela não está no perfil local. Suba com \`mise run up\`." >&2
+# Fora do perfil local, /local/* não existe e cai no deny-by-default (401/403) ou no 404.
+if [ "$status" = "401" ] || [ "$status" = "403" ] || [ "$status" = "404" ]; then
+  echo "A API em $base_url respondeu $status: ela não está no perfil local. Suba com \`mise run up\`." >&2
   exit 1
 fi
 

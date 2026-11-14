@@ -3,7 +3,7 @@
 # Primeira vez: `mise trust && mise install && mise run setup`.
 
 [tools]
-java = "temurin-25"
+java = "temurin-25.0.5+8.0.LTS"
 lefthook = "2.2.2"
 
 [tasks.setup]

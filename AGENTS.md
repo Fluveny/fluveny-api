@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-11-14 against feat/1-5-schema-conteudo (história 1.5). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-14 against 41cf25062cc3be38f13edc811fe17bbb13ce08b2 (feat/1-4-ambiente-local, história 1.4). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## fluveny-api
 
@@ -15,11 +15,11 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 
 ## Running and verifying
 
-- Build e testes: `./mvnw -B -ntp verify`, com JDK 25 e Docker ligados. Roda os unitários (surefire), o `ModularityTest` (verificação do Spring Modulith) e os `*IT` (failsafe). Os ITs usam um `mongo:8` do Testcontainers via `@ServiceConnection`; não precisam de Mongo local nem de variável.
-- Sem JDK 25 na máquina, rode o build num container `maven:3-eclipse-temurin-25` (comando no README).
+- Antes de abrir PR: `mise run check` (`./mvnw -B -ntp spotless:check verify`), com Docker ligado. É o que a CI roda: formatação, unitários (surefire), o `ModularityTest` e os `*IT` (failsafe). Os ITs usam o `mongo:8` em replica set do `LocalMongoContainer`; não precisam de Mongo local nem de variável. Formato fora do padrão: `mise run format`.
+- JDK 25 e lefthook vêm do `mise.toml` (`mise install`). Sem o mise, rode o build num container `maven:3-eclipse-temurin-25` (comando no README).
 - O build usa a versão de Java declarada em `java.version` no `pom.xml`. Não use a versão instalada na máquina.
 - Imagem: `docker build -t fluveny-api:local .`. A CI publica no GHCR a cada push na `main`.
-- O ambiente local (perfil `local`, replica set, `LocalDataLoader`) é da história 1.4.
+- API local: `mise run up` (perfil `local`, `./mvnw spring-boot:test-run` pela `LocalFluvenyApplication` dos testes). O Mongo é efêmero e nasce vazio a cada `up`. `mise run seed` e `mise run reset` chamam `POST /local/*` e só funcionam com a API no ar.
 
 ## Conventions that differ from defaults
 
@@ -27,16 +27,19 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 - Coleções Mongo em snake_case no plural, sem prefixo. Erros em RFC 9457 com `code` em SCREAMING_SNAKE.
 - Sucesso sai em `ApiResponse.of(data)` (`{data, message?}`). Erro de domínio é `throw new ApiException(status, "CODE", "detalhe em pt-BR")`; o `ProblemHandler` da `platform` faz o resto. Nunca devolva mensagem de exceção ao cliente.
 - Toda rota declara `@PublicRoute` ou `@RequiresRole(Role.X)` no método ou na classe (o método vence). Sem declaração a rota é negada e o `RouteDeclarationScanTest` falha o build. A hierarquia `ADMIN > CONTENT_CREATOR` mora só no `RoleHierarchyConfig`; `STUDENT` fica fora.
-- Os módulos usam a `platform` pelas named interfaces `web`, `security` e `meta`, e declaram `"platform :: *"` em `allowedDependencies`. `platform.config` e `platform.observability` são internos. `content` expõe as named interfaces `activity` (famílias da AD-6) e `render` (renderer da AD-8), além do pacote base para a `application`; `learning` declara `"content"`, `"content :: activity"` e `"content :: render"` (AD-3).
+- Os módulos usam a `platform` pelas named interfaces `web`, `security`, `meta` e `local`, e declaram `"platform :: *"` em `allowedDependencies`. `platform.config` e `platform.observability` são internos. `content` expõe as named interfaces `activity` (famílias da AD-6) e `render` (renderer da AD-8), além do pacote base para a `application`; `learning` declara `"content"`, `"content :: activity"` e `"content :: render"` (AD-3).
 - Sem `SPRING_PROFILES_ACTIVE` o perfil é `prod`, que exige `SPRING_DATA_MONGODB_URI`. Variáveis opcionais: `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `FLUVENY_MIN_APP_VERSION`. Teste `@SpringBootTest` sem Mongo passa uma URI local falsa (veja `PlatformWebTest`); o cliente não conecta na partida.
 - O contrato é o `openapi/openapi.json` (AD-11), e o App gera os tipos dele. Mudou rota ou DTO, gere de novo com `./mvnw -B -ntp test -Dtest=OpenApiContractTest -Dopenapi.write=true` e commite junto; nunca edite o arquivo nem resolva conflito nele à mão. No `/api/v1`, só mudança aditiva: o job `Contrato` (`oasdiff breaking` contra a `main`) falha em remoção de rota ou de campo obrigatório da resposta, troca de tipo, campo obrigatório novo na requisição e valor novo de `enum` na resposta. Remover campo opcional da resposta passa (info no oasdiff 1.38), então o App trata opcional como opcional.
 - Conteúdo Estruturado em `content/units/<unitKey>/` (`unit.json` + `stages/<stageKey>.json`), mídia em `content/media.json`, formato no JSON Schema de `content/schema/` (fonte única, AD-4/AD-6; o prefixo dos `$id`, `https://fluveny.github.io/content-schema/v1/`, é `[ASSUMPTION]`). Chaves em kebab-case, nunca reaproveitadas. Texto é string ou `{he, she, they}`; só `**negrito**`, `[[texto|expressionKey]]` e os placeholders de `x-fluveny-placeholder`. O `ContentUnitsTest` valida `content/` em todo `./mvnw test` e lista arquivo, ponteiro, chave e regra de cada erro.
 - Campo que o aluno não vê é `"x-fluveny-secret": true` no schema; nunca escreva lista de campos secretos no código. As famílias `Activity`, `ActivityStudentView` e `Answer` ficam em `content.activity` (named interface `activity`), um record por Tipo; o `ActivityFidelityTest` trava schema, records e fixtures. Tipo novo: siga "Tipo de Atividade novo" no README.
 - O `ContentText` sai no OpenAPI pelo `ContentTextModelConverter` (por causa do `@JsonValue`); no teste, use `new ModelConverters(true)` com esse conversor.
-- Logs em JSON (ECS). Não logue corpo de requisição, cabeçalhos de autenticação nem PII.
+- Entidade nova estende o carregador local do seu módulo: um bean `LocalDataSeeder` (`platform :: local`) com `@Profile("local")`, idempotente (grava por chave, com upsert), com os dados mínimos para testar a própria tela (AD-18). Senha de usuário de seed só pela `LocalSeedPassword` (`LOCAL_SEED_PASSWORD` no `.env.local`); nunca crie seed fora do perfil `local`.
+- O perfil `local` recusa subir junto de `prod` e com Mongo que não seja `localhost`, `127.0.0.1`, `::1` ou `mongo` (`LocalProfileGuard`). Rotas do perfil `local` ficam em `/local/*`, fora de `/api/v1` e do contrato.
+- Logs em JSON (ECS), exceto no perfil `local`, que loga texto. Não logue corpo de requisição, cabeçalhos de autenticação nem PII.
 
 ## Known pitfalls
 
-- O `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), como o do Docker Desktop recente: o `ApplicationIT` falha localmente com "Container exited with code 1". Na CI (runner Ubuntu) ele roda. Não troque a imagem do teste; atualize o Docker Desktop ou rode o IT só na CI.
+- O `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), como o do Docker Desktop recente: os ITs e o `mise run up` falham localmente com "Container exited with code 1". Na CI (runner Ubuntu) eles rodam. Não troque a imagem do `LocalMongoContainer`; atualize o Docker Desktop ou rode os ITs só na CI.
+- O `MongoDBContainer` do Testcontainers 2.0 não sobe replica set sem `.withReplicaSet()`, e aí as transações falham. Para Mongo em teste, importe o `LocalMongoContainer` em vez de criar outro container.
 
 <!-- /bmad:context -->
