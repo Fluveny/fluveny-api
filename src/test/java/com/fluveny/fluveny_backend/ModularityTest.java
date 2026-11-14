@@ -18,16 +18,20 @@ class ModularityTest {
 
 	private static final ApplicationModules modules = ApplicationModules.of(FluvenyBackendApplication.class);
 
+	// A API pública da platform fica nas named interfaces dela (web, security,
+	// meta); "platform" sozinho só daria acesso ao pacote base.
+	private static final String PLATFORM = "platform :: *";
+
 	// Setas cheias do grafo da AD-3, mais platform para todos. Mudar aqui é mudar a spine.
 	private static final Map<String, Set<String>> SPINE_GRAPH = Map.of(
-			"account", Set.of("mail", "metrics", "platform"),
-			"auth", Set.of("account", "mail", "platform"),
-			"team", Set.of("account", "auth", "platform"),
-			"content", Set.of("platform"),
-			"learning", Set.of("content", "account", "metrics", "platform"),
-			"metrics", Set.of("platform"),
-			"survey", Set.of("metrics", "platform"),
-			"mail", Set.of("platform"),
+			"account", Set.of("mail", "metrics", PLATFORM),
+			"auth", Set.of("account", "mail", PLATFORM),
+			"team", Set.of("account", "auth", PLATFORM),
+			"content", Set.of(PLATFORM),
+			"learning", Set.of("content", "account", "metrics", PLATFORM),
+			"metrics", Set.of(PLATFORM),
+			"survey", Set.of("metrics", PLATFORM),
+			"mail", Set.of(PLATFORM),
 			"platform", Set.of());
 
 	@Test

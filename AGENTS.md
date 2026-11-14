@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-11-14 against chore/1-1-base-nova (história 1.1). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-14 against feat/1-2-platform (história 1.2). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## fluveny-api
 
@@ -25,6 +25,11 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 
 - Código, identificadores e chaves em inglês. Mensagens ao usuário em pt-BR.
 - Coleções Mongo em snake_case no plural, sem prefixo. Erros em RFC 9457 com `code` em SCREAMING_SNAKE.
+- Sucesso sai em `ApiResponse.of(data)` (`{data, message?}`). Erro de domínio é `throw new ApiException(status, "CODE", "detalhe em pt-BR")`; o `ProblemHandler` da `platform` faz o resto. Nunca devolva mensagem de exceção ao cliente.
+- Toda rota declara `@PublicRoute` ou `@RequiresRole(Role.X)` no método ou na classe (o método vence). Sem declaração a rota é negada e o `RouteDeclarationScanTest` falha o build. A hierarquia `ADMIN > CONTENT_CREATOR` mora só no `RoleHierarchyConfig`; `STUDENT` fica fora.
+- Os módulos usam a `platform` pelas named interfaces `web`, `security` e `meta`, e declaram `"platform :: *"` em `allowedDependencies`. `platform.config` e `platform.observability` são internos.
+- Sem `SPRING_PROFILES_ACTIVE` o perfil é `prod`, que exige `SPRING_DATA_MONGODB_URI`. Variáveis opcionais: `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `FLUVENY_MIN_APP_VERSION`. Teste `@SpringBootTest` sem Mongo passa uma URI local falsa (veja `PlatformWebTest`); o cliente não conecta na partida.
+- Logs em JSON (ECS). Não logue corpo de requisição, cabeçalhos de autenticação nem PII.
 
 ## Known pitfalls
 
