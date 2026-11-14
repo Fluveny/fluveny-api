@@ -11,29 +11,26 @@ import org.testcontainers.mongodb.MongoDBContainer;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * Sobe o contexto inteiro contra um MongoDB 8 do Testcontainers (NFR13).
- * Não precisa de {@code SPRING_DATA_MONGODB_URI}: a {@code @ServiceConnection}
- * vence a propriedade. Por isso roda fora do perfil {@code prod}, que exige a
- * variável; o {@code MongoUriBindingIT} sobe o contexto no {@code prod}.
+ * Sobe o contexto inteiro contra um MongoDB 8 do Testcontainers (NFR13). Não precisa de {@code
+ * SPRING_DATA_MONGODB_URI}: a {@code @ServiceConnection} vence a propriedade. Por isso roda fora do
+ * perfil {@code prod}, que exige a variável; o {@code MongoUriBindingIT} sobe o contexto no {@code
+ * prod}.
  */
 @SpringBootTest
 @ActiveProfiles("test")
 @Import(ApplicationIT.MongoContainerConfig.class)
 class ApplicationIT {
 
-	@Test
-	void contextLoads() {
-	}
+    @Test
+    void contextLoads() {}
 
-	@TestConfiguration(proxyBeanMethods = false)
-	static class MongoContainerConfig {
+    @TestConfiguration(proxyBeanMethods = false)
+    static class MongoContainerConfig {
 
-		@Bean
-		@ServiceConnection
-		MongoDBContainer mongoDbContainer() {
-			return new MongoDBContainer(DockerImageName.parse("mongo:8"));
-		}
-
-	}
-
+        @Bean
+        @ServiceConnection
+        MongoDBContainer mongoDbContainer() {
+            return new MongoDBContainer(DockerImageName.parse("mongo:8"));
+        }
+    }
 }
