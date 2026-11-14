@@ -1,0 +1,81 @@
+# Avança a história do PR no sprint-status.yaml do repositório de planejamento.
+# O push lá dispara o "Sincroniza o Project", que move o card.
+#   PR em rascunho aberto      -> in-progress
+#   PR aberto ou pronto        -> review
+#   PR mesclado                -> done
+# A história vem da linha "- História:" do template de PR (chave ou número, ex.: 1.4).
+name: Status da história
+
+on:
+  pull_request:
+    types: [opened, ready_for_review, closed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: story-status-planejamento
+  cancel-in-progress: false
+
+jobs:
+  status:
+    name: Atualiza o sprint-status
+    if: github.event.action != 'closed' || github.event.pull_request.merged
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PR_BODY: ${{ github.event.pull_request.body }}
+      PR_REF: ${{ github.repository }}#${{ github.event.pull_request.number }}
+      STATUS_FILE: _bmad-output/implementation-artifacts/sprint-status.yaml
+    steps:
+      - name: Lê a história do PR
+        id: story
+        run: |
+          story=$(printf '%s' "$PR_BODY" | grep -oiP 'Hist(o|ó)ria:\s*`?\K[0-9]+[.-][0-9]+[^\s`]*' | head -1 || true)
+          if [ -z "$story" ]; then
+            echo "::warning::O PR não diz a história (linha '- História:' do template). Nada a atualizar."
+            exit 0
+          fi
+          if [ "${{ github.event.action }}" = "closed" ]; then
+            target=done
+          elif [ "${{ github.event.pull_request.draft }}" = "true" ]; then
+            target=in-progress
+          else
+            target=review
+          fi
+          echo "story=$story" >> "$GITHUB_OUTPUT"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.story.outputs.story
+        with:
+          repository: Fluveny/fluveny-planejamento
+          token: ${{ secrets.PLANEJAMENTO_TOKEN }}
+          path: planejamento
+
+      - name: Avança o status e faz push
+        if: steps.story.outputs.story
+        working-directory: planejamento
+        env:
+          STORY: ${{ steps.story.outputs.story }}
+          TARGET: ${{ steps.story.outputs.target }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          for attempt in 1 2 3; do
+            git pull -q --rebase origin main
+            out=$(python3 .github/scripts/set_story_status.py "$STATUS_FILE" "$STORY" "$TARGET")
+            echo "$out"
+            key=$(echo "$out" | sed -n 's/^key=//p')
+            if echo "$out" | grep -q "result=unchanged"; then
+              echo "$key já está em $TARGET ou depois. Nada a fazer."
+              exit 0
+            fi
+            git commit -q -am "sprint-status: $key -> $TARGET ($PR_REF)"
+            if git push -q origin HEAD:main; then
+              exit 0
+            fi
+            git reset -q --hard origin/main
+          done
+          echo "::error::Não consegui fazer push no planejamento depois de 3 tentativas."
+          exit 1

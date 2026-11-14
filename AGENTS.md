@@ -11,7 +11,7 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 - Não estenda, não conserte nem porte o domínio legado: Módulo, GrammarRule, exercícios, JWT, `RunOnStartup`, login por username e coleções `fl_*` (AD-17). Trabalho novo vai nos pacotes de módulo da AD-3.
 - Até a história 1.1 mesclar a `sprint9`, só a 1.1 parte da `main`, porque a `main` está 27 commits atrás da `sprint9`. Qualquer outra história espera a 1.1.
 - Nunca grave segredo, senha ou token em código, `.properties` ou `docker-compose`. Não copie as credenciais de `src/test/resources/application-test.properties`; passe a URI por `SPRING_DATA_MONGODB_URI`.
-- Implemente histórias com `bmad-build <número>` e revise com `bmad-code-review` num contexto novo. Depois do merge, a história muda de status em `../_bmad-output/implementation-artifacts/sprint-status.yaml` e no card do [Project](https://github.com/orgs/Fluveny/projects/12).
+- Implemente histórias com `bmad-build <número>` e revise com `bmad-code-review` num contexto novo. Preencha a linha `- História:` do template de PR: o workflow `story-status.yml` usa essa linha para avançar a história no `sprint-status.yaml`, e o card do Project acompanha. Não mova cards nem commite o `sprint-status.yaml` à mão.
 
 ## Running and verifying
 
