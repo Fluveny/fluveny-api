@@ -1,0 +1,15 @@
+meta {
+  name: Seed
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/local/seed
+  body: none
+  auth: none
+}
+
+docs {
+  Roda de novo os carregadores do perfil local. Idempotente. O mesmo que `mise run seed`.
+}

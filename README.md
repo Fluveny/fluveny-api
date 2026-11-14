@@ -4,10 +4,12 @@ API do Fluveny: monólito modular em Java 25, Spring Boot 4.1 e Spring Modulith 
 
 ## Requisitos
 
-- **JDK 25** (por exemplo, `brew install --cask temurin@25`). O Maven vem pelo wrapper (`./mvnw`).
-- **Docker** ligado, para os testes de integração (Testcontainers) e para gerar a imagem.
+- **[mise](https://mise.jdx.dev)** (`brew install mise`). Ele instala o JDK 25 e o lefthook nas versões do `mise.toml`; o Maven vem pelo wrapper (`./mvnw`).
+- **Docker** ligado. O Mongo local, o dos testes de integração (Testcontainers) e a imagem rodam nele. Nada de Mongo instalado na máquina.
 
-Sem JDK 25 na máquina, dá para rodar o build num container:
+> **Docker Desktop:** o `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), e aí o `mise run up` e os ITs falham com "Container exited with code 1". Confira com `docker info --format '{{.KernelVersion}}'` e, se estiver na faixa, atualize o Docker Desktop para uma versão com kernel fora dela.
+
+Sem o mise, dá para rodar o build num container:
 
 ```bash
 docker run --rm -v "$PWD:/w" -w /w \
@@ -16,6 +18,35 @@ docker run --rm -v "$PWD:/w" -w /w \
   -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
   maven:3-eclipse-temurin-25 ./mvnw -B -ntp verify
 ```
+
+## Ambiente local
+
+```bash
+mise trust && mise install   # uma vez: JDK 25 e lefthook
+mise run setup               # uma vez: hooks do git
+mise run up                  # API em http://localhost:8080, perfil local
+```
+
+O `mise run up` sobe a API no perfil `local` com um `mongo:8` em replica set de um nó, do Testcontainers (`./mvnw spring-boot:test-run`, pela `LocalFluvenyApplication` dos testes). Não precisa de `.env` nem de Mongo instalado. O Swagger UI fica em http://localhost:8080/swagger-ui/index.html.
+
+O Mongo é efêmero: cada `up` começa com o banco vazio, e o `LocalDataLoader` roda os carregadores dos módulos quando a API fica pronta. Com a API no ar, em outro terminal:
+
+| Tarefa | O que faz |
+| --- | --- |
+| `mise run seed` | Roda os carregadores de novo (`POST /local/seed`). Idempotente: não duplica nada. |
+| `mise run reset` | Apaga o banco e roda os carregadores (`POST /local/reset`). |
+| `mise run check` | Formatação, build e todos os testes. É o que a CI roda. |
+| `mise run format` | Formata o código Java (google-java-format, estilo AOSP). |
+
+Com a API fora do ar, o `seed` e o `reset` avisam e saem com erro. A coleção [Bruno](https://www.usebruno.com) em [`api-collection/`](api-collection/) tem o ambiente `local` com o `/api/v1/meta`, o `/local/seed` e o `/local/reset`.
+
+### Perfil `local`
+
+- Só existe na máquina do dev (AD-18). A API não sobe com `local` junto de `prod`, nem com um Mongo que não seja local: `mongodb+srv://` é recusado, e o host precisa ser `localhost`, `127.0.0.1`, `::1` ou `mongo` (o serviço do compose do App). A mensagem cita os perfis ou o host.
+- As rotas `/local/*` ficam fora de `/api/v1` e do contrato OpenAPI, e só existem nesse perfil.
+- Os dados de desenvolvimento: cada módulo registra um bean `LocalDataSeeder` (named interface `platform :: local`) com `@Profile("local")` e os dados mínimos para testar as próprias telas, gravando por chave para ser idempotente. Ainda não há nenhum: o primeiro chega com a 1.7 (`content`) ou a 2.1 (`account`).
+- Senha de usuário de seed vem de `LOCAL_SEED_PASSWORD`, lida pela `LocalSeedPassword`. Copie o [`.env.local.example`](.env.local.example) para `.env.local` (fora do git) e preencha; o perfil `local` lê o arquivo sozinho. Nenhum usuário é criado por seed fora do perfil `local`.
+- Os logs saem em texto, não em JSON.
 
 ## Módulos
 
@@ -84,16 +115,19 @@ As restrições "texto ou mídia" da opção, `minItems`/`maxItems`, `pattern` e
 ## Build e testes
 
 ```bash
-./mvnw -B -ntp verify
+mise run check   # ./mvnw -B -ntp spotless:check verify
 ```
 
+- Formatação: google-java-format no estilo AOSP, pelo Spotless. O `spotless:check` falha a CI; `mise run format` corrige, e o hook do lefthook formata os arquivos Java staged a cada commit.
 - Unitários (`*Test`, surefire), incluindo o `ModularityTest`, que também gera a documentação dos módulos em `target/spring-modulith-docs`.
-- Integração (`*IT`, failsafe), contra um `mongo:8` do Testcontainers, sem precisar de nenhuma variável de ambiente:
+- Integração (`*IT`, failsafe), contra o `mongo:8` em replica set do `LocalMongoContainer` (Testcontainers), sem precisar de nenhuma variável de ambiente:
   - o `ApplicationIT` sobe o contexto via `@ServiceConnection`, no perfil `test`;
+  - o `MongoTransactionIT` confirma que as transações funcionam (AD-10): commit e rollback;
+  - o `LocalDataLoaderIT` confirma que os carregadores rodam na partida, que rodar de novo não duplica e que o reset apaga o banco;
   - o `MongoUriBindingIT` passa a URI do container como `SPRING_DATA_MONGODB_URI` e confirma que a API conecta por ela, no perfil `prod` padrão;
   - o `ProdProfileIT` confirma que, sem perfil e sem `SPRING_DATA_MONGODB_URI`, a API não sobe e a falha cita a variável.
 
-> **Docker Desktop recente:** o `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), e os ITs falham com "Container exited with code 1". Na CI eles rodam normalmente. Para rodar só os unitários (incluindo o `ModularityTest`), use `./mvnw -B -ntp test`.
+Para rodar só os unitários (incluindo o `ModularityTest`), sem Docker: `./mvnw -B -ntp test`.
 
 ## Variáveis de ambiente
 
@@ -102,7 +136,8 @@ Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
 | Variável | Uso |
 | --- | --- |
 | `SPRING_DATA_MONGODB_URI` | URI do MongoDB, com credenciais e o nome do banco. Obrigatória no perfil `prod`: sem ela a API não sobe, e o log cita a variável. É lida em `spring.mongodb.uri`, porque o Boot 4 ignora a `spring.data.mongodb.uri`. |
-| `SPRING_PROFILES_ACTIVE` | Opcional. Sem ela, o perfil é `prod` (AD-18). |
+| `SPRING_PROFILES_ACTIVE` | Opcional. Sem ela, o perfil é `prod` (AD-18). O `local` é só para a máquina do dev (veja "Ambiente local"). |
+| `LOCAL_SEED_PASSWORD` | Só no perfil `local`, no `.env.local`. Senha dos usuários criados pelos carregadores locais. |
 | `SENTRY_DSN` | Opcional. Sem ela, o Sentry fica desligado e nada é enviado. Com ela, os erros 500 vão para o Sentry sem PII (usuário, IP, cookies, query string, cabeçalhos de autenticação e corpo da requisição são removidos). |
 | `SENTRY_ENVIRONMENT` | Opcional. Nome do ambiente no Sentry (por exemplo, `homolog` ou `prod`). |
 | `FLUVENY_MIN_APP_VERSION` | Opcional, padrão `0.0.0`. Versão mínima do App, devolvida em `GET /api/v1/meta`. Precisa estar no formato `X.Y.Z`; vazia ou em outro formato, a API não sobe. |
@@ -160,6 +195,6 @@ A API escuta na porta 8080 e roda com um usuário sem root. Em todo PR a CI cons
 
 A documentação da API fica no Swagger UI, em http://localhost:8080/swagger-ui/index.html, e o OpenAPI em `/v3/api-docs`. As duas são públicas em todos os ambientes.
 
-## Ambiente local
+## Contribuindo
 
-O ambiente local (Mongo em replica set, perfil `local` e dados de desenvolvimento) chega com a história 1.4. Até lá, não há compose nem script de partida neste repositório.
+Fluxo de branches, commits e PR no [`CONTRIBUTING.md`](CONTRIBUTING.md).

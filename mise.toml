@@ -1,0 +1,31 @@
+# Ponto único de entrada do ambiente local e da CI (história 1.4). A CI roda
+# `mise run check`, a mesma tarefa do dev (NFR13).
+# Primeira vez: `mise trust && mise install && mise run setup`.
+
+[tools]
+java = "temurin-25"
+lefthook = "2.2.2"
+
+[tasks.setup]
+description = "Instala os hooks do lefthook (formatação dos arquivos staged)"
+run = "lefthook install"
+
+[tasks.up]
+description = "Sobe a API em :8080 no perfil local, com um Mongo 8 em replica set (Testcontainers)"
+run = "./mvnw -ntp spring-boot:test-run"
+
+[tasks.seed]
+description = "Roda de novo os carregadores do perfil local na API em execução"
+run = "scripts/local-data.sh seed"
+
+[tasks.reset]
+description = "Apaga o banco local e roda os carregadores de novo, na API em execução"
+run = "scripts/local-data.sh reset"
+
+[tasks.check]
+description = "Formatação, build e todos os testes: o mesmo que a CI"
+run = "./mvnw -B -ntp spotless:check verify"
+
+[tasks.format]
+description = "Formata o código Java (google-java-format, estilo AOSP)"
+run = "./mvnw -B -ntp spotless:apply"
