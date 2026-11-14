@@ -1,0 +1,31 @@
+{
+  "stageKey": "s2-where-from",
+  "title": "Where are you from?",
+  "activities": [
+    {
+      "activityKey": "S2_Flags",
+      "type": "choice",
+      "title": "Flags",
+      "items": [
+        {
+          "itemKey": "s2-flags-brazil",
+          "question": "Which flag is from Brazil, {name}?",
+          "options": [
+            {
+              "optionKey": "brazil",
+              "mediaKey": "flag-brazil"
+            },
+            {
+              "optionKey": "japan",
+              "mediaKey": "flag-japan",
+              "text": "Japan"
+            }
+          ],
+          "correctOptionKey": "brazil",
+          "justification": "I [[am from|be-from]] {country}."
+        }
+      ],
+      "xp": 5
+    }
+  ]
+}

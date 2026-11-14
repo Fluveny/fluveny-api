@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/key.schema.json",
+  "title": "Chave estável",
+  "description": "unitKey, stageKey, activityKey, itemKey, optionKey, expressionKey e mediaKey (AD-5): kebab-case, nunca reaproveitada. A posição na lista é só ordem.",
+  "type": "string",
+  "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$"
+}

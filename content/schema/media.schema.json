@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/media.schema.json",
+  "title": "Manifesto de mídia",
+  "description": "content/media.json: mediaKey → {kind, source, url?}. O conteúdo referencia mídia só pelo mediaKey; url é obrigatória quando source é remote.",
+  "type": "object",
+  "propertyNames": { "$ref": "key.schema.json" },
+  "additionalProperties": { "$ref": "#/$defs/media" },
+  "$defs": {
+    "media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "source"],
+      "properties": {
+        "kind": { "enum": ["image", "video", "audio"] },
+        "source": { "enum": ["bundled", "remote"] },
+        "url": { "type": "string", "format": "uri" }
+      },
+      "if": { "properties": { "source": { "const": "remote" } }, "required": ["source"] },
+      "then": { "required": ["url"] }
+    }
+  }
+}

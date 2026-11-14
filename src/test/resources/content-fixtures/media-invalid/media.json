@@ -1,0 +1,15 @@
+{
+  "flag-brazil": {
+    "kind": "image",
+    "source": "bundled"
+  },
+  "flag-japan": {
+    "kind": "image",
+    "source": "remote",
+    "url": "not a url"
+  },
+  "flag-chile": {
+    "kind": "image",
+    "source": "remote"
+  }
+}

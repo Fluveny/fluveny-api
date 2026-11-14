@@ -19,6 +19,7 @@
 		<spring-modulith.version>2.1.2</spring-modulith.version>
 		<springdoc.version>3.2.0</springdoc.version>
 		<sentry.version>8.64.0</sentry.version>
+		<json-schema-validator.version>3.0.9</json-schema-validator.version>
 	</properties>
 
 	<dependencyManagement>
@@ -64,6 +65,13 @@
 			<groupId>io.sentry</groupId>
 			<artifactId>sentry-spring-boot-4-starter</artifactId>
 			<version>${sentry.version}</version>
+		</dependency>
+
+		<!-- Valida o Conteúdo Estruturado contra o JSON Schema de content/schema/ (AD-4, AD-6). -->
+		<dependency>
+			<groupId>com.networknt</groupId>
+			<artifactId>json-schema-validator</artifactId>
+			<version>${json-schema-validator.version}</version>
 		</dependency>
 
 		<dependency>

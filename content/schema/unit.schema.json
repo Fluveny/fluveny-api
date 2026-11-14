@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/unit.schema.json",
+  "title": "Unidade",
+  "description": "content/units/<unitKey>/unit.json. Cada Estágio de stages tem o arquivo stages/<stageKey>.json, na mesma ordem.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["unitKey", "order", "schemaVersion", "title", "stages", "usefulExpressions"],
+  "properties": {
+    "unitKey": { "$ref": "key.schema.json" },
+    "order": {
+      "description": "Ordem da Unidade no curso.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "schemaVersion": {
+      "description": "Versão do formato do conteúdo (AD-11).",
+      "const": 1
+    },
+    "title": { "$ref": "text.schema.json" },
+    "stages": {
+      "description": "Lista ordenada de stageKey. Uma Unidade sem Estágios aparece como \"em breve\".",
+      "type": "array",
+      "items": { "$ref": "key.schema.json" }
+    },
+    "usefulExpressions": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/usefulExpression" }
+    }
+  },
+  "$defs": {
+    "usefulExpression": {
+      "description": "Expressão Útil (FR-14): termo, significado e exemplos. O [[texto|expressionKey]] dos textos aponta para ela.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["expressionKey", "term", "meaning", "examples"],
+      "properties": {
+        "expressionKey": { "$ref": "key.schema.json" },
+        "term": { "$ref": "text.schema.json" },
+        "meaning": { "$ref": "text.schema.json" },
+        "examples": {
+          "type": "array",
+          "items": { "$ref": "text.schema.json" }
+        }
+      }
+    }
+  }
+}

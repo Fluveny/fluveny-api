@@ -1,0 +1,63 @@
+{
+  "stageKey": "s1-meet-alex",
+  "title": "Meet Alex",
+  "activities": [
+    {
+      "activityKey": "s1-greetings",
+      "type": "choice",
+      "title": "Greetings",
+      "prompt": "Escolha a resposta certa, {name}.",
+      "items": [
+        {
+          "itemKey": "s1-greetings-hello",
+          "question": "Alex says: [[Nice to meet you|nice-to-meet-you]]! What do you answer?",
+          "options": [
+            {
+              "optionKey": "nice-to-meet-you-too",
+              "text": "**Nice to meet you** too!"
+            },
+            {
+              "optionKey": "goodbye",
+              "text": "Goodbye!"
+            }
+          ],
+          "correctOptionKey": "nice-to-meet-you-too",
+          "justification": "Respondemos com **too** para devolver o cumprimento."
+        },
+        {
+          "itemKey": "s1-greetings-pronoun",
+          "question": {
+            "he": "He is Alex. Is he a student?",
+            "she": "She is Alex. Is she a student?",
+            "they": "They are Alex. Are they a student?"
+          },
+          "options": [
+            {
+              "optionKey": "yes",
+              "text": {
+                "he": "Yes, he is.",
+                "she": "Yes, she is.",
+                "they": "Yes, they are."
+              }
+            },
+            {
+              "optionKey": "no",
+              "text": {
+                "he": "No, he isn't.",
+                "she": "No, she isn't.",
+                "they": "No, they aren't."
+              }
+            }
+          ],
+          "correctOptionKey": "yes",
+          "justification": {
+            "he": "He **is** a student.",
+            "she": "She **is** a student.",
+            "they": "They **are** a student."
+          }
+        }
+      ],
+      "xp": 10
+    }
+  ]
+}

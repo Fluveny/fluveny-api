@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/activities/choice.schema.json",
+  "title": "Escolha",
+  "description": "Tipo Escolha (Vocab Mode, FR-18): cada item tem uma pergunta e de 2 a 6 opções, com escolha única. O V/F usa um item por afirmação. Os campos x-fluveny-secret saem da visão do aluno (AD-6).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activityKey", "type", "title", "items", "xp"],
+  "properties": {
+    "activityKey": { "$ref": "../key.schema.json" },
+    "type": { "const": "choice" },
+    "title": { "$ref": "../text.schema.json" },
+    "prompt": { "$ref": "../text.schema.json" },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/item" }
+    },
+    "xp": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itemKey", "question", "options", "correctOptionKey", "justification"],
+      "properties": {
+        "itemKey": { "$ref": "../key.schema.json" },
+        "question": { "$ref": "../text.schema.json" },
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 6,
+          "items": { "$ref": "#/$defs/option" }
+        },
+        "correctOptionKey": {
+          "$ref": "../key.schema.json",
+          "x-fluveny-secret": true
+        },
+        "justification": {
+          "$ref": "../text.schema.json",
+          "x-fluveny-secret": true
+        }
+      }
+    },
+    "option": {
+      "description": "Opção com texto, mídia ou os dois.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["optionKey"],
+      "anyOf": [
+        { "required": ["text"] },
+        { "required": ["mediaKey"] }
+      ],
+      "properties": {
+        "optionKey": { "$ref": "../key.schema.json" },
+        "text": { "$ref": "../text.schema.json" },
+        "mediaKey": { "$ref": "../key.schema.json" }
+      }
+    },
+    "answer": {
+      "description": "Answer da Escolha (AD-6): a opção escolhida em cada item.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "choice" },
+        "items": {
+          "description": "Ao menos um item. Se a resposta cobre todos os itens, quem confere é o corretor (1.11).",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/answerItem" }
+        }
+      }
+    },
+    "answerItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["itemKey", "optionKey"],
+      "properties": {
+        "itemKey": { "$ref": "../key.schema.json" },
+        "optionKey": { "$ref": "../key.schema.json" }
+      }
+    }
+  }
+}
