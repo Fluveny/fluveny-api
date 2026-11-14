@@ -32,6 +32,8 @@ O código fica em `src/main/java/com/fluveny/fluveny_backend/`, um pacote por m�
   - o `ApplicationIT` sobe o contexto via `@ServiceConnection`;
   - o `MongoUriBindingIT` passa a URI do container como `SPRING_DATA_MONGODB_URI` e confirma que a API conecta por ela.
 
+> **Docker Desktop recente:** o `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), e os ITs falham com "Container exited with code 1". Na CI eles rodam normalmente. Para rodar só os unitários (incluindo o `ModularityTest`), use `./mvnw -B -ntp test`.
+
 ## Variáveis de ambiente
 
 Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
@@ -50,6 +52,8 @@ docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... fluveny-api:local
 A API escuta na porta 8080 e roda com um usuário sem root. Em todo PR a CI constrói a imagem sem publicar. A cada merge na `main`, publica `ghcr.io/fluveny/fluveny-api:main` e `ghcr.io/fluveny/fluveny-api:sha-<sha>`.
 
 Até a história 1.2, que traz a segurança da `platform`, toda rota exige o basic auth padrão do Spring Security: usuário `user` e uma senha gerada a cada partida, impressa no log.
+
+A documentação da API fica no Swagger UI, em http://localhost:8080/swagger-ui/index.html, e o OpenAPI em `/v3/api-docs`, também atrás do basic auth padrão até a 1.2.
 
 ## Ambiente local
 
