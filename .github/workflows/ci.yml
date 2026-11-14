@@ -17,6 +17,24 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  secrets:
+    name: Segredos
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Só os commits novos: o histórico antigo tem uma credencial de teste
+      # conhecida, que a história 1.1 remove (NFR1).
+      - name: Gitleaks nos commits novos
+        env:
+          RANGE: ${{ github.event_name == 'pull_request' && format('{0}..{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
+        run: |
+          docker run --rm -v "$PWD:/repo" ghcr.io/gitleaks/gitleaks:v8.21.2 \
+            git /repo --log-opts="$RANGE" --redact --verbose --no-banner
+
   build:
     name: Build e testes
     runs-on: ubuntu-latest
