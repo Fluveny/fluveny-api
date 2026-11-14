@@ -1,0 +1,8 @@
+# Achados antigos do gitleaks, um fingerprint por linha (história 1.1, NFR1).
+# São credenciais de exemplo já removidas da árvore e sem uso. Reescrever o
+# histórico está fora de escopo, então elas ficam listadas aqui. Qualquer
+# achado novo continua bloqueando a CI.
+
+# .env.example (commit 0dfe1dc, "docker: dockerization the api"): senha e
+# segredo JWT de exemplo do compose dev. Arquivo apagado na 1.1.
+0dfe1dc18cda0a9973290b23980ea182aecf2a4f:.env.example:generic-api-key:13

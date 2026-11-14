@@ -1,69 +1,51 @@
-# Fluveny | Back-End
+# Fluveny | API
 
-Repositório destinado ao desenvolvimento do back-end da plataforma **Fluveny**.
+API do Fluveny: monólito modular em Java 25, Spring Boot 4.1 e Spring Modulith 2.1, sobre MongoDB. As decisões de arquitetura ficam no repositório de planejamento ([Fluveny/fluveny-planejamento](https://github.com/Fluveny/fluveny-planejamento)).
 
-- ![Java](https://img.shields.io/badge/Java-21-blue?logo=java)
-- ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.x-brightgreen?logo=springboot)
-- ![MongoDB](https://img.shields.io/badge/MongoDB-6.x-green?logo=mongodb)
-- ![Docker](https://img.shields.io/badge/Docker-Compose-blue?logo=docker)
-- ![Swagger](https://img.shields.io/badge/Swagger-UI-yellow?logo=swagger)
-- ![JUnit](https://img.shields.io/badge/JUnit-5-red?logo=java)
+## Requisitos
 
-Caso queira executar a aplicação em sua máquina, você poderá escolher alguma das opções:
+- **JDK 25** (por exemplo, `brew install --cask temurin@25`). O Maven vem pelo wrapper (`./mvnw`).
+- **Docker** ligado, para os testes de integração (Testcontainers) e para gerar a imagem.
 
-- [Ambiente de Execução](#ambiente-de-execução)
-- [Executando via IDE](#executando-via-ide)
-
-A aplicação roda na porta 8080.
-
-🔗 Acesse a documentação da API via Swagger:  
-[http://localhost:8080/swagger-ui/index.html](http://localhost:8080/swagger-ui/index.html)
-
-## Ambiente de Execução
-
-Este ambiente é destinado a desenvolvedores que irão realizar modificações ou desenvolvimento na aplicação. Utilizaremos o Docker apenas para rodar o banco de dados e executaremos a API localmente.
-
-### 1. Dependências Necessárias
-
-- **JDK 21** ou superior
-- **Docker** e **Docker-Compose**
-- Arquivo `.env` na raiz do projeto contendo as variáveis de ambiente necessárias.
-
-### 2. Subindo o Banco de Dados
-
-Para iniciar o MongoDB em um contêiner Docker:
+Sem JDK 25 na máquina, dá para rodar o build num container:
 
 ```bash
-docker-compose -f docker-compose-dev.yml up -d
+docker run --rm -v "$PWD:/w" -w /w \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal \
+  maven:3-eclipse-temurin-25 ./mvnw -B -ntp verify
 ```
 
-_Isso deixará o banco rodando em background._
+## Módulos
 
-### 3. Executando a API via Script
+O código fica em `src/main/java/com/fluveny/fluveny_backend/`, um pacote por módulo: `account`, `auth`, `team`, `content`, `learning`, `metrics`, `survey`, `mail` e `platform`. As dependências permitidas entre eles ficam no `package-info.java` de cada um e seguem o grafo da AD-3. O `ModularityTest` falha o build em caso de ciclo ou acesso fora do grafo.
 
-Para rodar a API rapidamente, sem precisar configurar a IDE, você pode utilizar o nosso script facilitador:
+## Build e testes
 
 ```bash
-./start-dev.sh
+./mvnw -B -ntp verify
 ```
 
-O script fará o seguinte:
+- Unitários (`*Test`, surefire), incluindo o `ModularityTest`, que também gera a documentação dos módulos em `target/spring-modulith-docs`.
+- Integração (`*IT`, failsafe): o `ApplicationIT` sobe o contexto contra um `mongo:8` do Testcontainers, sem precisar de nenhuma variável de ambiente.
 
-- Carregará as variáveis de ambiente do `.env`.
-- Definirá o profile da aplicação para `dev`.
-- Matará eventuais processos antigos que estejam travando a porta 8080.
-- Iniciará a API em background utilizando o Maven Wrapper.
+## Variáveis de ambiente
 
-Para acompanhar os logs em tempo real, execute:
+Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
+
+| Variável | Uso |
+| --- | --- |
+| `SPRING_DATA_MONGODB_URI` | URI do MongoDB, com credenciais. Obrigatória para rodar a API fora dos testes. |
+
+## Imagem
 
 ```bash
-tail -f api.log
+docker build -t fluveny-api:local .
+docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... fluveny-api:local
 ```
 
-### Executando via IDE
+A API escuta na porta 8080 e roda com um usuário sem root. A cada merge na `main`, a CI publica `ghcr.io/fluveny/fluveny-api:main` e `ghcr.io/fluveny/fluveny-api:sha-<sha>`.
 
-Se preferir rodar direto da sua IDE (como o IntelliJ IDEA):
+## Ambiente local
 
-1. Certifique-se de que o banco de dados já foi iniciado via `docker-compose-dev.yml`.
-2. Configure a variável de ambiente do profile na sua IDE de preferência: `SPRING_PROFILES_ACTIVE=dev` (nas configurações de Run/Debug).
-3. Execute a classe principal `FluvenyBackendApplication`.
+O ambiente local (Mongo em replica set, perfil `local` e dados de desenvolvimento) chega com a história 1.4.

@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-11-14 against a55eb65. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-14 against chore/1-1-base-nova (história 1.1). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## fluveny-api
 
@@ -8,16 +8,18 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 ## Policy
 
 - Nunca dê push na `main`. Trabalhe numa branch curta, abra PR e faça squash na `main`. O merge exige CI verde e 1 aprovação humana (AD-2). Nada no GitHub obriga isso ainda, então a regra vale pela palavra.
-- Não estenda, não conserte nem porte o domínio legado: Módulo, GrammarRule, exercícios, JWT, `RunOnStartup`, login por username e coleções `fl_*` (AD-17). Trabalho novo vai nos pacotes de módulo da AD-3.
-- Até a história 1.1 mesclar a `sprint9`, só a 1.1 parte da `main`, porque a `main` está 27 commits atrás da `sprint9`. Qualquer outra história espera a 1.1.
-- Nunca grave segredo, senha ou token em código, `.properties` ou `docker-compose`. Não copie as credenciais de `src/test/resources/application-test.properties`; passe a URI por `SPRING_DATA_MONGODB_URI`.
+- Não estenda, não conserte nem porte o domínio legado: Módulo, GrammarRule, exercícios, JWT, `RunOnStartup`, login por username e coleções `fl_*` (AD-17).
+- Trabalho novo vai num dos 9 pacotes de módulo (`account`, `auth`, `team`, `content`, `learning`, `metrics`, `survey`, `mail`, `platform`). As dependências permitidas ficam no `package-info.java` de cada módulo e seguem o grafo da AD-3; mudar o grafo é mudar a spine.
+- Nunca grave segredo, senha ou token em código, `.properties` ou `docker-compose`. A URI do Mongo vem só de `SPRING_DATA_MONGODB_URI`. Achados antigos do gitleaks ficam na `.gitleaksignore`; não acrescente achados novos lá, remova o segredo.
 - Implemente histórias com `bmad-build <número>` e revise com `bmad-code-review` num contexto novo. Depois do merge, a história muda de status em `../_bmad-output/implementation-artifacts/sprint-status.yaml` e no card do [Project](https://github.com/orgs/Fluveny/projects/12).
 
 ## Running and verifying
 
-- Os testes precisam de um Mongo em `localhost:27017`. Suba com `docker compose -f docker-compose-dev.yml up -d`. Os comandos do README estão errados: citam `docker-compose.dev.yml`, `docker-compose.test.yml`, `run.sh` e `run.ps1`, e nenhum desses arquivos existe.
+- Build e testes: `./mvnw -B -ntp verify`, com JDK 25 e Docker ligados. Roda os unitários (surefire), o `ModularityTest` (verificação do Spring Modulith) e os `*IT` (failsafe). Os ITs usam um `mongo:8` do Testcontainers via `@ServiceConnection`; não precisam de Mongo local nem de variável.
+- Sem JDK 25 na máquina, rode o build num container `maven:3-eclipse-temurin-25` (comando no README).
 - O build usa a versão de Java declarada em `java.version` no `pom.xml`. Não use a versão instalada na máquina.
-- A CI (`.github/workflows/ci.yml`) roda `./mvnw -B -ntp verify` contra um Mongo sem senha, via `SPRING_DATA_MONGODB_URI`. Para reproduzir uma falha da CI, use a mesma variável.
+- Imagem: `docker build -t fluveny-api:local .`. A CI publica no GHCR a cada push na `main`.
+- O ambiente local (perfil `local`, replica set, `LocalDataLoader`) é da história 1.4.
 
 ## Conventions that differ from defaults
 
@@ -26,6 +28,6 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 
 ## Known pitfalls
 
-- A CI fica vermelha na `main` até a 1.1: são 26 falhas e 3 erros em testes do domínio legado. Não conserte esses testes. A 1.1 apaga esse código.
+- O `mongo:8` não sobe em kernels Linux 6.19 a 7.0.13 (SERVER-121912), como o do Docker Desktop recente: o `ApplicationIT` falha localmente com "Container exited with code 1". Na CI (runner Ubuntu) ele roda. Não troque a imagem do teste; atualize o Docker Desktop ou rode o IT só na CI.
 
 <!-- /bmad:context -->
