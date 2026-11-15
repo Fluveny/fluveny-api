@@ -20,6 +20,8 @@
 		<springdoc.version>3.2.0</springdoc.version>
 		<sentry.version>8.64.0</sentry.version>
 		<json-schema-validator.version>3.0.9</json-schema-validator.version>
+		<spotless.version>3.11.0</spotless.version>
+		<google-java-format.version>2.0.0</google-java-format.version>
 	</properties>
 
 	<dependencyManagement>
@@ -111,6 +113,21 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+			<!-- Formatação: google-java-format no estilo AOSP. A CI roda spotless:check (mise run check);
+			     o lefthook formata os arquivos staged. -->
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>${spotless.version}</version>
+				<configuration>
+					<java>
+						<googleJavaFormat>
+							<version>${google-java-format.version}</version>
+							<style>AOSP</style>
+						</googleJavaFormat>
+					</java>
+				</configuration>
 			</plugin>
 			<!-- Testes de integração (*IT) rodam no verify, depois dos unitários. -->
 			<plugin>

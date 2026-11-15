@@ -1,0 +1,8 @@
+# Hooks do git (`mise run setup`). Formata só os arquivos Java staged e devolve
+# o resultado ao commit. A CI confere a formatação do repositório inteiro.
+pre-commit:
+  commands:
+    spotless:
+      glob: "*.java"
+      run: scripts/spotless-staged.sh {staged_files}
+      stage_fixed: true

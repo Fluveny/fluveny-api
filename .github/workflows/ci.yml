@@ -48,16 +48,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-java@v4
+      # Java 25 e lefthook, nas versões do mise.toml.
+      - uses: jdx/mise-action@v5
         with:
-          distribution: temurin
-          java-version: '25'
-          cache: maven
+          version: 2026.11.8
 
-      # Unitários (surefire), verificação do Spring Modulith (ModularityTest) e
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('pom.xml') }}
+          restore-keys: maven-${{ runner.os }}-
+
+      # A mesma tarefa que o dev roda (NFR13): formatação (spotless:check),
+      # unitários (surefire), verificação do Spring Modulith (ModularityTest) e
       # integração (failsafe, *IT). O Mongo dos ITs vem do Testcontainers.
-      - name: Build e testes
-        run: ./mvnw -B -ntp verify
+      - name: mise run check
+        run: mise run check
 
   contract:
     name: Contrato

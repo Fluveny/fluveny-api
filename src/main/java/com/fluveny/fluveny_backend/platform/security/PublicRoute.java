@@ -7,14 +7,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Declara uma rota pública, sem autenticação (AD-12). Vale no método ou na
- * classe do controller; a declaração do método vence a da classe. Toda rota
- * declara {@code @PublicRoute} ou {@link RequiresRole}; sem declaração, ela é
- * negada.
+ * Declara uma rota pública, sem autenticação (AD-12). Vale no método ou na classe do controller; a
+ * declaração do método vence a da classe. Toda rota declara {@code @PublicRoute} ou {@link
+ * RequiresRole}; sem declaração, ela é negada.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
-@Target({ ElementType.METHOD, ElementType.TYPE })
-public @interface PublicRoute {
-
-}
+@Target({ElementType.METHOD, ElementType.TYPE})
+public @interface PublicRoute {}

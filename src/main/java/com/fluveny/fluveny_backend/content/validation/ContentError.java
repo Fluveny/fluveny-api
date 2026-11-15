@@ -9,12 +9,19 @@ package com.fluveny.fluveny_backend.content.validation;
  * @param rule a regra violada
  * @param message a explicação, em pt-BR
  */
-public record ContentError(String file, String pointer, String key, ContentRule rule, String message) {
+public record ContentError(
+        String file, String pointer, String key, ContentRule rule, String message) {
 
-	/** Uma linha do relatório: {@code arquivo#ponteiro [REGRA] (chave) mensagem}. */
-	public String format() {
-		return this.file + "#" + this.pointer + " [" + this.rule + "]" + ((this.key != null) ? " (" + this.key + ")" : "")
-				+ " " + this.message;
-	}
-
+    /** Uma linha do relatório: {@code arquivo#ponteiro [REGRA] (chave) mensagem}. */
+    public String format() {
+        return this.file
+                + "#"
+                + this.pointer
+                + " ["
+                + this.rule
+                + "]"
+                + ((this.key != null) ? " (" + this.key + ")" : "")
+                + " "
+                + this.message;
+    }
 }
