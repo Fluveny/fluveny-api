@@ -1,5 +1,5 @@
-# CI: segredos, build, testes, contrato (oasdiff) e build da imagem em todo PR e em todo push na
-# main. A imagem só é publicada no GHCR em push na main.
+# CI: segredos, build, testes, contrato (oasdiff), o workflow de publicação contra uma API efêmera
+# e o build da imagem em todo PR e em todo push na main. A imagem só é publicada no GHCR em push na main.
 name: CI
 
 on:
@@ -93,14 +93,148 @@ jobs:
           docker run --rm -v "$RUNNER_TEMP:/base" -v "$PWD/openapi:/head" tufin/oasdiff:v1.38.0 \
             breaking /base/base-openapi.json /head/openapi.json --fail-on ERR
 
+  publish-workflow:
+    name: Publicação (API efêmera)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
+    env:
+      API_URL: http://localhost:8080
+      EMPTY_API_URL: http://localhost:8081
+      FIXTURE: src/test/resources/content-fixtures/publish-ci
+    steps:
+      - uses: actions/checkout@v4
+
+      # O workflow publish-content.yml precisa ser válido antes de qualquer coisa.
+      - name: actionlint
+        run: |
+          docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color \
+            .github/workflows/publish-content.yml .github/workflows/ci.yml
+
+      - uses: jdx/mise-action@v5
+        with:
+          version: 2026.11.8
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: maven-${{ runner.os }}-${{ hashFiles('pom.xml') }}
+          restore-keys: maven-${{ runner.os }}-
+
+      - name: Build do jar
+        run: ./mvnw -B -ntp -q package -DskipTests
+
+      # Token gerado no job, mascarado; a API recebe só o sha256 (Decisão 2).
+      - name: Subir a API (perfil prod, mongo:8 do job)
+        run: |
+          TOKEN="$(openssl rand -hex 32)"
+          echo "::add-mask::$TOKEN"
+          echo "FLUVENY_DEPLOY_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_ci \
+          FLUVENY_DEPLOY_TOKEN_SHA256="$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)" \
+            nohup java -jar target/fluveny-backend-*.jar > "$RUNNER_TEMP/api.log" 2>&1 &
+          # Uma segunda API, com outro banco, faz o papel de um registro que não tem o hash.
+          SERVER_PORT=8081 SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_ci_empty \
+          FLUVENY_DEPLOY_TOKEN_SHA256="$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)" \
+            nohup java -jar target/fluveny-backend-*.jar > "$RUNNER_TEMP/api-empty.log" 2>&1 &
+          for url in "$API_URL" "$EMPTY_API_URL"; do
+            for _ in $(seq 1 60); do
+              if curl -fsS "$url/api/v1/meta" > /dev/null 2>&1; then continue 2; fi
+              sleep 2
+            done
+            echo "::error::A API em $url não subiu."
+            exit 1
+          done
+
+      # Os mesmos comandos dos jobs do publish-content.yml, com a API efêmera no
+      # papel de homologação e de produção.
+      - name: Homologação, publicar e republicar
+        run: |
+          node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" | tee "$RUNNER_TEMP/first.txt"
+          grep -q "versão nova" "$RUNNER_TEMP/first.txt"
+          node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" | tee "$RUNNER_TEMP/second.txt"
+          grep -q "versão já existia" "$RUNNER_TEMP/second.txt"
+
+      - name: Produção, candidata, registro e ponteiro
+        run: |
+          GITHUB_OUTPUT="$RUNNER_TEMP/candidate.out" \
+            node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" --publish false
+          VERSION_ID="$(grep '^version-id=' "$RUNNER_TEMP/candidate.out" | cut -d= -f2)"
+          grep -q '^published=true' "$RUNNER_TEMP/candidate.out" # já era a publicada
+          node scripts/content-bundle.mjs check unit-coming-soon "$VERSION_ID" --api "$API_URL"
+          GITHUB_OUTPUT="$RUNNER_TEMP/prod.out" \
+            node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE"
+          test "$(grep '^version-id=' "$RUNNER_TEMP/prod.out" | cut -d= -f2)" = "$VERSION_ID"
+
+      - name: Recusas
+        run: |
+          # Hash fora da homologação: o check falha, e o job de produção pararia.
+          if node scripts/content-bundle.mjs check unit-coming-soon "sha256:$(printf '0%.0s' $(seq 1 64))" --api "$API_URL"; then
+            echo "::error::O check aceitou um hash inexistente."; exit 1
+          fi
+          # A Escolha ainda não tem sinceAppVersion: 422 UNSUPPORTED_ACTIVITY_TYPE.
+          if node scripts/content-bundle.mjs publish unit-1 --api "$API_URL" --content src/test/resources/content-fixtures/valid 2> "$RUNNER_TEMP/unsupported.txt"; then
+            echo "::error::A publicação aceitou um Tipo sem sinceAppVersion."; exit 1
+          fi
+          grep -q UNSUPPORTED_ACTIVITY_TYPE "$RUNNER_TEMP/unsupported.txt"
+          # Token errado: 403.
+          if FLUVENY_DEPLOY_TOKEN=errado node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" 2> "$RUNNER_TEMP/forbidden.txt"; then
+            echo "::error::A publicação aceitou um token errado."; exit 1
+          fi
+          grep -q "A API respondeu 403:" "$RUNNER_TEMP/forbidden.txt"
+          grep -q "^ACCESS_DENIED:" "$RUNNER_TEMP/forbidden.txt"
+
+      - name: Candidata nova fica fora do ponteiro e do registro
+        run: |
+          PUBLISHED="$(grep '^version-id=' "$RUNNER_TEMP/prod.out" | cut -d= -f2)"
+          CANDIDATE_DIR="$RUNNER_TEMP/candidate-content"
+          cp -R "$FIXTURE" "$CANDIDATE_DIR"
+          sed -i 's/"title": "Coming soon"/"title": "Coming soon, candidate"/' "$CANDIDATE_DIR/units/unit-coming-soon/unit.json"
+          GITHUB_OUTPUT="$RUNNER_TEMP/new-candidate.out" \
+            node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$CANDIDATE_DIR" --publish false
+          grep -q '^created=true' "$RUNNER_TEMP/new-candidate.out"
+          grep -q '^published=false' "$RUNNER_TEMP/new-candidate.out"
+          CANDIDATE="$(grep '^version-id=' "$RUNNER_TEMP/new-candidate.out" | cut -d= -f2)"
+          test "$CANDIDATE" != "$PUBLISHED"
+          # O ponteiro continua na versão publicada.
+          curl -fsS "$API_URL/api/v1/units/unit-coming-soon" | grep -q "\"versionId\":\"$PUBLISHED\""
+          # A API que tem a candidata a acha; um registro sem ela recusa, e o job de produção pararia.
+          node scripts/content-bundle.mjs check unit-coming-soon "$CANDIDATE" --api "$API_URL"
+          if node scripts/content-bundle.mjs check unit-coming-soon "$CANDIDATE" --api "$EMPTY_API_URL" 2> "$RUNNER_TEMP/missing.txt"; then
+            echo "::error::O check aceitou um hash que o registro não tem."; exit 1
+          fi
+          grep -q "não existe em $EMPTY_API_URL" "$RUNNER_TEMP/missing.txt"
+
+      - name: O aluno vê a Unidade em breve
+        run: |
+          curl -fsS "$API_URL/api/v1/units" | tee "$RUNNER_TEMP/units.json"
+          node -e 'const {data}=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if (data.length !== 1 || data[0].unitKey !== "unit-coming-soon" || data[0].comingSoon !== true) process.exit(1)' "$RUNNER_TEMP/units.json"
+
+      - name: Log da API
+        if: failure()
+        run: cat "$RUNNER_TEMP/api.log" "$RUNNER_TEMP/api-empty.log"
+
   image:
     name: Imagem
-    needs: [secrets, build, contract]
+    needs: [secrets, build, contract, publish-workflow]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
       contents: read
       packages: write
+    services:
+      mongo:
+        image: mongo:8
+        ports:
+          - 27017:27017
     env:
       PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
@@ -115,6 +249,32 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Smoke: a imagem sobe no perfil prod contra o mongo:8 do job e responde o /meta. Pega,
+      # por exemplo, os schemas fora do classpath antes do deploy.
+      - name: Build local para o smoke
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: fluveny-api:smoke
+          cache-from: type=gha
+
+      - name: Smoke da imagem
+        run: |
+          docker run -d --name api-smoke --network host \
+            -e SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_smoke \
+            fluveny-api:smoke
+          for _ in $(seq 1 60); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/meta)" = "200" ]; then
+              exit 0
+            fi
+            sleep 2
+          done
+          docker logs api-smoke
+          echo "::error::A imagem não respondeu 200 em /api/v1/meta."
+          exit 1
 
       - id: meta
         uses: docker/metadata-action@v5

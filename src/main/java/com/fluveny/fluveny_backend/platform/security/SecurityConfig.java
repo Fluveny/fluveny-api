@@ -1,18 +1,22 @@
 package com.fluveny.fluveny_backend.platform.security;
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 
 /**
  * Cadeia de segurança única da API (AD-12): stateless, sem basic auth, sem formulário e sem a senha
- * gerada do Boot; deny-by-default pelo {@link RouteAuthorizationManager}. A sessão (Bearer e
- * cookie) chega nas histórias 2.3 e 4.2; até lá nenhuma rota autentica.
+ * gerada do Boot; deny-by-default pelo {@link RouteAuthorizationManager}. O único autenticador por
+ * enquanto é o token de deploy ({@link DeployTokenFilter}, história 1.7); a sessão (Bearer e
+ * cookie) chega nas histórias 2.3 e 4.2.
  */
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(DeployTokenProperties.class)
 class SecurityConfig {
 
     /**
@@ -27,9 +31,14 @@ class SecurityConfig {
     SecurityFilterChain apiSecurityFilterChain(
             HttpSecurity http,
             RouteAuthorizationManager routeAuthorization,
-            ProblemSecurityHandlers problemHandlers)
+            ProblemSecurityHandlers problemHandlers,
+            DeployTokenProperties deployToken)
             throws Exception {
         return http
+                // Não é bean: registrado como bean, o Boot o poria também na cadeia do servlet.
+                .addFilterBefore(
+                        new DeployTokenFilter(deployToken.sha256Bytes()),
+                        AnonymousAuthenticationFilter.class)
                 // Sem cookie de sessão ainda, não há o que proteger com CSRF (o Painel chega na
                 // 4.2).
                 .csrf(AbstractHttpConfigurer::disable)

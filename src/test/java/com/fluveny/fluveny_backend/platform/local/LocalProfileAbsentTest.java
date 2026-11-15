@@ -20,7 +20,10 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(
-        properties = "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests")
+        properties = {
+            "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",
+            "fluveny.mongo.indexes-on-startup=false"
+        })
 class LocalProfileAbsentTest {
 
     @Autowired private ApplicationContext context;

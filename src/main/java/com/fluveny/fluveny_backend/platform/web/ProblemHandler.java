@@ -77,8 +77,14 @@ class ProblemHandler extends ResponseEntityExceptionHandler {
                     request.getRequestURI(),
                     ex);
         }
-        return problem(
-                Problems.of(ex.getStatus(), ex.getCode(), ex.getDetail()), new HttpHeaders());
+        ProblemDetail problem = Problems.of(ex.getStatus(), ex.getCode(), ex.getDetail());
+        ex.getProperties().forEach(problem::setProperty);
+        HttpHeaders headers = new HttpHeaders();
+        if (ex.getStatus() == HttpStatus.UNAUTHORIZED) {
+            // Todo 401 leva o desafio (AD-12), inclusive o de domínio.
+            headers.set(HttpHeaders.WWW_AUTHENTICATE, Problems.BEARER_CHALLENGE);
+        }
+        return problem(problem, headers);
     }
 
     /** Negação lançada dentro do handler (por exemplo, a posse do recurso, AD-12). */

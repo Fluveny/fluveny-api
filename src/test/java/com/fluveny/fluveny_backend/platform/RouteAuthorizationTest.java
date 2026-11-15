@@ -105,6 +105,17 @@ class RouteAuthorizationTest {
                 .andExpect(status().isOk());
     }
 
+    /** Sem {@code FLUVENY_DEPLOY_TOKEN_SHA256}, nenhum token entra (história 1.7). */
+    @Test
+    void withoutTheDeployHashEveryTokenIsDenied() throws Exception {
+        expectProblem(
+                this.mvc.perform(
+                        get("/test/roles/deploy").header("Authorization", "Bearer qualquer-token")),
+                403,
+                "ACCESS_DENIED");
+        expectProblem(this.mvc.perform(get("/test/roles/deploy")), 401, "UNAUTHENTICATED");
+    }
+
     @Test
     void methodDeclarationWinsOverTheClass() throws Exception {
         expectProblem(this.mvc.perform(get("/test/method-wins")), 401, "UNAUTHENTICATED");

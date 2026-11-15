@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.stream.Stream;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.StreamReadFeature;
@@ -111,12 +112,12 @@ public final class ContentValidator {
                                     + "/<unitKey>/.");
                     continue;
                 }
-                JsonNode unit = checkUnit(entry, mediaKeys, report);
+                JsonNode unit = checkUnitDir(entry, new Scope(mediaKeys), report);
                 if (unit != null && unit.path("order").isIntegralNumber()) {
                     orders.computeIfAbsent(unit.get("order").asLong(), order -> new ArrayList<>())
                             .add(
                                     new Located(
-                                            entry.resolve(UNIT_FILE),
+                                            report.name(entry.resolve(UNIT_FILE)),
                                             "/order",
                                             unit.path("unitKey").asString(null)));
                 }
@@ -148,16 +149,144 @@ public final class ContentValidator {
     public List<ContentError> validateUnit(Path unitDir, Path mediaManifest) {
         Report report = new Report(unitDir.toAbsolutePath().getParent());
         Set<String> mediaKeys = readManifest(mediaManifest, report);
-        checkUnit(unitDir, mediaKeys, report);
+        checkUnitDir(unitDir, new Scope(mediaKeys), report);
         return report.errors();
     }
+
+    /**
+     * Valida o pacote de publicação {@code {unit, stages[], media{}}} em memória (história 1.7),
+     * com as mesmas regras da pasta. Os arquivos do relatório são os do repositório, relativos a
+     * {@code content/}: {@code units/<unitKey>/unit.json}, {@code
+     * units/<unitKey>/stages/<stageKey>.json} e {@code media.json}. Além das regras da pasta, o
+     * pacote precisa trazer os Estágios na ordem de {@code unit.stages} e, em {@code media}, só as
+     * entradas que a Unidade referencia.
+     *
+     * @param unitKey a Unidade do caminho da publicação; nomeia a pasta dos arquivos
+     */
+    public List<ContentError> validateBundle(String unitKey, JsonNode bundle) {
+        Report report = new Report(Path.of(""));
+        String unitDir = UNITS_DIR + "/" + unitKey + "/";
+        String unitFile = unitDir + UNIT_FILE;
+        if (bundle == null || !bundle.isObject()) {
+            report.add(
+                    "",
+                    "",
+                    null,
+                    ContentRule.INVALID_BUNDLE,
+                    "O pacote precisa ser um objeto {unit, stages, media}.");
+            return report.errors();
+        }
+        for (String name : bundle.propertyNames()) {
+            if (!BUNDLE_FIELDS.contains(name)) {
+                report.add(
+                        "",
+                        "/" + JsonPointers.escape(name),
+                        null,
+                        ContentRule.INVALID_BUNDLE,
+                        "Campo fora do pacote: só valem unit, stages e media.");
+            }
+        }
+
+        Set<String> mediaKeys = new HashSet<>();
+        JsonNode media = bundle.get("media");
+        if (media == null) {
+            report.add(
+                    MEDIA_FILE, "", null, ContentRule.MISSING_FILE, "O pacote não traz o media.");
+        } else {
+            checkSchema(media, ContentSchemas.MEDIA, MEDIA_FILE, report);
+            if (media.isObject()) {
+                mediaKeys.addAll(media.propertyNames());
+            }
+        }
+
+        JsonNode unit = bundle.get("unit");
+        if (unit == null) {
+            report.add(unitFile, "", null, ContentRule.MISSING_FILE, "O pacote não traz o unit.");
+        }
+
+        Map<String, StageDoc> stageDocs = new LinkedHashMap<>();
+        List<String> bundleOrder = new ArrayList<>();
+        JsonNode stages = bundle.get("stages");
+        if (stages == null || !stages.isArray()) {
+            report.add(
+                    "",
+                    "/stages",
+                    null,
+                    ContentRule.INVALID_BUNDLE,
+                    "O pacote precisa de stages: a lista dos Estágios, na ordem de unit.stages.");
+        } else {
+            for (int i = 0; i < stages.size(); i++) {
+                JsonNode stage = stages.get(i);
+                String key = stage.path("stageKey").asString(null);
+                String file =
+                        unitDir + STAGES_DIR + "/" + ((key != null) ? key + JSON : "[" + i + "]");
+                if (key == null) {
+                    // Sem stageKey: o schema aponta a falta, e o Estágio não casa com a lista.
+                    key = "[" + i + "]";
+                }
+                if (stageDocs.containsKey(key)) {
+                    report.add(
+                            file,
+                            "/stageKey",
+                            key,
+                            ContentRule.INVALID_BUNDLE,
+                            "O Estágio " + key + " aparece mais de uma vez em stages do pacote.");
+                    continue;
+                }
+                stageDocs.put(key, new StageDoc(file, key, stage));
+                bundleOrder.add(key);
+            }
+        }
+
+        Scope scope = new Scope(mediaKeys);
+        checkUnit(unitKey, unitFile, unit, stageDocs, scope, report);
+
+        if (unit != null) {
+            List<String> listed = new ArrayList<>();
+            for (JsonNode stageKey : unit.path("stages")) {
+                if (stageKey.isString() && !listed.contains(stageKey.asString())) {
+                    listed.add(stageKey.asString());
+                }
+            }
+            List<String> present = bundleOrder.stream().filter(listed::contains).toList();
+            List<String> expected = listed.stream().filter(stageDocs::containsKey).toList();
+            if (!present.equals(expected)) {
+                report.add(
+                        "",
+                        "/stages",
+                        null,
+                        ContentRule.INVALID_BUNDLE,
+                        "Os Estágios do pacote precisam vir na ordem de unit.stages: "
+                                + String.join(", ", expected)
+                                + ".");
+            }
+        }
+        if (media != null && media.isObject()) {
+            for (String key : new TreeSet<>(media.propertyNames())) {
+                if (!scope.referencedMedia.contains(key)) {
+                    report.add(
+                            MEDIA_FILE,
+                            "/" + JsonPointers.escape(key),
+                            key,
+                            ContentRule.UNREFERENCED_MEDIA,
+                            "O mediaKey "
+                                    + key
+                                    + " não é usado pela Unidade; o pacote só traz a mídia que ela"
+                                    + " referencia.");
+                }
+            }
+        }
+        return report.errors();
+    }
+
+    private static final Set<String> BUNDLE_FIELDS = Set.of("unit", "stages", "media");
 
     private Set<String> readManifest(Path manifest, Report report) {
         JsonNode node = read(manifest, report);
         if (node == null) {
             return Set.of();
         }
-        checkSchema(node, ContentSchemas.MEDIA, manifest, report);
+        checkSchema(node, ContentSchemas.MEDIA, report.name(manifest), report);
         Set<String> keys = new HashSet<>();
         if (node.isObject()) {
             keys.addAll(node.propertyNames());
@@ -165,20 +294,20 @@ public final class ContentValidator {
         return keys;
     }
 
-    /**
-     * @return o {@code unit.json} lido, ou {@code null} se não deu para ler
-     */
-    private JsonNode checkUnit(Path unitDir, Set<String> mediaKeys, Report report) {
+    /** Lê a pasta da Unidade e aplica as regras. */
+    private JsonNode checkUnitDir(Path unitDir, Scope scope, Report report) {
         Path unitFile = unitDir.resolve(UNIT_FILE);
         JsonNode unit = read(unitFile, report);
 
-        Map<String, Path> stageFiles = new TreeMap<>();
+        Map<String, StageDoc> stageDocs = new TreeMap<>();
         Path stagesDir = unitDir.resolve(STAGES_DIR);
         if (Files.isDirectory(stagesDir)) {
             for (Path file : list(stagesDir)) {
                 String name = file.getFileName().toString();
                 if (Files.isRegularFile(file) && name.endsWith(JSON)) {
-                    stageFiles.put(name.substring(0, name.length() - JSON.length()), file);
+                    String fileKey = name.substring(0, name.length() - JSON.length());
+                    stageDocs.put(
+                            fileKey, new StageDoc(report.name(file), fileKey, read(file, report)));
                 } else {
                     report.add(
                             file,
@@ -193,16 +322,35 @@ public final class ContentValidator {
                 }
             }
         }
+        return checkUnit(
+                unitDir.getFileName().toString(),
+                report.name(unitFile),
+                unit,
+                stageDocs,
+                scope,
+                report);
+    }
 
-        // Sem a Unidade não se sabe quais expressionKey existem: a existência não é conferida.
-        Set<String> expressionKeys = null;
-        Map<String, Map<String, List<Located>>> unitKeys = new LinkedHashMap<>();
-        List<Path> stageOrder = new ArrayList<>();
+    /**
+     * As regras da Unidade sobre documentos já lidos. {@code unit} é {@code null} quando não deu
+     * para ler (o erro já está no relatório); um Estágio com {@code node} nulo idem.
+     *
+     * @param dirName o nome da pasta da Unidade, que tem de ser o {@code unitKey}
+     * @param stageDocs os Estágios por nome de arquivo (sem {@code .json})
+     * @return o {@code unit.json}, ou {@code null}
+     */
+    private JsonNode checkUnit(
+            String dirName,
+            String unitFile,
+            JsonNode unit,
+            Map<String, StageDoc> stageDocs,
+            Scope scope,
+            Report report) {
+        List<StageDoc> stageOrder = new ArrayList<>();
 
         if (unit != null) {
-            expressionKeys = new HashSet<>();
+            scope.expressionKeys = new HashSet<>();
             checkSchema(unit, ContentSchemas.UNIT, unitFile, report);
-            String dirName = unitDir.getFileName().toString();
             if (unit.path("unitKey").isString()
                     && !unit.get("unitKey").asString().equals(dirName)) {
                 report.add(
@@ -218,7 +366,7 @@ public final class ContentValidator {
             }
             for (JsonNode expression : unit.path("usefulExpressions")) {
                 if (expression.path("expressionKey").isString()) {
-                    expressionKeys.add(expression.get("expressionKey").asString());
+                    scope.expressionKeys.add(expression.get("expressionKey").asString());
                 }
             }
 
@@ -245,8 +393,8 @@ public final class ContentValidator {
                                         + " vezes em stages.");
                     }
                 }
-                Path file = stageFiles.get(stageKey);
-                if (file == null) {
+                StageDoc doc = stageDocs.get(stageKey);
+                if (doc == null) {
                     report.add(
                             unitFile,
                             "/stages/" + positions.get(0),
@@ -261,13 +409,13 @@ public final class ContentValidator {
                                     + JSON
                                     + ".");
                 } else {
-                    stageOrder.add(file);
+                    stageOrder.add(doc);
                 }
             });
-            stageFiles.forEach((stageKey, file) -> {
+            stageDocs.forEach((stageKey, doc) -> {
                 if (!listed.containsKey(stageKey)) {
                     report.add(
-                            file,
+                            doc.file(),
                             "",
                             stageKey,
                             ContentRule.STAGE_FILE_MISMATCH,
@@ -276,28 +424,22 @@ public final class ContentValidator {
                                     + " não está em stages do "
                                     + UNIT_FILE
                                     + ".");
-                    stageOrder.add(file);
+                    stageOrder.add(doc);
                 }
             });
-            checkDocument(
-                    unit,
-                    ContentSchemas.UNIT,
-                    unitFile,
-                    expressionKeys,
-                    mediaKeys,
-                    unitKeys,
-                    report);
+            checkDocument(unit, ContentSchemas.UNIT, unitFile, scope, report);
         } else {
-            stageOrder.addAll(stageFiles.values());
+            stageOrder.addAll(stageDocs.values());
         }
 
-        for (Path file : stageOrder) {
-            JsonNode stage = read(file, report);
+        for (StageDoc doc : stageOrder) {
+            JsonNode stage = doc.node();
             if (stage == null) {
                 continue;
             }
+            String file = doc.file();
             checkSchema(stage, ContentSchemas.STAGE, file, report);
-            String fileKey = file.getFileName().toString().replaceFirst("\\.json$", "");
+            String fileKey = doc.fileKey();
             if (stage.path("stageKey").isString()
                     && !stage.get("stageKey").asString().equals(fileKey)) {
                 report.add(
@@ -312,8 +454,7 @@ public final class ContentValidator {
                                 + JSON
                                 + ".");
             }
-            checkDocument(
-                    stage, ContentSchemas.STAGE, file, expressionKeys, mediaKeys, unitKeys, report);
+            checkDocument(stage, ContentSchemas.STAGE, file, scope, report);
             JsonNode activities = stage.path("activities");
             for (int i = 0; i < activities.size(); i++) {
                 String type = activities.get(i).path("type").asString(null);
@@ -326,7 +467,7 @@ public final class ContentValidator {
             }
         }
 
-        unitKeys.forEach((name, values) ->
+        scope.unitKeys.forEach((name, values) ->
                 values.forEach((key, places) -> {
                     if (places.size() > 1) {
                         for (Located place : places) {
@@ -350,26 +491,20 @@ public final class ContentValidator {
 
     /** Regras que valem para qualquer arquivo da Unidade: textos, mídia e chaves. */
     private void checkDocument(
-            JsonNode document,
-            String schemaId,
-            Path file,
-            Set<String> expressionKeys,
-            Set<String> mediaKeys,
-            Map<String, Map<String, List<Located>>> unitKeys,
-            Report report) {
+            JsonNode document, String schemaId, String file, Scope scope, Report report) {
         this.walker.walkTexts(
                 document,
                 schemaId,
                 (pointer, text) ->
-                        checkText(document, pointer, text, file, expressionKeys, report));
-        scan(document, "", file, mediaKeys, unitKeys, report);
+                        checkText(document, pointer, text, file, scope.expressionKeys, report));
+        scan(document, "", file, scope, report);
     }
 
     private void checkText(
             JsonNode document,
             String pointer,
             JsonNode text,
-            Path file,
+            String file,
             Set<String> expressionKeys,
             Report report) {
         if (text.isString()) {
@@ -409,7 +544,7 @@ public final class ContentValidator {
             JsonNode document,
             String pointer,
             String text,
-            Path file,
+            String file,
             Set<String> expressionKeys,
             Report report) {
         for (MarkupChecker.Problem problem : this.markup.check(text, expressionKeys)) {
@@ -423,21 +558,18 @@ public final class ContentValidator {
     }
 
     /** Mídia no manifesto e chaves únicas, em qualquer profundidade. */
-    private void scan(
-            JsonNode node,
-            String pointer,
-            Path file,
-            Set<String> mediaKeys,
-            Map<String, Map<String, List<Located>>> unitKeys,
-            Report report) {
+    private void scan(JsonNode node, String pointer, String file, Scope scope, Report report) {
         if (node.isObject()) {
             for (var property : node.properties()) {
                 String name = property.getKey();
                 JsonNode value = property.getValue();
                 String child = pointer + "/" + JsonPointers.escape(name);
+                if (value.isString() && "mediaKey".equals(name)) {
+                    scope.referencedMedia.add(value.asString());
+                }
                 if (value.isString()
                         && "mediaKey".equals(name)
-                        && !mediaKeys.contains(value.asString())) {
+                        && !scope.mediaKeys.contains(value.asString())) {
                     report.add(
                             file,
                             child,
@@ -450,11 +582,12 @@ public final class ContentValidator {
                                     + ".");
                 }
                 if (value.isString() && UNIT_SCOPED_KEYS.contains(name)) {
-                    unitKeys.computeIfAbsent(name, key -> new LinkedHashMap<>())
+                    scope.unitKeys
+                            .computeIfAbsent(name, key -> new LinkedHashMap<>())
                             .computeIfAbsent(value.asString(), key -> new ArrayList<>())
                             .add(new Located(file, child, name));
                 }
-                scan(value, child, file, mediaKeys, unitKeys, report);
+                scan(value, child, file, scope, report);
             }
         } else if (node.isArray()) {
             for (String name : LIST_SCOPED_KEYS) {
@@ -485,7 +618,7 @@ public final class ContentValidator {
                 });
             }
             for (int i = 0; i < node.size(); i++) {
-                scan(node.get(i), pointer + "/" + i, file, mediaKeys, unitKeys, report);
+                scan(node.get(i), pointer + "/" + i, file, scope, report);
             }
         }
     }
@@ -494,7 +627,7 @@ public final class ContentValidator {
      * Resposta aceita da Escolha: {@code correctOptionKey} existe e está entre as opções do item.
      */
     private static void checkChoiceAnswer(
-            JsonNode activity, String pointer, Path file, Report report) {
+            JsonNode activity, String pointer, String file, Report report) {
         JsonNode items = activity.path("items");
         for (int i = 0; i < items.size(); i++) {
             JsonNode item = items.get(i);
@@ -527,7 +660,7 @@ public final class ContentValidator {
         }
     }
 
-    private void checkSchema(JsonNode document, String schemaId, Path file, Report report) {
+    private void checkSchema(JsonNode document, String schemaId, String file, Report report) {
         for (Error error : this.schemas.schema(schemaId).validate(document)) {
             String pointer = JsonPointers.of(error.getInstanceLocation());
             if ("required".equals(error.getKeyword()) && error.getProperty() != null) {
@@ -590,10 +723,34 @@ public final class ContentValidator {
     @FunctionalInterface
     private interface AcceptedAnswerRule {
 
-        void check(JsonNode activity, String pointer, Path file, Report report);
+        void check(JsonNode activity, String pointer, String file, Report report);
     }
 
-    private record Located(Path file, String pointer, String name) {}
+    private record Located(String file, String pointer, String name) {}
+
+    /** Um Estágio já lido: o arquivo do relatório, a chave do nome do arquivo e o documento. */
+    private record StageDoc(String file, String fileKey, JsonNode node) {}
+
+    /** O que as regras acumulam ao percorrer uma Unidade. */
+    private static final class Scope {
+
+        final Set<String> mediaKeys;
+
+        /** Os {@code mediaKey} que a Unidade usa. */
+        final Set<String> referencedMedia = new HashSet<>();
+
+        /**
+         * As chaves de {@code usefulExpressions}; {@code null} sem a Unidade, e aí a existência da
+         * chave não é conferida.
+         */
+        Set<String> expressionKeys;
+
+        final Map<String, Map<String, List<Located>>> unitKeys = new LinkedHashMap<>();
+
+        Scope(Set<String> mediaKeys) {
+            this.mediaKeys = mediaKeys;
+        }
+    }
 
     /** Ordena ponteiros pelos segmentos, com os índices em ordem numérica. */
     static final Comparator<String> POINTER_ORDER =
@@ -631,18 +788,18 @@ public final class ContentValidator {
         }
 
         void add(Path file, String pointer, String key, ContentRule rule, String message) {
-            this.rules.add(new ContentError(name(file), pointer, key, rule, message));
+            add(name(file), pointer, key, rule, message);
         }
 
-        void addSchema(Path file, String pointer, String key, String keyword, String message) {
+        void add(String file, String pointer, String key, ContentRule rule, String message) {
+            this.rules.add(new ContentError(file, pointer, key, rule, message));
+        }
+
+        void addSchema(String file, String pointer, String key, String keyword, String message) {
             this.schema.add(
                     new SchemaError(
                             new ContentError(
-                                    name(file),
-                                    pointer,
-                                    key,
-                                    ContentRule.SCHEMA_VIOLATION,
-                                    message),
+                                    file, pointer, key, ContentRule.SCHEMA_VIOLATION, message),
                             keyword));
         }
 
@@ -682,7 +839,7 @@ public final class ContentValidator {
             };
         }
 
-        private String name(Path file) {
+        String name(Path file) {
             Path absolute = file.toAbsolutePath();
             Path relative =
                     absolute.startsWith(this.base) ? this.base.relativize(absolute) : absolute;

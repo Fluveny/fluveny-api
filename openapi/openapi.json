@@ -1,6 +1,40 @@
 {
   "components" : {
     "schemas" : {
+      "Activity" : {
+        "discriminator" : {
+          "mapping" : {
+            "choice" : "#/components/schemas/ChoiceActivity"
+          },
+          "propertyName" : "type"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/ChoiceActivity"
+        } ],
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "type" ]
+      },
+      "ActivityStudentView" : {
+        "discriminator" : {
+          "mapping" : {
+            "choice" : "#/components/schemas/ChoiceActivityStudentView"
+          },
+          "propertyName" : "type"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/ChoiceActivityStudentView"
+        } ],
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "type" ]
+      },
       "ActivityTypeSupport" : {
         "properties" : {
           "sinceAppVersion" : {
@@ -13,6 +47,21 @@
         "required" : [ "type" ],
         "type" : "object"
       },
+      "ApiResponseListUnitListItemStudentView" : {
+        "properties" : {
+          "data" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UnitListItemStudentView"
+            },
+            "type" : "array"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "ApiResponseMeta" : {
         "properties" : {
           "data" : {
@@ -23,6 +72,195 @@
           }
         },
         "required" : [ "data" ],
+        "type" : "object"
+      },
+      "ApiResponseStageStudentView" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StageStudentView"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
+      "ApiResponseUnitStudentView" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/UnitStudentView"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
+      "ApiResponseUnitVersionInfo" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/UnitVersionInfo"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
+      "ApiResponseUnitVersionPublication" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/UnitVersionPublication"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
+      "ChoiceActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChoiceItem"
+            },
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "choice" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "items", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "ChoiceActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChoiceItemStudentView"
+            },
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "choice" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "items", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "ChoiceItem" : {
+        "properties" : {
+          "correctOptionKey" : {
+            "type" : "string"
+          },
+          "itemKey" : {
+            "type" : "string"
+          },
+          "justification" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChoiceOption"
+            },
+            "type" : "array"
+          },
+          "question" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "correctOptionKey", "itemKey", "justification", "options", "question" ],
+        "type" : "object"
+      },
+      "ChoiceItemStudentView" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          },
+          "options" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChoiceOption"
+            },
+            "type" : "array"
+          },
+          "question" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "itemKey", "options", "question" ],
+        "type" : "object"
+      },
+      "ChoiceOption" : {
+        "properties" : {
+          "mediaKey" : {
+            "type" : "string"
+          },
+          "optionKey" : {
+            "type" : "string"
+          },
+          "text" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "optionKey" ],
+        "type" : "object"
+      },
+      "ContentText" : {
+        "description" : "Texto do conteúdo: uma string ou as variantes {he, she, they}.",
+        "oneOf" : [ {
+          "minLength" : 1,
+          "type" : "string"
+        }, {
+          "$ref" : "#/components/schemas/PronounVariants"
+        } ]
+      },
+      "MediaContent" : {
+        "properties" : {
+          "kind" : {
+            "enum" : [ "image", "video", "audio" ],
+            "type" : "string"
+          },
+          "source" : {
+            "enum" : [ "bundled", "remote" ],
+            "type" : "string"
+          },
+          "url" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "kind", "source" ],
         "type" : "object"
       },
       "Meta" : {
@@ -39,6 +277,269 @@
         },
         "required" : [ "activityTypes", "minAppVersion" ],
         "type" : "object"
+      },
+      "PronounVariants" : {
+        "properties" : {
+          "he" : {
+            "type" : "string"
+          },
+          "she" : {
+            "type" : "string"
+          },
+          "they" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "he", "she", "they" ],
+        "type" : "object"
+      },
+      "StageContent" : {
+        "properties" : {
+          "activities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/Activity"
+            },
+            "type" : "array"
+          },
+          "stageKey" : {
+            "type" : "string"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "activities", "stageKey", "title" ],
+        "type" : "object"
+      },
+      "StageStudentView" : {
+        "properties" : {
+          "activities" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ActivityStudentView"
+            },
+            "type" : "array"
+          },
+          "stageKey" : {
+            "type" : "string"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "versionId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "activities", "stageKey", "title", "versionId" ],
+        "type" : "object"
+      },
+      "StageSummaryStudentView" : {
+        "properties" : {
+          "activityCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stageKey" : {
+            "type" : "string"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "activityCount", "stageKey", "title" ],
+        "type" : "object"
+      },
+      "UnitBundleContent" : {
+        "properties" : {
+          "media" : {
+            "additionalProperties" : {
+              "$ref" : "#/components/schemas/MediaContent"
+            },
+            "type" : "object"
+          },
+          "stages" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StageContent"
+            },
+            "type" : "array"
+          },
+          "unit" : {
+            "$ref" : "#/components/schemas/UnitContent"
+          }
+        },
+        "required" : [ "media", "stages", "unit" ],
+        "type" : "object"
+      },
+      "UnitContent" : {
+        "properties" : {
+          "order" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "schemaVersion" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stages" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "unitKey" : {
+            "type" : "string"
+          },
+          "usefulExpressions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UsefulExpressionContent"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "order", "schemaVersion", "stages", "title", "unitKey", "usefulExpressions" ],
+        "type" : "object"
+      },
+      "UnitListItemStudentView" : {
+        "properties" : {
+          "comingSoon" : {
+            "type" : "boolean"
+          },
+          "order" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "unitKey" : {
+            "type" : "string"
+          },
+          "versionId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "comingSoon", "order", "title", "unitKey", "versionId" ],
+        "type" : "object"
+      },
+      "UnitStudentView" : {
+        "properties" : {
+          "comingSoon" : {
+            "type" : "boolean"
+          },
+          "order" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stages" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StageSummaryStudentView"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "unitKey" : {
+            "type" : "string"
+          },
+          "usefulExpressions" : {
+            "items" : {
+              "$ref" : "#/components/schemas/UsefulExpressionStudentView"
+            },
+            "type" : "array"
+          },
+          "versionId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "comingSoon", "order", "stages", "title", "unitKey", "usefulExpressions", "versionId" ],
+        "type" : "object"
+      },
+      "UnitVersionInfo" : {
+        "properties" : {
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "order" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "published" : {
+            "type" : "boolean"
+          },
+          "schemaVersion" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "unitKey" : {
+            "type" : "string"
+          },
+          "versionId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "createdAt", "order", "published", "schemaVersion", "unitKey", "versionId" ],
+        "type" : "object"
+      },
+      "UnitVersionPublication" : {
+        "properties" : {
+          "created" : {
+            "type" : "boolean"
+          },
+          "published" : {
+            "type" : "boolean"
+          },
+          "versionId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "created", "published", "versionId" ],
+        "type" : "object"
+      },
+      "UsefulExpressionContent" : {
+        "properties" : {
+          "examples" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "expressionKey" : {
+            "type" : "string"
+          },
+          "meaning" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "term" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "examples", "expressionKey", "meaning", "term" ],
+        "type" : "object"
+      },
+      "UsefulExpressionStudentView" : {
+        "properties" : {
+          "examples" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "expressionKey" : {
+            "type" : "string"
+          },
+          "meaning" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "term" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "examples", "expressionKey", "meaning", "term" ],
+        "type" : "object"
       }
     }
   },
@@ -48,6 +549,93 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/v1/admin/content/units/{unitKey}/versions" : {
+      "post" : {
+        "operationId" : "publishUnitVersion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "unitKey",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "publish",
+          "required" : false,
+          "schema" : {
+            "default" : true,
+            "type" : "boolean"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UnitBundleContent"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnitVersionPublication"
+                }
+              }
+            },
+            "description" : "A versão já existia"
+          },
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnitVersionPublication"
+                }
+              }
+            },
+            "description" : "Versão nova gravada"
+          }
+        },
+        "tags" : [ "content-admin" ]
+      }
+    },
+    "/api/v1/admin/content/units/{unitKey}/versions/{versionId}" : {
+      "get" : {
+        "operationId" : "getUnitVersion",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "unitKey",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "versionId",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnitVersionInfo"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "content-admin" ]
+      }
+    },
     "/api/v1/meta" : {
       "get" : {
         "operationId" : "getMeta",
@@ -64,6 +652,83 @@
           }
         },
         "tags" : [ "meta" ]
+      }
+    },
+    "/api/v1/units" : {
+      "get" : {
+        "operationId" : "listUnits",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseListUnitListItemStudentView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "units" ]
+      }
+    },
+    "/api/v1/units/{unitKey}" : {
+      "get" : {
+        "operationId" : "getUnit",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "unitKey",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseUnitStudentView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "units" ]
+      }
+    },
+    "/api/v1/units/{unitKey}/stages/{stageKey}" : {
+      "get" : {
+        "operationId" : "getStage",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "unitKey",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "path",
+          "name" : "stageKey",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStageStudentView"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "units" ]
       }
     }
   },

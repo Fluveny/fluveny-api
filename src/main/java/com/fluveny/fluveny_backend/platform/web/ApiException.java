@@ -1,6 +1,9 @@
 package com.fluveny.fluveny_backend.platform.web;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 
@@ -23,6 +26,12 @@ public class ApiException extends RuntimeException {
 
     private final String detail;
 
+    /** Membros que o problema não pode ter como propriedade extra (RFC 9457 e o {@code code}). */
+    private static final Set<String> RESERVED =
+            Set.of("type", "title", "status", "detail", "instance", "code");
+
+    private final Map<String, Object> properties;
+
     /**
      * @param status o status HTTP da resposta
      * @param code código estável em SCREAMING_SNAKE, que o App mapeia para texto
@@ -32,7 +41,7 @@ public class ApiException extends RuntimeException {
      *     SCREAMING_SNAKE
      */
     public ApiException(HttpStatus status, String code, String detail) {
-        this(status, code, detail, null);
+        this(status, code, detail, (Throwable) null);
     }
 
     /**
@@ -44,6 +53,27 @@ public class ApiException extends RuntimeException {
         this.status = validStatus(status);
         this.code = code;
         this.detail = Objects.requireNonNull(detail, "detail");
+        this.properties = Map.of();
+    }
+
+    /**
+     * Como {@link #ApiException(HttpStatus, String, String)}, com membros extras no problema (por
+     * exemplo, {@code errors}).
+     *
+     * @throws IllegalArgumentException se um nome for de membro padrão ({@code type}, {@code
+     *     code}…)
+     */
+    public ApiException(HttpStatus status, String code, String detail, Map<String, ?> properties) {
+        super(validCode(code));
+        this.status = validStatus(status);
+        this.code = code;
+        this.detail = Objects.requireNonNull(detail, "detail");
+        for (String name : properties.keySet()) {
+            if (RESERVED.contains(name)) {
+                throw new IllegalArgumentException("Membro reservado do problema: " + name);
+            }
+        }
+        this.properties = Map.copyOf(new LinkedHashMap<>(properties));
     }
 
     /** Atalho para um dos códigos transversais, com detalhe próprio. */
@@ -78,5 +108,10 @@ public class ApiException extends RuntimeException {
 
     public String getDetail() {
         return this.detail;
+    }
+
+    /** Membros extras do problema; vazio quando não há. */
+    public Map<String, Object> getProperties() {
+        return this.properties;
     }
 }

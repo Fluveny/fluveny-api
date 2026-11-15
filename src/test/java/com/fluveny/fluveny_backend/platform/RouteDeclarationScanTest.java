@@ -31,7 +31,10 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @TestPropertySource(
-        properties = "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests")
+        properties = {
+            "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",
+            "fluveny.mongo.indexes-on-startup=false"
+        })
 class RouteDeclarationScanTest {
 
     @Autowired

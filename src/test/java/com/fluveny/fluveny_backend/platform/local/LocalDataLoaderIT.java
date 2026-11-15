@@ -45,7 +45,8 @@ class LocalDataLoaderIT {
     void seedsOnStartupAndAgainWithoutDuplicates() throws Exception {
         assertThat(count()).as("carregado na partida").isEqualTo(2);
 
-        assertThat(this.loader.load()).containsExactly("first", "second");
+        // O carregador de content (@Order(100)) roda depois dos dois de teste.
+        assertThat(this.loader.load()).containsSubsequence("first", "second").endsWith("content");
         this.mvc
                 .perform(post("/local/seed"))
                 .andExpect(status().isOk())

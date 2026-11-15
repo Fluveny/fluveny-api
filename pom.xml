@@ -129,6 +129,32 @@
 					</java>
 				</configuration>
 			</plugin>
+			<!-- O JSON Schema de content/schema/ entra no classpath em content/schema/: a publicação
+			     valida o pacote com ele na imagem, sem a pasta do repositório (história 1.7). -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-content-schema</id>
+						<phase>process-resources</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.outputDirectory}/content/schema</outputDirectory>
+							<resources>
+								<resource>
+									<directory>${project.basedir}/content/schema</directory>
+									<includes>
+										<include>**/*.schema.json</include>
+									</includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
 			<!-- Testes de integração (*IT) rodam no verify, depois dos unitários. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
