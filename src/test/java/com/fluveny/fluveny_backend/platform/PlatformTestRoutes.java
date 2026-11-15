@@ -93,6 +93,12 @@ public class PlatformTestRoutes {
         ApiResponse<String> student() {
             return ApiResponse.of("student");
         }
+
+        @RequiresRole(Role.DEPLOY)
+        @GetMapping("/deploy")
+        ApiResponse<String> deploy() {
+            return ApiResponse.of("deploy");
+        }
     }
 
     @RestController

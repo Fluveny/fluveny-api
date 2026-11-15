@@ -1,0 +1,140 @@
+# Publicar conteúdo (AD-4, história 1.7): job manual por ambiente. Envia o pacote
+# {unit, stages, media} de content/units/<unitKey>/ à API do ambiente, com o token
+# de deploy dele (secret FLUVENY_DEPLOY_TOKEN e variável FLUVENY_API_URL do GitHub
+# Environment). Só a API calcula o hash.
+#
+# Produção só publica um hash que já existe em homologação (Decisão 3): grava a
+# versão em prod como candidata (publish=false, ponteiro intacto), confere o hash
+# na homologação com o token dela e só então move o ponteiro de prod. Se o hash não
+# estiver na homologação, para antes de publicar; a candidata fica gravada em prod,
+# imutável e sem ser servida.
+#
+# O job "Publicação (API efêmera)" do ci.yml roda os mesmos comandos contra uma API
+# e um mongo:8 no próprio job.
+name: Publicar conteúdo
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente
+        type: choice
+        options: [homolog, prod]
+        required: true
+      unitKey:
+        description: unitKey (pasta em content/units/)
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-content-${{ inputs.environment }}-${{ inputs.unitKey }}
+  cancel-in-progress: false
+
+env:
+  UNIT_KEY: ${{ inputs.unitKey }}
+
+jobs:
+  guard:
+    name: Conferir a origem
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      # Só o conteúdo aprovado na main é publicado; candidata de PR é a 4.4.
+      - name: Só da main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Publique a partir da main (ref atual: $GITHUB_REF)."
+          exit 1
+      - name: unitKey em kebab-case
+        run: |
+          if ! printf '%s' "$UNIT_KEY" | grep -Eq '^[a-z0-9]+(-[a-z0-9]+)*$'; then
+            echo "::error::unitKey fora do formato kebab-case."
+            exit 1
+          fi
+
+  homolog:
+    name: Publicar em homologação
+    needs: guard
+    if: inputs.environment == 'homolog'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: homolog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Publicar
+        env:
+          FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          API_URL: ${{ vars.FLUVENY_API_URL }}
+        run: node scripts/content-bundle.mjs publish "$UNIT_KEY" --api "$API_URL"
+
+  prod-candidate:
+    name: Produção, gravar candidata
+    needs: guard
+    if: inputs.environment == 'prod'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod
+    outputs:
+      version-id: ${{ steps.candidate.outputs.version-id }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: candidate
+        name: Gravar sem mover o ponteiro
+        env:
+          FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          API_URL: ${{ vars.FLUVENY_API_URL }}
+        run: node scripts/content-bundle.mjs publish "$UNIT_KEY" --api "$API_URL" --publish false
+
+  homolog-registry:
+    name: Conferir o hash na homologação
+    needs: prod-candidate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: homolog
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: O hash existe em homologação
+        env:
+          FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          API_URL: ${{ vars.FLUVENY_API_URL }}
+          VERSION_ID: ${{ needs.prod-candidate.outputs.version-id }}
+        run: node scripts/content-bundle.mjs check "$UNIT_KEY" "$VERSION_ID" --api "$API_URL"
+
+  prod:
+    name: Publicar em produção
+    needs: [prod-candidate, homolog-registry]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: prod
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - id: publish
+        name: Mover o ponteiro
+        env:
+          FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          API_URL: ${{ vars.FLUVENY_API_URL }}
+        run: node scripts/content-bundle.mjs publish "$UNIT_KEY" --api "$API_URL"
+      - name: Mesmo hash da candidata
+        env:
+          EXPECTED: ${{ needs.prod-candidate.outputs.version-id }}
+          ACTUAL: ${{ steps.publish.outputs.version-id }}
+        run: |
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "::error::O conteúdo mudou entre a candidata ($EXPECTED) e a publicação ($ACTUAL)."
+            exit 1
+          fi

@@ -7,17 +7,23 @@ import com.networknt.schema.SchemaRegistryConfig;
 import com.networknt.schema.SpecificationVersion;
 import com.networknt.schema.path.PathType;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -79,23 +85,80 @@ public final class ContentSchemas {
         Map<String, JsonNode> documents = new LinkedHashMap<>();
         try (Stream<Path> files = Files.walk(schemaDir)) {
             for (Path file :
-                    files.filter(f -> f.getFileName().toString().endsWith(".schema.json"))
+                    files.filter(f -> f.getFileName().toString().endsWith(SUFFIX))
                             .sorted()
                             .toList()) {
-                JsonNode node = MAPPER.readTree(file.toFile());
-                String expected =
-                        ID_PREFIX + schemaDir.relativize(file).toString().replace('\\', '/');
-                String id = node.path("$id").asString();
-                if (!expected.equals(id)) {
-                    throw new IllegalStateException(
-                            "O $id de " + file + " devia ser " + expected + ", e é " + id);
-                }
-                documents.put(id, node);
+                put(
+                        documents,
+                        schemaDir.relativize(file).toString().replace('\\', '/'),
+                        MAPPER.readTree(file.toFile()),
+                        file.toString());
             }
         } catch (IOException ex) {
             throw new UncheckedIOException(ex);
         }
         return new ContentSchemas(Map.copyOf(documents));
+    }
+
+    /** Pasta dos schemas no classpath: o {@code pom.xml} copia {@code content/schema/} para lá. */
+    public static final String CLASSPATH_DIR = "content/schema/";
+
+    private static final String SUFFIX = ".schema.json";
+
+    /**
+     * Lê os schemas do classpath ({@link #CLASSPATH_DIR}), como a imagem os tem. Mesma regra do
+     * {@link #load(Path)}: o {@code $id} bate com o caminho.
+     *
+     * @throws IllegalStateException se não houver nenhum schema no classpath
+     */
+    public static ContentSchemas loadClasspath() {
+        Map<String, JsonNode> documents = new LinkedHashMap<>();
+        try {
+            Resource[] resources =
+                    new PathMatchingResourcePatternResolver(ContentSchemas.class.getClassLoader())
+                            .getResources("classpath*:" + CLASSPATH_DIR + "**/*" + SUFFIX);
+            List<Resource> sorted = new ArrayList<>(List.of(resources));
+            sorted.sort(Comparator.comparing(resource -> relative(resource)));
+            for (Resource resource : sorted) {
+                String relative = relative(resource);
+                if (documents.containsKey(ID_PREFIX + relative)) {
+                    // O mesmo schema em duas entradas do classpath (target/classes e o jar).
+                    continue;
+                }
+                try (InputStream input = resource.getInputStream()) {
+                    put(documents, relative, MAPPER.readTree(input), resource.getDescription());
+                }
+            }
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+        if (documents.isEmpty()) {
+            throw new IllegalStateException(
+                    "Nenhum JSON Schema em classpath:"
+                            + CLASSPATH_DIR
+                            + " (o build copia content/schema/).");
+        }
+        return new ContentSchemas(Map.copyOf(documents));
+    }
+
+    private static String relative(Resource resource) {
+        try {
+            String url = resource.getURL().toString();
+            return url.substring(url.lastIndexOf(CLASSPATH_DIR) + CLASSPATH_DIR.length());
+        } catch (IOException ex) {
+            throw new UncheckedIOException(ex);
+        }
+    }
+
+    private static void put(
+            Map<String, JsonNode> documents, String relative, JsonNode node, String source) {
+        String expected = ID_PREFIX + relative;
+        String id = node.path("$id").asString();
+        if (!expected.equals(id)) {
+            throw new IllegalStateException(
+                    "O $id de " + source + " devia ser " + expected + ", e é " + id);
+        }
+        documents.put(id, node);
     }
 
     /** O schema compilado do {@code $id}, para validar uma instância. */

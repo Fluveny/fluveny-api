@@ -28,7 +28,10 @@ import tools.jackson.databind.json.JsonMapper;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(
-        properties = "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests")
+        properties = {
+            "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",
+            "fluveny.mongo.indexes-on-startup=false"
+        })
 class OpenApiContractTest {
 
     /** Resolvido pelo {@code basedir} do Maven, não pelo diretório de trabalho. */

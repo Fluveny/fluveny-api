@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @TestPropertySource(
         properties = {
             "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",
+            "fluveny.mongo.indexes-on-startup=false",
             "FLUVENY_MIN_APP_VERSION=1.4.0"
         })
 class MetaConfiguredTest {

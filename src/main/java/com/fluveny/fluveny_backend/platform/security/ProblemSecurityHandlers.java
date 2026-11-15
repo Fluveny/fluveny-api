@@ -16,7 +16,8 @@ import org.springframework.stereotype.Component;
 /**
  * Escreve os 401 e 403 da segurança no mesmo formato de problema do resto da API (AD-11). Rota sem
  * declaração responde {@code ACCESS_DENIED}: 401 para o anônimo, 403 para o autenticado. Todo 401
- * leva {@code WWW-Authenticate: Bearer realm="fluveny"} (RFC 9110).
+ * leva {@code WWW-Authenticate: Bearer realm="fluveny"} (RFC 9110). Um Bearer que ninguém reconhece
+ * (token de deploy errado) responde {@code 403 ACCESS_DENIED} em vez do 401 (história 1.7).
  */
 @Component
 class ProblemSecurityHandlers implements AuthenticationEntryPoint, AccessDeniedHandler {
@@ -33,6 +34,12 @@ class ProblemSecurityHandlers implements AuthenticationEntryPoint, AccessDeniedH
             HttpServletResponse response,
             AuthenticationException authException)
             throws IOException {
+        if (!isUndeclared(request)
+                && request.getAttribute(DeployTokenFilter.UNRECOGNIZED_BEARER) != null) {
+            // Bearer que não é de ninguém: o token está errado, não falta (história 1.7).
+            this.problems.write(request, response, Problems.of(ErrorCode.ACCESS_DENIED));
+            return;
+        }
         ErrorCode code =
                 isUndeclared(request) ? ErrorCode.ACCESS_DENIED : ErrorCode.UNAUTHENTICATED;
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, Problems.BEARER_CHALLENGE);

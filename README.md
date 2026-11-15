@@ -44,7 +44,7 @@ Com a API fora do ar, o `seed` e o `reset` avisam e saem com erro. A coleção [
 
 - Só existe na máquina do dev (AD-18). A API não sobe com `local` junto de `prod`, nem com um Mongo que não seja local: `mongodb+srv://` é recusado, e o host precisa ser `localhost`, `127.0.0.1`, `::1` ou `mongo` (o serviço do compose do App). A mensagem cita os perfis ou o host.
 - As rotas `/local/*` ficam fora de `/api/v1` e do contrato OpenAPI, e só existem nesse perfil.
-- Os dados de desenvolvimento: cada módulo registra um bean `LocalDataSeeder` (named interface `platform :: local`) com `@Profile("local")` e os dados mínimos para testar as próprias telas, gravando por chave para ser idempotente. Ainda não há nenhum: o primeiro chega com a 1.7 (`content`) ou a 2.1 (`account`).
+- Os dados de desenvolvimento: cada módulo registra um bean `LocalDataSeeder` (named interface `platform :: local`) com `@Profile("local")` e os dados mínimos para testar as próprias telas, gravando por chave para ser idempotente. O de `content` (`ContentLocalSeeder`) publica cada pasta de `content/units/` com `publish=true`, pelo mesmo serviço da rota admin: depois do `mise run up`, `GET /api/v1/units` já lista as Unidades. Ele pula só a compatibilidade de Tipo com o `minAppVersion` (e avisa no log); as outras validações valem, e uma Unidade inválida fica de fora com os erros no log. A pasta vem de `FLUVENY_CONTENT_DIR` (padrão `content`, relativo ao diretório de trabalho).
 - Senha de usuário de seed vem de `LOCAL_SEED_PASSWORD`, lida pela `LocalSeedPassword`. Copie o [`.env.local.example`](.env.local.example) para `.env.local` (fora do git) e preencha; o perfil `local` lê o arquivo sozinho. Nenhum usuário é criado por seed fora do perfil `local`.
 - Os logs saem em texto, não em JSON.
 
@@ -103,6 +103,40 @@ O `ContentUnitsTest` roda o `ContentValidator` sobre `content/` (FR-29) e falha 
 
 As restrições "texto ou mídia" da opção, `minItems`/`maxItems`, `pattern` e `minLength` ficam só no JSON Schema: o OpenAPI dos records não as carrega, e quem as garante é o validador.
 
+### Publicação
+
+O conteúdo chega à API como uma Versão de Unidade (AD-4, história 1.7):
+
+- **Pacote:** `POST /api/v1/admin/content/units/{unitKey}/versions?publish=true|false` recebe `{unit, stages[], media{}}`: o `unit.json`, os Estágios na ordem de `unit.stages` e só as entradas de `content/media.json` que a Unidade referencia. O [`scripts/content-bundle.mjs`](scripts/content-bundle.mjs) (sem dependências) monta o pacote da pasta, e o carregador local monta o mesmo (`UnitBundle`).
+- **Validação:** as mesmas regras do `ContentUnitsTest` (schema e FR-29), mais as do pacote (`INVALID_BUNDLE`, `UNREFERENCED_MEDIA`). Cada Tipo usado precisa de um `ActivityTypeSource` com `sinceAppVersion` não nulo e ≤ `FLUVENY_MIN_APP_VERSION`. Qualquer erro é `422` (`INVALID_CONTENT`, `UNSUPPORTED_ACTIVITY_TYPE` ou `UNIT_KEY_MISMATCH`), com `errors: [{file, pointer, key, rule, message}]`, e nada é gravado.
+- **Hash:** só a API calcula. O id é `sha256:<hex>` do pacote em JSON canônico (RFC 8785, `CanonicalJson`), e a `UnitVersion` guarda o JSON canônico como string, então o hash sempre pode ser recalculado. Publicar o mesmo conteúdo de novo responde `200` com `created: false`; conteúdo novo, `201`.
+- **Coleções:** `unit_versions` (`_id` = hash, nunca apagada nem reescrita) e `unit_pointers` (`_id` = `unitKey`, `publishedVersionId`). Os índices são criados na partida (`ContentIndexes`); um `@SpringBootTest` sem Mongo desliga com `fluveny.mongo.indexes-on-startup=false`.
+- **Ponteiro:** com `publish=false` a versão é gravada como candidata e o ponteiro não se move.
+- **Registro:** `GET /api/v1/admin/content/units/{unitKey}/versions/{versionId}` responde `200` com os metadados ou `404`. A homologação é o registro de hashes: produção só publica um hash que já existe lá.
+
+As duas rotas admin exigem o token de deploy do ambiente (`Role.DEPLOY`, veja "Autorização").
+
+#### Job "Publicar conteúdo"
+
+O [`publish-content.yml`](.github/workflows/publish-content.yml) é manual (`workflow_dispatch`), da `main`, com os inputs `environment` (`homolog` ou `prod`) e `unitKey`. Cada GitHub Environment tem o secret `FLUVENY_DEPLOY_TOKEN` e a variável `FLUVENY_API_URL`.
+
+- `homolog`: envia o pacote com `publish=true`.
+- `prod`: grava a versão em produção como candidata (`publish=false`), confere o hash na homologação com o token dela e só então move o ponteiro de produção. Se o hash não estiver na homologação, o job para; a candidata fica em produção, imutável e sem ser servida.
+
+O job `Publicação (API efêmera)` da CI roda os mesmos comandos contra a API e um `mongo:8` no próprio job, e passa o `actionlint` nos workflows.
+
+### Rotas do aluno
+
+Públicas (`@PublicRoute`) e só com `*StudentView`, sobre a versão `published`:
+
+- `GET /api/v1/units`: `[{unitKey, order, title, comingSoon, versionId}]`, por `order`. `comingSoon` é a Unidade publicada sem Estágios. Unidade sem versão publicada fica de fora.
+- `GET /api/v1/units/{unitKey}`: o resumo, com os Estágios (`stageKey`, `title`, `activityCount`) e as `usefulExpressions`.
+- `GET /api/v1/units/{unitKey}/stages/{stageKey}`: `{versionId, stageKey, title, activities}`, com as Atividades na visão do aluno.
+
+Só o primeiro Estágio da Unidade de menor `order` é liberado; os demais respondem `401 UNAUTHENTICATED` até existir sessão (2.3). Chave fora do kebab-case é `400 INVALID_ID`; Unidade ou Estágio inexistente, `404` (`UNIT_NOT_FOUND`, `STAGE_NOT_FOUND`).
+
+A visão do aluno sai do `StudentViewProjector`, o único projetor: ele percorre a instância com o JSON Schema e remove toda propriedade `x-fluveny-secret`. O construtor recusa um segredo fora de `properties` ou debaixo de `oneOf`, `anyOf`, `additionalProperties` e afins, e a leitura em `ActivityStudentView` recusa propriedade desconhecida. O `ContentPublicationIT` varre todas as respostas das rotas do aluno com uma fixture cheia de segredos, e o `StudentRoutesOpenApiTest` falha se um componente alcançável por rota do aluno tiver uma propriedade secreta.
+
 ### Tipo de Atividade novo
 
 1. `content/schema/activities/<tipo>.schema.json`, com `type` como `const`, os campos secretos marcados e o `$defs.answer`. Na união de `stage.schema.json`, o valor no `enum` de `type` e um `if`/`then` para o arquivo.
@@ -124,6 +158,7 @@ mise run check   # ./mvnw -B -ntp spotless:check verify
   - o `ApplicationIT` sobe o contexto via `@ServiceConnection`, no perfil `test`;
   - o `MongoTransactionIT` confirma que as transações funcionam (AD-10): commit e rollback;
   - o `LocalDataLoaderIT` confirma que os carregadores rodam na partida, que rodar de novo não duplica e que o reset apaga o banco;
+  - o `ContentPublicationIT` cobre a publicação (nova, repetida, candidata, inválida, Tipo não suportado, `unitKey` divergente, token) e as rotas do aluno, com a varredura de segredos; o `ContentLocalSeederIT` confirma que o perfil `local` publica `content/units/` sozinho, inclusive depois do reset;
   - o `MongoUriBindingIT` passa a URI do container como `SPRING_DATA_MONGODB_URI` e confirma que a API conecta por ela, no perfil `prod` padrão;
   - o `ProdProfileIT` confirma que, sem perfil e sem `SPRING_DATA_MONGODB_URI`, a API não sobe e a falha cita a variável.
 
@@ -140,7 +175,9 @@ Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
 | `LOCAL_SEED_PASSWORD` | Só no perfil `local`, no `.env.local`. Senha dos usuários criados pelos carregadores locais. |
 | `SENTRY_DSN` | Opcional. Sem ela, o Sentry fica desligado e nada é enviado. Com ela, os erros 500 vão para o Sentry sem PII (usuário, IP, cookies, query string, cabeçalhos de autenticação e corpo da requisição são removidos). |
 | `SENTRY_ENVIRONMENT` | Opcional. Nome do ambiente no Sentry (por exemplo, `homolog` ou `prod`). |
-| `FLUVENY_MIN_APP_VERSION` | Opcional, padrão `0.0.0`. Versão mínima do App, devolvida em `GET /api/v1/meta`. Precisa estar no formato `X.Y.Z`; vazia ou em outro formato, a API não sobe. |
+| `FLUVENY_MIN_APP_VERSION` | Opcional, padrão `0.0.0`. Versão mínima do App, devolvida em `GET /api/v1/meta`. Precisa estar no formato `X.Y.Z`; vazia ou em outro formato, a API não sobe. A publicação recusa Tipo com `sinceAppVersion` acima dela. |
+| `FLUVENY_DEPLOY_TOKEN_SHA256` | Opcional. O sha256, em hex, do token de deploy do ambiente (o token fica só no GitHub Environment, como `FLUVENY_DEPLOY_TOKEN`). Sem ela, toda publicação é negada e a API sobe normalmente; fora do formato (64 dígitos hex), a API não sobe. Gere com `printf '%s' "$TOKEN" \| shasum -a 256`. |
+| `FLUVENY_CONTENT_DIR` | Só no perfil `local`. Pasta `content` lida pelo carregador local; padrão `content`. |
 
 Os logs saem no console em JSON (ECS), sem corpo de requisição nem cabeçalhos.
 
@@ -178,9 +215,12 @@ Toda rota é negada, a não ser que o handler declare quem pode chamá-la (deny-
 @PublicRoute                       // pública
 @RequiresRole(Role.CONTENT_CREATOR) // CONTENT_CREATOR ou ADMIN (hierarquia ADMIN > CONTENT_CREATOR)
 @RequiresRole(Role.STUDENT)        // só STUDENT; STUDENT fica fora da hierarquia
+@RequiresRole(Role.DEPLOY)         // só o job de publicação, pelo token de deploy
 ```
 
-A anotação vale no método ou na classe do controller, e a do método vence. Handler sem declaração, com `@PublicRoute` e `@RequiresRole` juntos ou com `@RequiresRole({})` responde `ACCESS_DENIED` (401 anônimo, 403 autenticado), e o `RouteDeclarationScanTest` falha o build nomeando o handler. Handler que não é método de controller (um `RouterFunction`, por exemplo) também é negado, porque não tem onde declarar papel. As únicas exceções por caminho são as da documentação: `/v3/api-docs`, `/v3/api-docs.yaml`, `/v3/api-docs/**`, `/swagger-ui.html` e `/swagger-ui/**`. Ainda não há login: sessões, Bearer e cookie chegam nas histórias 2.3 e 4.2, e até lá toda rota não pública responde 401.
+`Role.DEPLOY` é o papel do principal de máquina do job "Publicar conteúdo", fora da hierarquia (nenhum usuário o alcança). O `DeployTokenFilter` lê `Authorization: Bearer <token>`, calcula o sha256 e compara em tempo constante com `FLUVENY_DEPLOY_TOKEN_SHA256`. Sem o cabeçalho, uma rota com papel responde `401`; com um Bearer que ninguém reconhece (token errado, ou a variável ausente), `403 ACCESS_DENIED`. Rotas públicas ignoram o Bearer.
+
+A anotação vale no método ou na classe do controller, e a do método vence. Handler sem declaração, com `@PublicRoute` e `@RequiresRole` juntos ou com `@RequiresRole({})` responde `ACCESS_DENIED` (401 anônimo, 403 autenticado), e o `RouteDeclarationScanTest` falha o build nomeando o handler. Handler que não é método de controller (um `RouterFunction`, por exemplo) também é negado, porque não tem onde declarar papel. As únicas exceções por caminho são as da documentação: `/v3/api-docs`, `/v3/api-docs.yaml`, `/v3/api-docs/**`, `/swagger-ui.html` e `/swagger-ui/**`. Ainda não há login de usuário: sessões, Bearer e cookie chegam nas histórias 2.3 e 4.2, e até lá toda rota não pública responde 401 (exceto as de `Role.DEPLOY`, com o token de deploy).
 
 Os outros módulos usam a `platform` pelas named interfaces `web`, `security` e `meta`, declaradas como `"platform :: *"` no `package-info.java`.
 

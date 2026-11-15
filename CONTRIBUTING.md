@@ -17,6 +17,15 @@ Abra http://localhost:8080/swagger-ui/index.html. Se o `mise run up` falhar com 
 
 O `.env.local` é opcional. Quando algum carregador criar usuários, copie o `.env.local.example` para `.env.local` e preencha a `LOCAL_SEED_PASSWORD`. O resto do ambiente local está no [README](README.md#ambiente-local).
 
+## Publicar conteúdo
+
+O formato e as regras estão no [README](README.md#publicação). Na prática:
+
+- **Local:** ponha a Unidade em `content/units/<unitKey>/` e rode `mise run up`. O carregador de `content` publica todas as pastas sozinho, e `GET /api/v1/units` já as lista. Mudou o conteúdo com a API no ar: `mise run seed` (publica de novo; o mesmo conteúdo não cria versão nova) ou `mise run reset`. Apagar ou renomear uma pasta de `content/units/` não despublica nada: a Unidade antiga continua publicada no local até o `mise run reset`. Unidade inválida aparece no log com os erros, e o `./mvnw test -Dtest=ContentUnitsTest` mostra o mesmo relatório. No local, a compatibilidade de Tipo com o `minAppVersion` não é conferida.
+- **Contra uma API rodando** (para conferir o que o job faz): `FLUVENY_DEPLOY_TOKEN=<token> node scripts/content-bundle.mjs publish <unitKey> --api http://localhost:8080`, com a API subida com `FLUVENY_DEPLOY_TOKEN_SHA256` igual ao sha256 do token (`printf '%s' "$TOKEN" | shasum -a 256`). `--publish false` grava a candidata sem mover o ponteiro.
+- **Homologação e produção:** depois do merge na `main`, rode o workflow "Publicar conteúdo" (Actions → Publicar conteúdo → Run workflow), escolhendo o ambiente e o `unitKey`. Publique primeiro em homologação: o job de produção confere o hash lá e para se ele não existir.
+- **Token de deploy:** um por ambiente. O token fica só no secret `FLUVENY_DEPLOY_TOKEN` do GitHub Environment (`homolog` ou `prod`), junto da variável `FLUVENY_API_URL`; a API recebe só o sha256, em `FLUVENY_DEPLOY_TOKEN_SHA256`. Para trocar, gere outro (`openssl rand -hex 32`), atualize os dois lados e nunca grave o token em arquivo.
+
 ## Fluxo: trunk-based com squash
 
 - A `main` é o tronco e está sempre pronta para deploy. Nunca dê push direto nela.

@@ -22,6 +22,7 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(
         properties = {
             "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",
+            "fluveny.mongo.indexes-on-startup=false",
             "SENTRY_DSN=http://publickey@127.0.0.1:9/1"
         })
 class SentryWiringTest {

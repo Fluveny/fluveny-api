@@ -50,5 +50,15 @@ public enum ContentRule {
      * Formatação fora da lista fechada, {@code **} sem par ou {@code [[texto|expressionKey]]}
      * malformado ou com chave inexistente.
      */
-    INVALID_MARKUP
+    INVALID_MARKUP,
+
+    /**
+     * Pacote de publicação fora do formato {@code {unit, stages[], media{}}}: campo a mais, {@code
+     * stages} que não é lista, Estágio repetido ou fora da ordem de {@code unit.stages} (história
+     * 1.7).
+     */
+    INVALID_BUNDLE,
+
+    /** Entrada de {@code media} do pacote que a Unidade não referencia (história 1.7). */
+    UNREFERENCED_MEDIA
 }

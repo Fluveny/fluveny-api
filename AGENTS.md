@@ -43,3 +43,12 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 - O `MongoDBContainer` do Testcontainers 2.0 não sobe replica set sem `.withReplicaSet()`, e aí as transações falham. Para Mongo em teste, importe o `LocalMongoContainer` em vez de criar outro container.
 
 <!-- /bmad:context -->
+
+## Publicação de conteúdo (história 1.7)
+
+- A publicação é `POST /api/v1/admin/content/units/{unitKey}/versions` com o pacote `{unit, stages[], media{}}`, pelo `PublishUnitVersion`. Só a API calcula o hash (`CanonicalJson`, RFC 8785); nunca calcule no job nem no App. `UnitVersion` é imutável: nada apaga nem reescreve `unit_versions`.
+- As rotas admin de `content` declaram `@RequiresRole(Role.DEPLOY)`. O token de deploy fica no GitHub Environment (`FLUVENY_DEPLOY_TOKEN`); a API guarda só o sha256 (`FLUVENY_DEPLOY_TOKEN_SHA256`). Teste com token gerado na execução (`DeployTokenTest.sha256Hex`), nunca fixo no código.
+- Rota do aluno devolve só `*StudentView`, montada pelo `StudentViewProjector` (o único projetor, guiado pelo `x-fluveny-secret` do schema). O `ContentPublicationIT` e o `StudentRoutesOpenApiTest` falham se um segredo vazar.
+- Os schemas entram no classpath em `content/schema/` (o `pom.xml` copia); em código de aplicação use `ContentSchemas.loadClasspath()` ou o bean `ContentSchemas`, não a pasta do repositório.
+- `@SpringBootTest` sem Mongo passa também `fluveny.mongo.indexes-on-startup=false`, senão os índices da partida tentam conectar.
+- O workflow `publish-content.yml` e o job `Publicação (API efêmera)` da CI usam os mesmos comandos do `scripts/content-bundle.mjs`; mudou um, mude o outro.
