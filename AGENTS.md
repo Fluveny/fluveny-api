@@ -1,5 +1,5 @@
 <!-- bmad:context -->
-<!-- Verified 2026-11-14 against 41cf25062cc3be38f13edc811fe17bbb13ce08b2 (feat/1-4-ambiente-local, história 1.4). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+<!-- Verified 2026-11-16 against c77899794c538bcb197f4824bdb3c780c2e455b7 (main). Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
 ## fluveny-api
 
@@ -7,7 +7,7 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 
 ## Policy
 
-- Nunca dê push na `main`. Trabalhe numa branch curta, abra PR e faça squash na `main`. O merge exige CI verde e 1 aprovação humana (AD-2). Nada no GitHub obriga isso ainda, então a regra vale pela palavra.
+- Nunca dê push na `main`. Trabalhe numa branch curta, abra PR e faça squash na `main`. A proteção exige os checks `Segredos`, `Build e testes` e `Imagem` verdes e a branch atualizada, mas admins podem passar por cima. Nunca use esse bypass (`gh pr merge --admin`) para mesclar com a CI vermelha (AD-2). Com a CI verde, mescle sem esperar pedido.
 - Não estenda, não conserte nem porte o domínio legado: Módulo, GrammarRule, exercícios, JWT, `RunOnStartup`, login por username e coleções `fl_*` (AD-17).
 - Trabalho novo vai num dos 9 pacotes de módulo (`account`, `auth`, `team`, `content`, `learning`, `metrics`, `survey`, `mail`, `platform`). As dependências permitidas ficam no `package-info.java` de cada módulo e seguem o grafo da AD-3; mudar o grafo é mudar a spine.
 - Nunca grave segredo, senha ou token em código, `.properties` ou `docker-compose`. A URI do Mongo vem só de `SPRING_DATA_MONGODB_URI`, lida em `spring.mongodb.uri` (o Boot 4 ignora a `spring.data.mongodb.uri`); o `MongoUriBindingIT` prova o caminho. Achados antigos do gitleaks ficam na `.gitleaksignore`; não acrescente achados novos lá, remova o segredo.
