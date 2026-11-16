@@ -29,6 +29,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -433,13 +435,17 @@ class ContentPublicationIT {
         return keys;
     }
 
-    /** O Tipo {@code choice} com o {@code sinceAppVersion} que cada teste quiser. */
+    /**
+     * O Tipo {@code choice} com o {@code sinceAppVersion} que cada teste quiser. Vem antes do
+     * source real do {@code learning} (nulo): na publicação, o primeiro source vence.
+     */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {
 
         static final AtomicReference<String> SINCE = new AtomicReference<>("0.0.0");
 
         @Bean
+        @Order(Ordered.HIGHEST_PRECEDENCE)
         ActivityTypeSource testChoiceType() {
             return () -> List.of(new ActivityTypeSupport("choice", SINCE.get()));
         }

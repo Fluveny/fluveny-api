@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -109,12 +110,41 @@ class StudentRoutesOpenApiTest {
         TreeMap<String, Set<String>> leaked = new TreeMap<>();
         for (String name : reachable) {
             for (String property : components.path(name).path("properties").propertyNames()) {
-                if (secrets.contains(property)) {
+                if (secrets.contains(property)
+                        && !DISCLOSED.getOrDefault(name, Set.of()).contains(property)) {
                     leaked.computeIfAbsent(name, key -> new TreeSet<>()).add(property);
                 }
             }
         }
         assertThat(leaked).as("propriedades secretas alcançáveis pelo aluno").isEmpty();
+    }
+
+    /**
+     * As únicas exceções, da história 1.11 (AD-7): o Resultado da Tentativa revela o gabarito
+     * depois de um Acerto ou de "Ver resposta". {@code ItemResult.justification} é a justificativa
+     * do item, e {@code AttemptResult.expected} é um {@code Answer} com a opção certa de cada item
+     * (o nome da propriedade não é secreto, por isso não precisa de exceção aqui, mas o conteúdo é
+     * o {@code correctOptionKey}). O {@code VisitorAttemptsTest} prova que nenhum dos dois sai no
+     * Erro.
+     */
+    private static final Map<String, Set<String>> DISCLOSED =
+            Map.of("ItemResult", Set.of("justification"));
+
+    @Test
+    void theAttemptResultDisclosesOnlyTheExpectedAnswerAndTheJustification() throws Exception {
+        JsonNode api =
+                MAPPER.readTree(
+                        this.mvc
+                                .perform(get("/v3/api-docs"))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString(StandardCharsets.UTF_8));
+        JsonNode result = api.at("/components/schemas/AttemptResult");
+        assertThat(result.at("/properties/expected/$ref").asString())
+                .isEqualTo(COMPONENTS + "Answer");
+        assertThat(result.path("required").toString()).doesNotContain("expected");
+        JsonNode item = api.at("/components/schemas/ItemResult");
+        assertThat(item.path("required").toString()).doesNotContain("justification");
     }
 
     @Test

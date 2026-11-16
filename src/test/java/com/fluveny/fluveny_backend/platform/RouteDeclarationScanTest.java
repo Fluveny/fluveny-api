@@ -124,7 +124,9 @@ class RouteDeclarationScanTest {
         HttpResponse<String> meta = get("/api/v1/meta");
         assertThat(meta.statusCode()).isEqualTo(200);
         assertThat(meta.body())
-                .isEqualTo("{\"data\":{\"minAppVersion\":\"0.0.0\",\"activityTypes\":[]}}");
+                .isEqualTo(
+                        "{\"data\":{\"minAppVersion\":\"0.0.0\",\"activityTypes\":"
+                                + "[{\"type\":\"choice\",\"sinceAppVersion\":null}]}}");
 
         HttpResponse<String> missing = get("/api/v1/qualquer");
         assertThat(missing.statusCode()).isEqualTo(404);

@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.platform;
 
 import static com.fluveny.fluveny_backend.platform.ProblemFormatTest.expectProblem;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -25,7 +26,10 @@ class RouteAuthorizationTest {
                 .perform(get("/api/v1/meta"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.minAppVersion").value("0.0.0"))
-                .andExpect(jsonPath("$.data.activityTypes").isEmpty())
+                // O Tipo choice, do learning, com sinceAppVersion nulo até a tag do App (1.11).
+                .andExpect(jsonPath("$.data.activityTypes.length()").value(1))
+                .andExpect(jsonPath("$.data.activityTypes[0].type").value("choice"))
+                .andExpect(jsonPath("$.data.activityTypes[0].sinceAppVersion").value(nullValue()))
                 .andExpect(jsonPath("$.message").doesNotExist());
     }
 
