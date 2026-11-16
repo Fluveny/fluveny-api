@@ -76,6 +76,18 @@
         "required" : [ "data" ],
         "type" : "object"
       },
+      "ApiResponseCompletionResult" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/CompletionResult"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "ApiResponseListUnitListItemStudentView" : {
         "properties" : {
           "data" : {
@@ -166,6 +178,11 @@
             "format" : "uuid",
             "type" : "string"
           },
+          "deviceId" : {
+            "description" : "O aparelho do Visitante. Sem ele, a Tentativa é corrigida sem gravar nem gerar receipt, e o reveal responde 409 ATTEMPT_REQUIRED.",
+            "format" : "uuid",
+            "type" : "string"
+          },
           "studyTimeMs" : {
             "format" : "int64",
             "minimum" : 0,
@@ -196,6 +213,9 @@
           },
           "outcome" : {
             "enum" : [ "GRADED", "SKIPPED", "VIEWED" ],
+            "type" : "string"
+          },
+          "receipt" : {
             "type" : "string"
           },
           "resultPct" : {
@@ -354,6 +374,57 @@
           }
         },
         "required" : [ "optionKey" ],
+        "type" : "object"
+      },
+      "Completion" : {
+        "properties" : {
+          "activityKey" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type" : "string"
+          },
+          "attemptId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "deviceId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "VIEWED", "SKIPPED" ],
+            "type" : "string"
+          },
+          "studyTimeMs" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "versionId" : {
+            "pattern" : "^sha256:[0-9a-f]{64}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "attemptId", "deviceId", "outcome", "studyTimeMs", "versionId" ],
+        "type" : "object"
+      },
+      "CompletionResult" : {
+        "properties" : {
+          "outcome" : {
+            "enum" : [ "GRADED", "SKIPPED", "VIEWED" ],
+            "type" : "string"
+          },
+          "receipt" : {
+            "type" : "string"
+          },
+          "xpAwarded" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "outcome", "xpAwarded" ],
         "type" : "object"
       },
       "ContentText" : {
@@ -867,7 +938,7 @@
     },
     "/api/v1/visitor/attempts" : {
       "post" : {
-        "description" : "Corrige a Tentativa. expected e as justificativas só voltam no Acerto (100%).",
+        "description" : "Corrige a Tentativa. expected e as justificativas só voltam no Acerto (100%). receipt só volta na primeira Tentativa do aparelho na Atividade, e de novo no reenvio do mesmo attemptId.",
         "operationId" : "submitVisitorAttempt",
         "requestBody" : {
           "content" : {
@@ -896,7 +967,7 @@
     },
     "/api/v1/visitor/attempts/reveal" : {
       "post" : {
-        "description" : "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e as justificativas, sem XP.",
+        "description" : "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e as justificativas, sem XP e sem receipt. Exige uma Tentativa do aparelho na Atividade (409 ATTEMPT_REQUIRED).",
         "operationId" : "revealVisitorAttempt",
         "requestBody" : {
           "content" : {
@@ -914,6 +985,35 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseAttemptResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "visitor" ]
+      }
+    },
+    "/api/v1/visitor/completions" : {
+      "post" : {
+        "description" : "Conclui uma Atividade sem correção (VIEWED ou SKIPPED), sem XP. receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade.",
+        "operationId" : "completeVisitorActivity",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Completion"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCompletionResult"
                 }
               }
             },

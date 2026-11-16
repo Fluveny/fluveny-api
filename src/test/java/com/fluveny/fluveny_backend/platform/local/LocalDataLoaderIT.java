@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fluveny.fluveny_backend.LocalMongoContainer;
+import java.util.ArrayList;
+import java.util.List;
 import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,8 +47,11 @@ class LocalDataLoaderIT {
     void seedsOnStartupAndAgainWithoutDuplicates() throws Exception {
         assertThat(count()).as("carregado na partida").isEqualTo(2);
 
-        // O carregador de content (@Order(100)) roda depois dos dois de teste.
-        assertThat(this.loader.load()).containsSubsequence("first", "second").endsWith("content");
+        // Os carregadores de content (@Order(100)) e learning (@Order(200)) rodam depois dos dois
+        // de teste.
+        assertThat(this.loader.load())
+                .containsSubsequence("first", "second", "content")
+                .endsWith("learning");
         this.mvc
                 .perform(post("/local/seed"))
                 .andExpect(status().isOk())
@@ -67,6 +72,14 @@ class LocalDataLoaderIT {
 
         assertThat(this.mongoTemplate.collectionExists("leftovers")).isFalse();
         assertThat(count()).isEqualTo(2);
+        // O carregador de learning recria os índices de visitor_attempts (história 1.12).
+        List<String> indexes = new ArrayList<>();
+        this.mongoTemplate
+                .getCollection("visitor_attempts")
+                .listIndexes()
+                .map(index -> index.getString("name"))
+                .into(indexes);
+        assertThat(indexes).contains("deviceId_activityKey", "createdAt_ttl");
     }
 
     private long count() {

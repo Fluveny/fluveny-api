@@ -3,6 +3,7 @@ package com.fluveny.fluveny_backend.learning.visitor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,15 +14,27 @@ import com.fluveny.fluveny_backend.content.publication.UnitPointer;
 import com.fluveny.fluveny_backend.content.publication.UnitPointerStore;
 import com.fluveny.fluveny_backend.content.publication.UnitVersion;
 import com.fluveny.fluveny_backend.content.publication.UnitVersionStore;
+import com.fluveny.fluveny_backend.learning.grading.Outcome;
+import com.fluveny.fluveny_backend.learning.receipt.ReceiptPayload;
+import com.fluveny.fluveny_backend.learning.receipt.ReceiptVerifier;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,10 +56,11 @@ import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
 /**
- * As rotas de Tentativa e "Ver resposta" do Visitante (história 1.11), sem Mongo: as coleções de
- * {@code content} ficam em memória, e o conteúdo entra pelo mesmo {@link PublishUnitVersion} da
- * rota admin. A fixture {@code unit-1} tem {@code s1-greetings} (2 itens, xp 10) no Estágio 1 e
- * {@code s2-flags} no Estágio 2.
+ * As rotas de Tentativa, "Ver resposta" e conclusão do Visitante (histórias 1.11 e 1.12), sem
+ * Mongo: as coleções de {@code content} e {@code visitor_attempts} ficam em memória, e o conteúdo
+ * entra pelo mesmo {@link PublishUnitVersion} da rota admin. Cada teste usa um IP próprio, para o
+ * limite por IP de um não vazar no outro. A fixture {@code unit-1} tem {@code s1-greetings} (2
+ * itens, xp 10) no Estágio 1 e {@code s2-flags} no Estágio 2.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -62,6 +76,11 @@ class VisitorAttemptsTest {
 
     private static final String REVEAL = ATTEMPTS + "/reveal";
 
+    private static final String COMPLETIONS = "/api/v1/visitor/completions";
+
+    /** Um IP por teste, sem colisão no contexto compartilhado. */
+    private static final AtomicInteger IPS = new AtomicInteger();
+
     private static final JsonMapper MAPPER = JsonMapper.builder().build();
 
     @Autowired private MockMvc mvc;
@@ -70,12 +89,21 @@ class VisitorAttemptsTest {
 
     @Autowired private InMemoryContent content;
 
+    @Autowired private ReceiptVerifier verifier;
+
     private String versionId;
+
+    private String deviceId;
+
+    private String remoteAddr;
 
     @BeforeEach
     void publish() throws Exception {
         this.content.clear();
         this.versionId = publish(validBundle());
+        this.deviceId = UUID.randomUUID().toString();
+        int ip = IPS.incrementAndGet();
+        this.remoteAddr = "10." + ((ip >> 16) & 255) + "." + ((ip >> 8) & 255) + "." + (ip & 255);
     }
 
     private String publish(JsonNode bundle) {
@@ -91,6 +119,7 @@ class VisitorAttemptsTest {
     private ObjectNode attempt(String activityKey, String... pairs) {
         ObjectNode body = MAPPER.createObjectNode();
         body.put("attemptId", UUID.randomUUID().toString());
+        body.put("deviceId", this.deviceId);
         body.put("versionId", this.versionId);
         body.put("activityKey", activityKey);
         body.put("type", "choice");
@@ -118,9 +147,26 @@ class VisitorAttemptsTest {
                 "s1-greetings", "s1-greetings-hello", "goodbye", "s1-greetings-pronoun", "yes");
     }
 
+    private ObjectNode completion(String activityKey, String outcome) {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("attemptId", UUID.randomUUID().toString());
+        body.put("deviceId", this.deviceId);
+        body.put("versionId", this.versionId);
+        body.put("activityKey", activityKey);
+        body.put("outcome", outcome);
+        body.put("studyTimeMs", 800);
+        return body;
+    }
+
     private ResultActions send(String path, JsonNode body) throws Exception {
         return this.mvc.perform(
-                post(path).contentType(MediaType.APPLICATION_JSON).content(body.toString()));
+                post(path)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.toString())
+                        .with(request -> {
+                            request.setRemoteAddr(this.remoteAddr);
+                            return request;
+                        }));
     }
 
     private static JsonNode json(ResultActions result) throws Exception {
@@ -177,7 +223,9 @@ class VisitorAttemptsTest {
 
     @Test
     void revealGradesTheSameAttemptAndDisclosesWithoutXp() throws Exception {
-        send(REVEAL, halfRight())
+        ObjectNode attempt = halfRight();
+        send(ATTEMPTS, attempt).andExpect(status().isOk());
+        send(REVEAL, attempt)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.outcome").value("GRADED"))
                 .andExpect(jsonPath("$.data.resultPct").value(50))
@@ -188,7 +236,8 @@ class VisitorAttemptsTest {
                                 .value("Respondemos com **too** para devolver o cumprimento."))
                 .andExpect(
                         jsonPath("$.data.expected.items[0].optionKey")
-                                .value("nice-to-meet-you-too"));
+                                .value("nice-to-meet-you-too"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
     }
 
     @Test
@@ -298,6 +347,7 @@ class VisitorAttemptsTest {
 
     @Test
     void revealOfAHitStillAwardsNoXp() throws Exception {
+        send(ATTEMPTS, allRight()).andExpect(status().isOk());
         send(REVEAL, allRight())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.resultPct").value(100))
@@ -311,6 +361,7 @@ class VisitorAttemptsTest {
     @ValueSource(
             strings = {
                 "attemptId=not-a-uuid",
+                "deviceId=not-a-uuid",
                 "versionId=sha256:abc",
                 "studyTimeMs=-1",
                 "attemptId=",
@@ -339,6 +390,315 @@ class VisitorAttemptsTest {
         expectProblem(send(ATTEMPTS, body), 400, "VALIDATION_FAILED");
     }
 
+    // História 1.12: recibos, conclusões, "Ver resposta" com Tentativa e limite de taxa.
+
+    @Test
+    void theFirstAttemptCarriesAReceiptAndIsStored() throws Exception {
+        ObjectNode attempt = halfRight();
+        JsonNode body = json(send(ATTEMPTS, attempt).andExpect(status().isOk()));
+        String receipt = body.at("/data/receipt").asString();
+
+        ReceiptPayload payload = this.verifier.verify(receipt);
+        assertThat(payload.deviceId()).hasToString(this.deviceId);
+        assertThat(payload.unitKey()).isEqualTo("unit-1");
+        assertThat(payload.versionId()).isEqualTo(this.versionId);
+        assertThat(payload.activityKey()).isEqualTo("s1-greetings");
+        assertThat(payload.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(payload.resultPct()).isEqualTo(50);
+        assertThat(payload.xpAwarded()).isEqualTo(5);
+        assertThat(payload.nonce()).isNotNull();
+        assertThat(payload.issuedAt()).isNotNull();
+
+        FirstAttempt stored =
+                this.content.attempts.get(
+                        InMemoryContent.key(UUID.fromString(this.deviceId), "s1-greetings"));
+        assertThat(stored.attemptId()).hasToString(attempt.get("attemptId").asString());
+        assertThat(stored.receipt()).isEqualTo(receipt);
+        assertThat(stored.nonce()).isEqualTo(payload.nonce());
+        assertThat(stored.studyTimeMs()).isEqualTo(1200);
+    }
+
+    @Test
+    void aLaterAttemptIsGradedWithoutAReceipt() throws Exception {
+        send(ATTEMPTS, halfRight()).andExpect(jsonPath("$.data.receipt").exists());
+        send(ATTEMPTS, allRight())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100))
+                .andExpect(jsonPath("$.data.xpAwarded").value(10))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).hasSize(1);
+    }
+
+    @Test
+    void resendingTheFirstAttemptReturnsTheSameResultAndReceipt() throws Exception {
+        ObjectNode attempt = halfRight();
+        String first = json(send(ATTEMPTS, attempt)).toString();
+        send(ATTEMPTS, allRight()).andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(json(send(ATTEMPTS, attempt)).toString()).isEqualTo(first);
+    }
+
+    @Test
+    void resendingTheFirstAttemptIdWithAnotherAnswerHasNoReceipt() throws Exception {
+        ObjectNode first = halfRight();
+        send(ATTEMPTS, first).andExpect(jsonPath("$.data.receipt").exists());
+        ObjectNode changed = allRight().put("attemptId", first.get("attemptId").asString());
+        send(ATTEMPTS, changed)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @Test
+    void theFirstAttemptIdReusedOnCompletionsHasNoReceipt() throws Exception {
+        ObjectNode first = halfRight();
+        send(ATTEMPTS, first).andExpect(jsonPath("$.data.receipt").exists());
+        ObjectNode completion =
+                completion("s1-greetings", "SKIPPED")
+                        .put("attemptId", first.get("attemptId").asString());
+        send(COMPLETIONS, completion)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.outcome").value("SKIPPED"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @Test
+    void simultaneousResendsOfTheFirstAttemptAllGetTheSameReceipt() throws Exception {
+        ObjectNode attempt = halfRight();
+        int threads = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<JsonNode>> results = new ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                results.add(
+                        pool.submit(() -> {
+                            start.await();
+                            return json(send(ATTEMPTS, attempt));
+                        }));
+            }
+            start.countDown();
+            java.util.Set<String> receipts = new java.util.HashSet<>();
+            for (Future<JsonNode> result : results) {
+                JsonNode receipt = result.get().at("/data/receipt");
+                assertThat(receipt.isString()).isTrue();
+                receipts.add(receipt.asString());
+            }
+            assertThat(receipts).hasSize(1);
+            assertThat(this.content.attempts).hasSize(1);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void twoSimultaneousFirstAttemptsYieldOneReceipt() throws Exception {
+        int threads = 8;
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CountDownLatch start = new CountDownLatch(1);
+        try {
+            List<Future<JsonNode>> results = new ArrayList<>();
+            for (int i = 0; i < threads; i++) {
+                ObjectNode attempt = halfRight();
+                results.add(
+                        pool.submit(() -> {
+                            start.await();
+                            return json(send(ATTEMPTS, attempt));
+                        }));
+            }
+            start.countDown();
+            int receipts = 0;
+            for (Future<JsonNode> result : results) {
+                if (result.get().at("/data/receipt").isString()) {
+                    receipts++;
+                }
+            }
+            assertThat(receipts).isEqualTo(1);
+            assertThat(this.content.attempts).hasSize(1);
+        } finally {
+            pool.shutdownNow();
+        }
+    }
+
+    @Test
+    void aSkippedCompletionCarriesAReceiptWithoutXp() throws Exception {
+        JsonNode body =
+                json(
+                        send(COMPLETIONS, completion("s1-greetings", "SKIPPED"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("SKIPPED"))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0)));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.outcome()).isEqualTo(Outcome.SKIPPED);
+        assertThat(payload.resultPct()).isZero();
+        assertThat(payload.xpAwarded()).isZero();
+
+        // Depois da conclusão, a Tentativa é corrigida, mas sem recibo.
+        send(ATTEMPTS, allRight()).andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @Test
+    void aViewedCompletionIsIdempotentByAttemptId() throws Exception {
+        ObjectNode completion = completion("s1-greetings", "VIEWED");
+        String first = json(send(COMPLETIONS, completion).andExpect(status().isOk())).toString();
+        assertThat(first).contains("\"receipt\"");
+        assertThat(json(send(COMPLETIONS, completion)).toString()).isEqualTo(first);
+        send(COMPLETIONS, completion("s1-greetings", "VIEWED"))
+                .andExpect(jsonPath("$.data.outcome").value("VIEWED"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @Test
+    void aCompletionOutsideTheFirstStageIsUnauthenticatedAndNotStored() throws Exception {
+        expectProblem(send(COMPLETIONS, completion("s2-flags", "VIEWED")), 401, "UNAUTHENTICATED");
+        expectProblem(
+                send(ATTEMPTS, attempt("s2-flags", "s2-flags-brazil", "brazil")),
+                401,
+                "UNAUTHENTICATED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void aCompletionOfAnUnknownActivityIsNotFound() throws Exception {
+        expectProblem(send(COMPLETIONS, completion("s1-nothing", "VIEWED")), 404, "NOT_FOUND");
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "outcome=GRADED",
+                "outcome=",
+                "deviceId=",
+                "deviceId=abc",
+                "attemptId=",
+                "versionId=sha256:abc"
+            })
+    void aMalformedCompletionIs400(String change) throws Exception {
+        ObjectNode body = completion("s1-greetings", "VIEWED");
+        String[] parts = change.split("=", 2);
+        if (parts[1].isEmpty()) {
+            body.remove(parts[0]);
+        } else {
+            body.put(parts[0], parts[1]);
+        }
+        expectProblem(send(COMPLETIONS, body), 400, "VALIDATION_FAILED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void anAttemptWithoutDeviceIdIsGradedWithoutReceiptNorStorage() throws Exception {
+        ObjectNode attempt = allRight();
+        attempt.remove("deviceId");
+        send(ATTEMPTS, attempt)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100))
+                .andExpect(jsonPath("$.data.xpAwarded").value(10))
+                .andExpect(jsonPath("$.data.expected.type").value("choice"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void anAttemptWithoutDeviceIdIsNotCountedPerDevice() throws Exception {
+        for (int i = 0; i < 31; i++) {
+            ObjectNode attempt = halfRight();
+            attempt.remove("deviceId");
+            send(ATTEMPTS, attempt).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void revealWithoutDeviceIdIsAConflict() throws Exception {
+        send(ATTEMPTS, halfRight()).andExpect(status().isOk());
+        ObjectNode reveal = halfRight();
+        reveal.remove("deviceId");
+        expectProblem(send(REVEAL, reveal), 409, "ATTEMPT_REQUIRED");
+    }
+
+    @Test
+    void revealWithoutAnAttemptIsAConflict() throws Exception {
+        expectProblem(send(REVEAL, halfRight()), 409, "ATTEMPT_REQUIRED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void revealAfterACompletionIsAllowed() throws Exception {
+        send(COMPLETIONS, completion("s1-greetings", "SKIPPED")).andExpect(status().isOk());
+        send(REVEAL, halfRight())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @Test
+    void tooManyRequestsFromOneDeviceAre429() throws Exception {
+        for (int i = 0; i < 30; i++) {
+            send(ATTEMPTS, halfRight()).andExpect(status().isOk());
+        }
+        expectProblem(send(ATTEMPTS, halfRight()), 429, "TOO_MANY_REQUESTS")
+                .andExpect(header().exists("Retry-After"));
+        expectProblem(
+                send(COMPLETIONS, completion("s1-greetings", "VIEWED")), 429, "TOO_MANY_REQUESTS");
+        expectProblem(send(REVEAL, halfRight()), 429, "TOO_MANY_REQUESTS")
+                .andExpect(header().exists("Retry-After"));
+
+        // Outro aparelho, no mesmo IP, segue.
+        this.deviceId = UUID.randomUUID().toString();
+        send(ATTEMPTS, halfRight()).andExpect(status().isOk());
+    }
+
+    @Test
+    void tooManyRequestsFromOneIpAre429EvenWithoutABody() throws Exception {
+        for (int i = 0; i < 300; i++) {
+            this.mvc.perform(
+                    post(ATTEMPTS)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}")
+                            .with(request -> {
+                                request.setRemoteAddr(this.remoteAddr);
+                                return request;
+                            }));
+        }
+        expectProblem(
+                        send(COMPLETIONS, completion("s1-greetings", "VIEWED")),
+                        429,
+                        "TOO_MANY_REQUESTS")
+                .andExpect(header().exists("Retry-After"));
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void aPercentEncodedVisitorPathStillCountsPerIp() throws Exception {
+        URI encoded = URI.create("/api/v1/%76isitor/attempts");
+        int first =
+                this.mvc
+                        .perform(
+                                post(encoded)
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(halfRight().toString())
+                                        .with(request -> {
+                                            request.setRemoteAddr(this.remoteAddr);
+                                            return request;
+                                        }))
+                        .andReturn()
+                        .getResponse()
+                        .getStatus();
+        // O MVC roteia o caminho codificado para o controller; então ele precisa contar.
+        assertThat(first).isEqualTo(200);
+        for (int i = 1; i < 300; i++) {
+            send(ATTEMPTS, MAPPER.createObjectNode());
+        }
+        expectProblem(
+                this.mvc.perform(
+                        post(encoded)
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(halfRight().toString())
+                                .with(request -> {
+                                    request.setRemoteAddr(this.remoteAddr);
+                                    return request;
+                                })),
+                429,
+                "TOO_MANY_REQUESTS");
+    }
+
     private static java.util.Set<String> keys(JsonNode node) {
         java.util.Set<String> keys = new java.util.TreeSet<>();
         collect(node, keys);
@@ -364,9 +724,46 @@ class VisitorAttemptsTest {
 
         private final Map<String, UnitPointer> pointers = new ConcurrentHashMap<>();
 
+        final Map<String, FirstAttempt> attempts = new ConcurrentHashMap<>();
+
+        /**
+         * Relógio parado para os limites de taxa: a janela nunca vira no meio de uma rajada. Cada
+         * teste usa IP e aparelho próprios, então a contagem não vaza entre testes.
+         */
+        @Bean
+        @Primary
+        Clock fixedClock() {
+            return Clock.fixed(Instant.parse("2026-11-16T12:00:30Z"), ZoneOffset.UTC);
+        }
+
         void clear() {
             this.versions.clear();
             this.pointers.clear();
+            this.attempts.clear();
+        }
+
+        static String key(UUID deviceId, String activityKey) {
+            return deviceId + "|" + activityKey;
+        }
+
+        /** Como o Mongo com o índice único: só a primeira gravação por chave vale. */
+        @Bean
+        @Primary
+        VisitorAttemptStore inMemoryVisitorAttempts() {
+            return new VisitorAttemptStore() {
+                @Override
+                public boolean insertIfAbsent(FirstAttempt attempt) {
+                    return InMemoryContent.this.attempts.putIfAbsent(
+                                    key(attempt.deviceId(), attempt.activityKey()), attempt)
+                            == null;
+                }
+
+                @Override
+                public Optional<FirstAttempt> find(UUID deviceId, String activityKey) {
+                    return Optional.ofNullable(
+                            InMemoryContent.this.attempts.get(key(deviceId, activityKey)));
+                }
+            };
         }
 
         @Bean

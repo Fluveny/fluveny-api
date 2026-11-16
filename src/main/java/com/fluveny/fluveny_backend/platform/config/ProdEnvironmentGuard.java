@@ -11,13 +11,16 @@ import org.springframework.util.StringUtils;
 
 /**
  * No perfil {@code prod} (o padrão, AD-18), a API não sobe sem as variáveis obrigatórias. Roda
- * antes de qualquer bean ser criado, para a falha citar a variável e não um erro de conexão.
+ * antes de qualquer bean ser criado, para a falha citar a variável e não um erro de conexão. A
+ * chave dos recibos do Visitante ({@code FLUVENY_RECEIPT_KEY}, história 1.12) é obrigatória aqui;
+ * fora de {@code prod}, sem ela, {@code learning} gera uma chave na partida.
  */
 @Component
 @Profile("prod")
 class ProdEnvironmentGuard implements BeanFactoryPostProcessor, EnvironmentAware {
 
-    static final List<String> REQUIRED_VARIABLES = List.of("SPRING_DATA_MONGODB_URI");
+    static final List<String> REQUIRED_VARIABLES =
+            List.of("SPRING_DATA_MONGODB_URI", "FLUVENY_RECEIPT_KEY");
 
     private Environment environment;
 
