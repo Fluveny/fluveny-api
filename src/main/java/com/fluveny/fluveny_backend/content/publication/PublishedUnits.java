@@ -125,6 +125,14 @@ public class PublishedUnits {
         return new StudentViews.Stage(unit.versionId(), stageKey, title(stage), activities);
     }
 
+    /**
+     * A Unidade publicada de menor {@code order}: a única com Estágio liberado sem sessão (a mesma
+     * regra do {@link #stage}). Vazio se nada foi publicado.
+     */
+    public Optional<String> firstUnitKey() {
+        return published().stream().findFirst().map(Published::unitKey);
+    }
+
     /** Só o primeiro Estágio da Unidade publicada de menor {@code order}. */
     private boolean isUnlocked(Published unit, String stageKey) {
         Optional<Published> first = published().stream().findFirst();

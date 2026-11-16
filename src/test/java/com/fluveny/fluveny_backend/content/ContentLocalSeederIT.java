@@ -19,9 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * 2º critério de aceite da 1.7: com uma Unidade em {@code content/units/}, a API no perfil {@code
- * local} a publica sozinha, e {@code GET /api/v1/units} a lista sem nenhuma ação manual. Nenhum
- * {@code ActivityTypeSource} existe, e a Escolha passa: o perfil local pula só a compatibilidade de
- * Tipo. O reset apaga o banco e publica de novo.
+ * local} a publica sozinha, e {@code GET /api/v1/units} a lista sem nenhuma ação manual. A Escolha
+ * tem {@code sinceAppVersion} nulo no {@code learning} e passa mesmo assim: o perfil local pula só
+ * a compatibilidade de Tipo. O reset apaga o banco e publica de novo.
  */
 @SpringBootTest
 @AutoConfigureMockMvc

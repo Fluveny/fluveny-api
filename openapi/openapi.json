@@ -47,6 +47,35 @@
         "required" : [ "type" ],
         "type" : "object"
       },
+      "Answer" : {
+        "discriminator" : {
+          "mapping" : {
+            "choice" : "#/components/schemas/ChoiceAnswer"
+          },
+          "propertyName" : "type"
+        },
+        "oneOf" : [ {
+          "$ref" : "#/components/schemas/ChoiceAnswer"
+        } ],
+        "properties" : {
+          "type" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "type" ]
+      },
+      "ApiResponseAttemptResult" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/AttemptResult"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "ApiResponseListUnitListItemStudentView" : {
         "properties" : {
           "data" : {
@@ -122,6 +151,68 @@
         "required" : [ "data" ],
         "type" : "object"
       },
+      "Attempt" : {
+        "properties" : {
+          "activityKey" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type" : "string"
+          },
+          "answer" : {
+            "$ref" : "#/components/schemas/Answer"
+          },
+          "attemptId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "studyTimeMs" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "type" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "versionId" : {
+            "pattern" : "^sha256:[0-9a-f]{64}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "answer", "attemptId", "studyTimeMs", "type", "versionId" ],
+        "type" : "object"
+      },
+      "AttemptResult" : {
+        "properties" : {
+          "expected" : {
+            "$ref" : "#/components/schemas/Answer"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ItemResult"
+            },
+            "type" : "array"
+          },
+          "outcome" : {
+            "enum" : [ "GRADED", "SKIPPED", "VIEWED" ],
+            "type" : "string"
+          },
+          "resultPct" : {
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "xpAwarded" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "items", "outcome", "resultPct", "xpAwarded" ],
+        "type" : "object"
+      },
       "ChoiceActivity" : {
         "properties" : {
           "activityKey" : {
@@ -178,6 +269,34 @@
           }
         },
         "required" : [ "activityKey", "items", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "ChoiceAnswer" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ChoiceAnswerItem"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "choice" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "items", "type" ],
+        "type" : "object"
+      },
+      "ChoiceAnswerItem" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          },
+          "optionKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "itemKey", "optionKey" ],
         "type" : "object"
       },
       "ChoiceItem" : {
@@ -245,6 +364,21 @@
         }, {
           "$ref" : "#/components/schemas/PronounVariants"
         } ]
+      },
+      "ItemResult" : {
+        "properties" : {
+          "correct" : {
+            "type" : "boolean"
+          },
+          "itemKey" : {
+            "type" : "string"
+          },
+          "justification" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "correct", "itemKey" ],
+        "type" : "object"
       },
       "MediaContent" : {
         "properties" : {
@@ -729,6 +863,64 @@
           }
         },
         "tags" : [ "units" ]
+      }
+    },
+    "/api/v1/visitor/attempts" : {
+      "post" : {
+        "description" : "Corrige a Tentativa. expected e as justificativas só voltam no Acerto (100%).",
+        "operationId" : "submitVisitorAttempt",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Attempt"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttemptResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "visitor" ]
+      }
+    },
+    "/api/v1/visitor/attempts/reveal" : {
+      "post" : {
+        "description" : "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e as justificativas, sem XP.",
+        "operationId" : "revealVisitorAttempt",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Attempt"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttemptResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "visitor" ]
       }
     }
   },
