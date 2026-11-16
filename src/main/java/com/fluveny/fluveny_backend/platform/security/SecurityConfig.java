@@ -1,5 +1,10 @@
 package com.fluveny.fluveny_backend.platform.security;
 
+import com.fluveny.fluveny_backend.platform.web.Problems;
+import com.fluveny.fluveny_backend.platform.web.RateLimiter;
+import java.time.Clock;
+import java.time.Duration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -32,9 +37,19 @@ class SecurityConfig {
             HttpSecurity http,
             RouteAuthorizationManager routeAuthorization,
             ProblemSecurityHandlers problemHandlers,
-            DeployTokenProperties deployToken)
+            DeployTokenProperties deployToken,
+            Problems problems,
+            Clock clock,
+            @Value("${fluveny.visitor.rate-limit.ip-per-minute:300}") int visitorIpPerMinute)
             throws Exception {
         return http
+                // Limite por IP das rotas do Visitante (história 1.12), antes de qualquer outro.
+                // Também fora dos beans, pelo mesmo motivo do DeployTokenFilter.
+                .addFilterBefore(
+                        new VisitorRateLimitFilter(
+                                new RateLimiter(visitorIpPerMinute, Duration.ofMinutes(1), clock),
+                                problems),
+                        AnonymousAuthenticationFilter.class)
                 // Não é bean: registrado como bean, o Boot o poria também na cadeia do servlet.
                 .addFilterBefore(
                         new DeployTokenFilter(deployToken.sha256Bytes()),

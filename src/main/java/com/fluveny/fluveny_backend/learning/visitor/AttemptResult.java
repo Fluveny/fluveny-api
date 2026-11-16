@@ -12,6 +12,8 @@ import java.util.List;
  *
  * @param resultPct de 0 a 100
  * @param expected a resposta certa, só depois de um Acerto ou de "Ver resposta"
+ * @param receipt o recibo da primeira Tentativa do aparelho na Atividade (história 1.12); ausente
+ *     nas seguintes e no "Ver resposta"
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "AttemptResult")
@@ -20,4 +22,5 @@ public record AttemptResult(
         @Schema(requiredMode = RequiredMode.REQUIRED, minimum = "0", maximum = "100") int resultPct,
         @Schema(requiredMode = RequiredMode.REQUIRED) List<ItemResult> items,
         @Schema(requiredMode = RequiredMode.REQUIRED, minimum = "0") int xpAwarded,
-        Answer expected) {}
+        Answer expected,
+        String receipt) {}

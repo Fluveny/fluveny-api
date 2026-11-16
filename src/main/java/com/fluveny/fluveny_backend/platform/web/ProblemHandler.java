@@ -84,6 +84,9 @@ class ProblemHandler extends ResponseEntityExceptionHandler {
             // Todo 401 leva o desafio (AD-12), inclusive o de domínio.
             headers.set(HttpHeaders.WWW_AUTHENTICATE, Problems.BEARER_CHALLENGE);
         }
+        if (ex instanceof RateLimitedException limited) {
+            headers.set(HttpHeaders.RETRY_AFTER, Long.toString(limited.getRetryAfterSeconds()));
+        }
         return problem(problem, headers);
     }
 

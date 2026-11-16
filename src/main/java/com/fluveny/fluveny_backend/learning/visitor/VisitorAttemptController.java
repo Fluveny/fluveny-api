@@ -11,13 +11,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Tentativa e "Ver resposta" do Visitante (história 1.11, AD-7). Anônimas e só para as Atividades
- * do Estágio liberado; fora dele, {@code 401 UNAUTHENTICATED}.
+ * Tentativa, "Ver resposta" e conclusão do Visitante (histórias 1.11 e 1.12, AD-7). Anônimas e só
+ * para as Atividades do Estágio liberado; fora dele, {@code 401 UNAUTHENTICATED}. Acima do limite
+ * de taxa, {@code 429 TOO_MANY_REQUESTS}.
  */
 @RestController
 @Tag(name = "visitor")
 @PublicRoute
-@RequestMapping("/api/v1/visitor/attempts")
+@RequestMapping("/api/v1/visitor")
 class VisitorAttemptController {
 
     private final VisitorAttempts attempts;
@@ -29,8 +30,10 @@ class VisitorAttemptController {
     @Operation(
             operationId = "submitVisitorAttempt",
             description =
-                    "Corrige a Tentativa. expected e as justificativas só voltam no Acerto (100%).")
-    @PostMapping
+                    "Corrige a Tentativa. expected e as justificativas só voltam no Acerto (100%)."
+                            + " receipt só volta na primeira Tentativa do aparelho na Atividade, e"
+                            + " de novo no reenvio do mesmo attemptId.")
+    @PostMapping("/attempts")
     ApiResponse<AttemptResult> attempt(@Valid @RequestBody Attempt attempt) {
         return ApiResponse.of(this.attempts.attempt(attempt));
     }
@@ -39,9 +42,20 @@ class VisitorAttemptController {
             operationId = "revealVisitorAttempt",
             description =
                     "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e"
-                            + " as justificativas, sem XP.")
-    @PostMapping("/reveal")
+                            + " as justificativas, sem XP e sem receipt. Exige uma Tentativa do"
+                            + " aparelho na Atividade (409 ATTEMPT_REQUIRED).")
+    @PostMapping("/attempts/reveal")
     ApiResponse<AttemptResult> reveal(@Valid @RequestBody Attempt attempt) {
         return ApiResponse.of(this.attempts.reveal(attempt));
+    }
+
+    @Operation(
+            operationId = "completeVisitorActivity",
+            description =
+                    "Conclui uma Atividade sem correção (VIEWED ou SKIPPED), sem XP. receipt só"
+                            + " volta na primeira conclusão ou Tentativa do aparelho na Atividade.")
+    @PostMapping("/completions")
+    ApiResponse<CompletionResult> complete(@Valid @RequestBody Completion completion) {
+        return ApiResponse.of(this.attempts.complete(completion));
     }
 }
