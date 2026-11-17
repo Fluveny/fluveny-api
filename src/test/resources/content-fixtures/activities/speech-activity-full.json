@@ -1,0 +1,20 @@
+{
+  "activityKey": "s1-your-turn",
+  "type": "speech",
+  "title": "It's your turn",
+  "prompt": "Se apresente para o Alex.",
+  "target": {
+    "he": "Hi Alex, I'm {name}. He is my friend.",
+    "she": "Hi Alex, I'm {name}. She is my friend.",
+    "they": "Hi Alex, I'm {name}. They are my friend."
+  },
+  "alternatives": [
+    "Hello Alex, my name is {name}.",
+    {
+      "he": "Hi! I am {name}. He is my friend.",
+      "she": "Hi! I am {name}. She is my friend.",
+      "they": "Hi! I am {name}. They are my friend."
+    }
+  ],
+  "xp": 10
+}

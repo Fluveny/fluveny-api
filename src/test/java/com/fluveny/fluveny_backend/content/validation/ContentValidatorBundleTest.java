@@ -340,4 +340,110 @@ class ContentValidatorBundleTest {
                     assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
                 });
     }
+
+    // História 1.15: a Fala.
+
+    /** A Fala de {@code s1-meet-alex} na fixture válida ({@code /activities/4}). */
+    private static ObjectNode speech(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/4");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"{name}", " {name} {country}. ", "**{name}**!", "[[{name}|be-from]]"})
+    void aTargetWithOnlyPlaceholdersIsRejected(String target) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        speech(bundle).put("target", target);
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .filteredOn(error -> error.rule() == ContentRule.MISSING_SPEECH_WORD)
+                .extracting(ContentError::file, ContentError::pointer, ContentError::key)
+                .containsExactly(tuple(S1, "/activities/4/target", "s1-your-turn"));
+    }
+
+    @Test
+    void eachAlternativeAndVariantNeedsAWord() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode speech = speech(bundle);
+        speech.putObject("target")
+                .put("he", "He is {name}.")
+                .put("she", "{name}.")
+                .put("they", "They are {name}.");
+        ArrayNode alternatives = speech.putArray("alternatives");
+        alternatives.add("Hello, {name}!");
+        alternatives.add("{name}!");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/4/target/she", ContentRule.MISSING_SPEECH_WORD),
+                        tuple("/activities/4/alternatives/1", ContentRule.MISSING_SPEECH_WORD));
+    }
+
+    /** As regras de Tipo rodam mesmo com erro de schema; alternatives fora de lista não quebra. */
+    @Test
+    void alternativesAsAnObjectIsOnlyASchemaViolation() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        speech(bundle).putObject("alternatives");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.pointer()).startsWith("/activities/4/alternatives");
+                    assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
+                });
+    }
+
+    @Test
+    void aSpeechWithoutTargetIsOnlyMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        speech(bundle).remove("target");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule, ContentError::key)
+                .containsExactly(
+                        tuple(
+                                "/activities/4/target",
+                                ContentRule.MISSING_ACCEPTED_ANSWER,
+                                "s1-your-turn"));
+    }
+
+    @Test
+    void speechTextsFollowTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode speech = speech(bundle);
+        speech.put("target", "Hi, {age}!");
+        ((ArrayNode) speech.get("alternatives")).set(0, "[[Hi|nao-existe]]!");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/4/target", ContentRule.UNKNOWN_PLACEHOLDER),
+                        tuple("/activities/4/alternatives/0", ContentRule.INVALID_MARKUP));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "prompt=",
+                "xp=",
+                "xp=-1",
+                "alternatives=empty",
+                "target=empty",
+                "extra-property=x"
+            })
+    void anInvalidSpeechIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode speech = speech(bundle);
+        switch (change) {
+            case "prompt=" -> speech.remove("prompt");
+            case "xp=" -> speech.remove("xp");
+            case "xp=-1" -> speech.put("xp", -1);
+            case "alternatives=empty" -> speech.putArray("alternatives");
+            case "target=empty" -> speech.put("target", "");
+            default -> speech.put("audio", "x");
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/4");
+                })
+                .anySatisfy(
+                        error -> assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION));
+    }
 }

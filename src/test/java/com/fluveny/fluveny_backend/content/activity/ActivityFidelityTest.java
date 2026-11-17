@@ -527,8 +527,9 @@ class ActivityFidelityTest {
                             + "activities/"
                             + activity.path("type").asString()
                             + ".schema.json";
-            if (!SCHEMAS.document(id).toString().contains("\"" + ContentSchemas.SECRET + "\"")) {
-                // Sem segredo (Diálogo), a visão do aluno é a própria Atividade.
+            if (!hasSecretField(activity, secretNames(SCHEMAS.document(id), new TreeSet<>()))) {
+                // Sem segredo no schema (Diálogo) ou na fixture (Fala sem alternatives), a visão
+                // do aluno é a própria Atividade.
                 assertThat(
                                 (JsonNode)
                                         STRICT.valueToTree(
@@ -542,6 +543,38 @@ class ActivityFidelityTest {
                     .as("%s lido como visão do aluno", file.getFileName())
                     .hasMessageContaining("Unrecognized property");
         }
+    }
+
+    /**
+     * Os nomes das propriedades {@code x-fluveny-secret} de um schema, em qualquer profundidade.
+     */
+    private static Set<String> secretNames(JsonNode node, Set<String> names) {
+        if (node.isObject()) {
+            for (var property : node.path("properties").properties()) {
+                if (property.getValue().path(ContentSchemas.SECRET).asBoolean(false)) {
+                    names.add(property.getKey());
+                }
+            }
+        }
+        node.forEach(child -> secretNames(child, names));
+        return names;
+    }
+
+    /** Se a instância tem algum campo com um dos nomes secretos, em qualquer profundidade. */
+    private static boolean hasSecretField(JsonNode node, Set<String> secrets) {
+        if (node.isObject()) {
+            for (String name : node.propertyNames()) {
+                if (secrets.contains(name)) {
+                    return true;
+                }
+            }
+        }
+        for (JsonNode child : node) {
+            if (hasSecretField(child, secrets)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Cada campo opcional do schema aparece presente e ausente nas fixtures da família. */

@@ -821,6 +821,166 @@ class VisitorAttemptsTest {
                 "TOO_MANY_REQUESTS");
     }
 
+    // História 1.15: a Fala.
+
+    private static final String SPEECH = "s1-your-turn";
+
+    private ObjectNode speech(String transcript) {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("attemptId", UUID.randomUUID().toString());
+        body.put("deviceId", this.deviceId);
+        body.put("versionId", this.versionId);
+        body.put("activityKey", SPEECH);
+        body.put("type", "speech");
+        body.putObject("answer").put("type", "speech").put("transcript", transcript);
+        body.put("studyTimeMs", 3000);
+        return body;
+    }
+
+    @Test
+    void theStageServesTheSpeechWithoutAlternatives() throws Exception {
+        this.mvc
+                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.activities[4].activityKey").value(SPEECH))
+                .andExpect(jsonPath("$.data.activities[4].type").value("speech"))
+                .andExpect(
+                        jsonPath("$.data.activities[4].prompt").value("Se apresente para o Alex."))
+                .andExpect(jsonPath("$.data.activities[4].target").value("Hi Alex, I'm {name}."))
+                .andExpect(jsonPath("$.data.activities[4].xp").value(10))
+                .andExpect(jsonPath("$.data.activities[4].alternatives").doesNotExist());
+    }
+
+    @Test
+    void aSpeechHitCarriesTheReceiptAndTheTranscriptIsNotStored() throws Exception {
+        String transcript = "hi alex i am {name} nice";
+        JsonNode body =
+                json(
+                        send(ATTEMPTS, speech(transcript))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("GRADED"))
+                                .andExpect(jsonPath("$.data.resultPct").value(100))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(10))
+                                .andExpect(jsonPath("$.data.items.length()").value(1))
+                                .andExpect(jsonPath("$.data.items[0].itemKey").value(SPEECH))
+                                .andExpect(jsonPath("$.data.items[0].correct").value(true))
+                                .andExpect(jsonPath("$.data.expected.type").value("speech"))
+                                .andExpect(
+                                        jsonPath("$.data.expected.transcript")
+                                                .value("Hi Alex, I'm {name}.")));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(SPEECH);
+        assertThat(payload.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(payload.resultPct()).isEqualTo(100);
+        assertThat(payload.xpAwarded()).isEqualTo(10);
+        assertThat(this.content.attempts).hasSize(1);
+        assertThat(this.content.attempts.values().iterator().next().toString())
+                .doesNotContain(transcript);
+    }
+
+    @Test
+    void aSpeechAlternativeIsAHit() throws Exception {
+        send(ATTEMPTS, speech("Hello Alex, my name is {name}."))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100));
+    }
+
+    @Test
+    void aSpeechMissHasNoXpNorExpected() throws Exception {
+        JsonNode body =
+                json(
+                        send(ATTEMPTS, speech("goodbye"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.resultPct").value(0))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                                .andExpect(jsonPath("$.data.items[0].correct").value(false))
+                                .andExpect(jsonPath("$.data.receipt").exists()));
+        assertThat(keys(body)).doesNotContain("expected", "justification");
+        assertThat(body.toString()).doesNotContain("Hello Alex");
+        JsonNode revealed =
+                json(
+                        send(REVEAL, speech("goodbye"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                                .andExpect(
+                                        jsonPath("$.data.expected.transcript")
+                                                .value("Hi Alex, I'm {name}.")));
+        // O reveal mostra o alvo, nunca as alternativas.
+        assertThat(keys(revealed)).doesNotContain("alternatives");
+        assertThat(revealed.toString()).doesNotContain("Hello Alex", "my name is");
+    }
+
+    /**
+     * A Fala aceita Tentativa e SKIPPED: vale o primeiro, como em qualquer Tipo (AD-9). Pular
+     * depois de tentar é concluído sem recibo e não grava nada.
+     */
+    @Test
+    void skippingAfterAnAttemptHasNoReceiptAndKeepsTheAttempt() throws Exception {
+        send(ATTEMPTS, speech("hi alex i'm {name}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.xpAwarded").value(10))
+                .andExpect(jsonPath("$.data.receipt").exists());
+        send(COMPLETIONS, completion(SPEECH, "SKIPPED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.outcome").value("SKIPPED"))
+                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).hasSize(1);
+        FirstAttempt stored = this.content.attempts.values().iterator().next();
+        assertThat(stored.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(stored.xpAwarded()).isEqualTo(10);
+    }
+
+    /**
+     * Tentar depois de pular é corrigido como Tentativa seguinte: sem recibo, e o pulo gravado
+     * continua o único registro. O {@code xpAwarded} da resposta é o da correção, como em toda
+     * Tentativa seguinte; o XP só vale pelo recibo.
+     */
+    @Test
+    void anAttemptAfterSkippingHasNoReceiptAndKeepsTheSkip() throws Exception {
+        send(COMPLETIONS, completion(SPEECH, "SKIPPED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.receipt").exists());
+        send(ATTEMPTS, speech("hi alex i'm {name}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100))
+                .andExpect(jsonPath("$.data.xpAwarded").value(10))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).hasSize(1);
+        FirstAttempt stored = this.content.attempts.values().iterator().next();
+        assertThat(stored.outcome()).isEqualTo(Outcome.SKIPPED);
+        assertThat(stored.xpAwarded()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"   ", ""})
+    void aBlankTranscriptIsInvalidAndNotStored(String transcript) throws Exception {
+        expectProblem(send(ATTEMPTS, speech(transcript)), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void skippingASpeechCarriesAReceiptWithoutXp() throws Exception {
+        JsonNode body =
+                json(
+                        send(COMPLETIONS, completion(SPEECH, "SKIPPED"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("SKIPPED"))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0)));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(SPEECH);
+        assertThat(payload.outcome()).isEqualTo(Outcome.SKIPPED);
+        assertThat(payload.xpAwarded()).isZero();
+        assertThat(this.content.attempts).hasSize(1);
+    }
+
+    @Test
+    void viewingASpeechIsNotAllowedAndNotStored() throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion(SPEECH, "VIEWED")), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
     private static java.util.Set<String> keys(JsonNode node) {
         java.util.Set<String> keys = new java.util.TreeSet<>();
         collect(node, keys);

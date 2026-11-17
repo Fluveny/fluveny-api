@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
 import com.fluveny.fluveny_backend.platform.meta.ActivityTypeSource;
 import com.fluveny.fluveny_backend.platform.meta.ActivityTypeSupport;
@@ -22,9 +23,10 @@ import org.springframework.stereotype.Component;
 public class LearningActivityTypes implements ActivityTypeSource {
 
     /**
-     * As conclusões ({@code completions}) que cada Tipo aceita (histórias 1.13 e 1.14). Os
+     * As conclusões ({@code completions}) que cada Tipo aceita (histórias 1.13 a 1.15). Os
      * expositivos (Diálogo, Cartões de expressões, Expressão Útil destacada) só são vistos; a
-     * Escolha não se conclui sem Tentativa. Tipo fora do mapa não aceita nenhuma.
+     * Escolha não se conclui sem Tentativa; a Fala pode ser pulada ("Não posso falar agora"). Tipo
+     * fora do mapa não aceita nenhuma.
      */
     private static final Map<String, Set<Outcome>> COMPLETIONS =
             Map.of(
@@ -35,7 +37,9 @@ public class LearningActivityTypes implements ActivityTypeSource {
                     ExpressionActivity.TYPE,
                     Set.of(Outcome.VIEWED),
                     ChoiceActivity.TYPE,
-                    Set.of());
+                    Set.of(),
+                    SpeechActivity.TYPE,
+                    Set.of(Outcome.SKIPPED));
 
     @Override
     public List<ActivityTypeSupport> activityTypes() {
@@ -43,7 +47,8 @@ public class LearningActivityTypes implements ActivityTypeSource {
                 new ActivityTypeSupport(ChoiceActivity.TYPE, null),
                 new ActivityTypeSupport(DialogueActivity.TYPE, null),
                 new ActivityTypeSupport(CardsActivity.TYPE, null),
-                new ActivityTypeSupport(ExpressionActivity.TYPE, null));
+                new ActivityTypeSupport(ExpressionActivity.TYPE, null),
+                new ActivityTypeSupport(SpeechActivity.TYPE, null));
     }
 
     /** Os Tipos com regra de conclusão; o teste confere que batem com {@link #activityTypes()}. */

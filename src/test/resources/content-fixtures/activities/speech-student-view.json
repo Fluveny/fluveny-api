@@ -1,0 +1,8 @@
+{
+  "activityKey": "s1-your-turn",
+  "type": "speech",
+  "title": "It's your turn",
+  "prompt": "Se apresente para o Alex.",
+  "target": "Hi Alex, I'm {name}.",
+  "xp": 10
+}

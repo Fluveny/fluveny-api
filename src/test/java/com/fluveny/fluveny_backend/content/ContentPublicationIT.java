@@ -80,6 +80,7 @@ class ContentPublicationIT {
         Types.SINCE.set("0.0.0");
         Types.DIALOGUE_SINCE.set("0.0.0");
         Types.EXPRESSIONS_SINCE.set("0.0.0");
+        Types.SPEECH_SINCE.set("0.0.0");
     }
 
     static ObjectNode validBundle() throws Exception {
@@ -262,6 +263,22 @@ class ContentPublicationIT {
         assertThat(versions()).isZero();
     }
 
+    /**
+     * História 1.15: a Fala com o {@code sinceAppVersion} nulo do source real do {@code learning}
+     * não é publicada fora do perfil local.
+     */
+    @Test
+    void speechWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+        Types.SPEECH_SINCE.set(null);
+        publish(UNIT, validBundle())
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
+                .andExpect(jsonPath("$.errors.length()").value(1))
+                .andExpect(jsonPath("$.errors[0].pointer").value("/activities/4/type"))
+                .andExpect(jsonPath("$.errors[0].key").value("s1-your-turn"));
+        assertThat(versions()).isZero();
+    }
+
     @Test
     void theUnitKeyOfThePathMustMatchTheBundle() throws Exception {
         publish("/api/v1/admin/content/units/unit-9/versions", validBundle())
@@ -355,7 +372,7 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.data.title").value("Unit 1: Hello!"))
                 .andExpect(jsonPath("$.data.stages[0].stageKey").value("s1-meet-alex"))
                 .andExpect(jsonPath("$.data.stages[0].title").value("Meet Alex"))
-                .andExpect(jsonPath("$.data.stages[0].activityCount").value(4))
+                .andExpect(jsonPath("$.data.stages[0].activityCount").value(5))
                 .andExpect(jsonPath("$.data.stages[1].stageKey").value("s2-where-from"))
                 .andExpect(
                         jsonPath("$.data.usefulExpressions[0].expressionKey")
@@ -390,7 +407,11 @@ class ContentPublicationIT {
                                 .value(
                                         "Hi, {name}! They are Alex. [[Nice to meet"
                                                 + " you|nice-to-meet-you]]! They [[are"
-                                                + " from|be-from]] **Canada**."));
+                                                + " from|be-from]] **Canada**."))
+                // História 1.15: a Fala, sem as alternativas.
+                .andExpect(jsonPath("$.data.activities[4].type").value("speech"))
+                .andExpect(jsonPath("$.data.activities[4].target").value("Hi Alex, I'm {name}."))
+                .andExpect(jsonPath("$.data.activities[4].alternatives").doesNotExist());
         this.mvc
                 .perform(get("/api/v1/units/unit-1/stages/s2-where-from"))
                 .andExpect(status().isUnauthorized())
@@ -475,7 +496,7 @@ class ContentPublicationIT {
         }
         assertThat(scanned).contains("activities", "items", "options", "mediaKey");
         JsonNode stage = json(this.mvc.perform(get("/api/v1/units/unit-1/stages/s1-meet-alex")));
-        assertThat(stage.at("/data/activities").size()).isEqualTo(5);
+        assertThat(stage.at("/data/activities").size()).isEqualTo(6);
     }
 
     static Set<String> keys(JsonNode node, Set<String> keys) {
@@ -494,7 +515,7 @@ class ContentPublicationIT {
      * Os Tipos {@code choice}, {@code dialogue}, {@code cards} e {@code expression} com o {@code
      * sinceAppVersion} que cada teste quiser. Vêm antes do source real do {@code learning} (nulo):
      * na publicação, o primeiro source vence. Com {@code DIALOGUE_SINCE} ou {@code
-     * EXPRESSIONS_SINCE} nulo, o Tipo fica de fora e vale o source real.
+     * EXPRESSIONS_SINCE} ou {@code SPEECH_SINCE} nulo, o Tipo fica de fora e vale o source real.
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {
@@ -505,6 +526,9 @@ class ContentPublicationIT {
 
         /** O dos Cartões de expressões e da Expressão Útil destacada (história 1.14). */
         static final AtomicReference<String> EXPRESSIONS_SINCE = new AtomicReference<>("0.0.0");
+
+        /** O da Fala (história 1.15). */
+        static final AtomicReference<String> SPEECH_SINCE = new AtomicReference<>("0.0.0");
 
         @Bean
         @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -518,6 +542,9 @@ class ContentPublicationIT {
                 if (EXPRESSIONS_SINCE.get() != null) {
                     types.add(new ActivityTypeSupport("cards", EXPRESSIONS_SINCE.get()));
                     types.add(new ActivityTypeSupport("expression", EXPRESSIONS_SINCE.get()));
+                }
+                if (SPEECH_SINCE.get() != null) {
+                    types.add(new ActivityTypeSupport("speech", SPEECH_SINCE.get()));
                 }
                 return types;
             };

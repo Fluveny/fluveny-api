@@ -46,6 +46,13 @@ public enum ContentRule {
      */
     MISSING_EXPRESSION_TERM,
 
+    /**
+     * Frase-alvo ou alternativa da Fala sem nenhuma palavra fora dos placeholders (história 1.15):
+     * os placeholders não contam no critério, então a frase não teria o que conferir. Com variantes
+     * de pronome, vale para cada uma.
+     */
+    MISSING_SPEECH_WORD,
+
     /** {@code mediaKey} fora do manifesto {@code content/media.json}. */
     MEDIA_NOT_FOUND,
 

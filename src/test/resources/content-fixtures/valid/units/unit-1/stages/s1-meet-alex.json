@@ -142,6 +142,17 @@
         "she": "Hi, {name}! She is Alex. [[Nice to meet you|nice-to-meet-you]]! She [[is from|be-from]] **Canada**.",
         "they": "Hi, {name}! They are Alex. [[Nice to meet you|nice-to-meet-you]]! They [[are from|be-from]] **Canada**."
       }
+    },
+    {
+      "activityKey": "s1-your-turn",
+      "type": "speech",
+      "title": "It's your turn",
+      "prompt": "Se apresente para o Alex.",
+      "target": "Hi Alex, I'm {name}.",
+      "alternatives": [
+        "Hello Alex, my name is {name}."
+      ],
+      "xp": 10
     }
   ]
 }
