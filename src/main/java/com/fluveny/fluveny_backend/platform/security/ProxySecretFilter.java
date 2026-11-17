@@ -24,12 +24,15 @@ import org.springframework.web.util.UrlPathHelper;
  * ACCESS_DENIED}, exceto {@code GET /api/v1/meta}, o health check do host. A comparação é em tempo
  * constante, sobre o sha256 dos dois lados, e o segredo nunca vai para o log.
  *
- * <p>Com o segredo certo, o IP da requisição passa a ser o {@code CF-Connecting-IP} que o Worker
- * repassa, base do limite de taxa ({@link VisitorRateLimitFilter}). Sem o segredo, o cabeçalho é
- * ignorado; o {@code X-Forwarded-For} nunca é lido, e a {@code server.forward-headers-strategy}
- * fica desligada, porque confiaria num cabeçalho que qualquer um forja.
+ * <p>Com o segredo certo, o IP da requisição passa a ser o {@code X-Fluveny-Client-IP} que o Worker
+ * envia (o {@code CF-Connecting-IP} que ele recebe do aluno), base do limite de taxa ({@link
+ * VisitorRateLimitFilter}). Sem o segredo, o cabeçalho é ignorado. O {@code CF-Connecting-IP} que
+ * chega à API não serve: o host da API também fica atrás do Cloudflare, que, em subrequisição entre
+ * zonas, o troca pelo IP fixo do Worker. O {@code X-Forwarded-For} nunca é lido, e a {@code
+ * server.forward-headers-strategy} fica desligada, porque confiaria num cabeçalho que qualquer um
+ * forja.
  *
- * <p>Com o segredo certo e sem um {@code CF-Connecting-IP} que pareça IP, o IP fica o do proxy
+ * <p>Com o segredo certo e sem um {@code X-Fluveny-Client-IP} que pareça IP, o IP fica o do proxy
  * (todos os clientes num balde só do limite de taxa) e um aviso vai para o log, sem o valor do
  * cabeçalho.
  *
@@ -41,7 +44,7 @@ final class ProxySecretFilter extends OncePerRequestFilter {
 
     static final String HEADER = "X-Fluveny-Proxy";
 
-    static final String CLIENT_IP_HEADER = "CF-Connecting-IP";
+    static final String CLIENT_IP_HEADER = "X-Fluveny-Client-IP";
 
     static final String HEALTH_CHECK_PATH = "/api/v1/meta";
 

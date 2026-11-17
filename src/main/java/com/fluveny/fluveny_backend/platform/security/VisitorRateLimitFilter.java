@@ -18,8 +18,8 @@ import org.springframework.web.util.UrlPathHelper;
  * lê. Estouro responde {@code 429 TOO_MANY_REQUESTS} com {@code Retry-After}.
  *
  * <p>O IP é o {@link HttpServletRequest#getRemoteAddr()}. Atrás do Worker (AD-12, AD-18, história
- * 1.6), o {@link ProxySecretFilter} roda antes e troca o IP pelo {@code CF-Connecting-IP} quando o
- * segredo de proxy confere; o {@code X-Forwarded-For} nunca é lido, e a {@code
+ * 1.6), o {@link ProxySecretFilter} roda antes e troca o IP pelo {@code X-Fluveny-Client-IP} quando
+ * o segredo de proxy confere; o {@code X-Forwarded-For} nunca é lido, e a {@code
  * server.forward-headers-strategy} fica desligada.
  */
 final class VisitorRateLimitFilter extends OncePerRequestFilter {

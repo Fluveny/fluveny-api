@@ -61,6 +61,10 @@ class SentryPiiScrubberTest {
                                 "X-Client-IP",
                                 "203.0.113.7",
                                 "X-Original-Forwarded-For",
+                                "203.0.113.7",
+                                "X-Fluveny-Proxy",
+                                "segredo",
+                                "X-Fluveny-Client-IP",
                                 "203.0.113.7"));
         request.setBodySize(42L);
         request.setEnvs(new HashMap<>(Map.of("REMOTE_ADDR", "203.0.113.7", "SERVER_NAME", "api")));

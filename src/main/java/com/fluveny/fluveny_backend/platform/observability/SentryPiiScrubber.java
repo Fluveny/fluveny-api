@@ -11,8 +11,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Tira PII de todo evento antes de ir para o Sentry (NFR17): usuário, IP, cookies, query string,
- * cabeçalhos de autenticação e o corpo da requisição. Complementa o {@code
- * sentry.send-default-pii=false}.
+ * cabeçalhos de autenticação, o segredo de proxy e o IP do aluno que o Worker repassa, e o corpo da
+ * requisição. Complementa o {@code sentry.send-default-pii=false}.
  */
 @Component
 public class SentryPiiScrubber implements SentryOptions.BeforeSendCallback {
@@ -25,6 +25,8 @@ public class SentryPiiScrubber implements SentryOptions.BeforeSendCallback {
                     "set-cookie",
                     "x-api-key",
                     "x-fluveny-client",
+                    "x-fluveny-proxy",
+                    "x-fluveny-client-ip",
                     "x-forwarded-for",
                     "x-real-ip",
                     "forwarded",

@@ -18,7 +18,7 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
-/** Matriz da spec da história 1.6: o segredo de proxy e o IP do {@code CF-Connecting-IP}. */
+/** Matriz da spec da história 1.6: o segredo de proxy e o IP do {@code X-Fluveny-Client-IP}. */
 class ProxySecretFilterTest {
 
     private static final String SECRET = TestProxySecret.generate();
@@ -57,10 +57,11 @@ class ProxySecretFilterTest {
     }
 
     @Test
-    void throughTheWorkerTheClientIpIsTheCfConnectingIp() throws Exception {
+    void throughTheWorkerTheClientIpIsTheFluvenyClientIp() throws Exception {
         MockHttpServletRequest request = request("GET", "/api/v1/units");
         request.addHeader(ProxySecretFilter.HEADER, SECRET);
         request.addHeader(ProxySecretFilter.CLIENT_IP_HEADER, "203.0.113.7");
+        request.addHeader("CF-Connecting-IP", "2a06:98c0:3600::103");
         send(request);
 
         assertThat(passed().getRemoteAddr()).isEqualTo("203.0.113.7");
@@ -128,6 +129,15 @@ class ProxySecretFilterTest {
         request.addHeader(ProxySecretFilter.HEADER, SECRET.toUpperCase());
         send(request);
         verifyDenied();
+    }
+
+    @Test
+    void cfConnectingIpIsNeverRead() throws Exception {
+        MockHttpServletRequest request = request("GET", "/api/v1/units");
+        request.addHeader(ProxySecretFilter.HEADER, SECRET);
+        request.addHeader("CF-Connecting-IP", "203.0.113.7");
+        send(request);
+        assertThat(passed().getRemoteAddr()).isEqualTo("10.9.9.9");
     }
 
     @Test

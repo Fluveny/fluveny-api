@@ -82,26 +82,26 @@ class ProxySecretTest {
     }
 
     @Test
-    void theRateLimitCountsTheCfConnectingIp() throws Exception {
+    void theRateLimitCountsTheFluvenyClientIp() throws Exception {
         // Mesmo remoteAddr (o do Worker), clientes diferentes: cada um tem a própria contagem.
         String worker = "10.33.0.1";
         this.mvc
                 .perform(
                         attempt(worker)
                                 .header(TestProxySecret.HEADER, TestProxySecret.value())
-                                .header("CF-Connecting-IP", "203.0.113.10"))
+                                .header("X-Fluveny-Client-IP", "203.0.113.10"))
                 .andExpect(status().isBadRequest());
         this.mvc
                 .perform(
                         attempt(worker)
                                 .header(TestProxySecret.HEADER, TestProxySecret.value())
-                                .header("CF-Connecting-IP", "203.0.113.11"))
+                                .header("X-Fluveny-Client-IP", "203.0.113.11"))
                 .andExpect(status().isBadRequest());
         this.mvc
                 .perform(
                         attempt(worker)
                                 .header(TestProxySecret.HEADER, TestProxySecret.value())
-                                .header("CF-Connecting-IP", "203.0.113.10"))
+                                .header("X-Fluveny-Client-IP", "203.0.113.10"))
                 .andExpect(status().isTooManyRequests());
     }
 
