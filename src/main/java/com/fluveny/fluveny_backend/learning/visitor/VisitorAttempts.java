@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.learning.visitor;
 
 import com.fluveny.fluveny_backend.content.ContentActivities;
+import com.fluveny.fluveny_backend.learning.LearningActivityTypes;
 import com.fluveny.fluveny_backend.learning.grading.GradeResult;
 import com.fluveny.fluveny_backend.learning.grading.Grader;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
@@ -35,6 +36,8 @@ import org.springframework.stereotype.Service;
 class VisitorAttempts {
 
     static final String ATTEMPT_REQUIRED = "ATTEMPT_REQUIRED";
+
+    static final String COMPLETION_NOT_ALLOWED = "COMPLETION_NOT_ALLOWED";
 
     private final ContentActivities activities;
 
@@ -101,11 +104,21 @@ class VisitorAttempts {
         return toResult(result, true, 0, null);
     }
 
-    /** Atividade vista ou pulada: sem correção e sem XP. */
+    /**
+     * Atividade vista ou pulada: sem correção e sem XP. O Tipo decide a conclusão aceita ({@link
+     * LearningActivityTypes#allowsCompletion}); fora dela, {@code 409 COMPLETION_NOT_ALLOWED}, sem
+     * gravar.
+     */
     CompletionResult complete(Completion completion) {
         this.deviceLimiter.acquire(completion.deviceId().toString());
         ContentActivities.Found found = open(completion.versionId(), completion.activityKey());
         Outcome outcome = completion.outcome().outcome();
+        if (!LearningActivityTypes.allowsCompletion(found.activity().type(), outcome)) {
+            throw new ApiException(
+                    HttpStatus.CONFLICT,
+                    COMPLETION_NOT_ALLOWED,
+                    "Esta Atividade não pode ser concluída como " + outcome + ".");
+        }
         String receipt =
                 receipt(
                         found,

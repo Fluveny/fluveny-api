@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.content.validation;
 
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
+import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.networknt.schema.Error;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -45,7 +46,8 @@ public final class ContentValidator {
             JsonMapper.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build();
 
     /** Chaves únicas dentro da própria lista (a do Item, a das Expressões Úteis). */
-    private static final Set<String> LIST_SCOPED_KEYS = Set.of("optionKey", "expressionKey");
+    private static final Set<String> LIST_SCOPED_KEYS =
+            Set.of("optionKey", "expressionKey", "lineKey");
 
     /** Chaves únicas na Unidade inteira (AD-5), cada uma no próprio espaço. */
     private static final Set<String> UNIT_SCOPED_KEYS = Set.of("activityKey", "itemKey");
@@ -54,8 +56,19 @@ public final class ContentValidator {
      * A regra de resposta aceita de cada Tipo (FR-29). Todo {@code type} da união do schema precisa
      * de uma; o construtor falha se faltar.
      */
-    private static final Map<String, AcceptedAnswerRule> ACCEPTED_ANSWER_RULES =
+    private static final Map<String, ActivityRule> ACCEPTED_ANSWER_RULES =
             Map.of(ChoiceActivity.TYPE, ContentValidator::checkChoiceAnswer);
+
+    /**
+     * Os Tipos expositivos (história 1.13): sem Answer, sem regra de resposta aceita e sem
+     * Tentativa; a conclusão é por {@code completions}. Ficam fora da exigência de {@link
+     * #ACCEPTED_ANSWER_RULES}, e o {@code ActivityFidelityTest} dispensa o Answer deles.
+     */
+    public static final Set<String> EXPOSITORY_TYPES = Set.of(DialogueActivity.TYPE);
+
+    /** Regras de um Tipo que o JSON Schema não expressa, além da resposta aceita. */
+    private static final Map<String, ActivityRule> TYPE_RULES =
+            Map.of(DialogueActivity.TYPE, ContentValidator::checkDialogueAsks);
 
     private final ContentSchemas schemas;
 
@@ -72,9 +85,16 @@ public final class ContentValidator {
         this.activityTypes = schemas.activityTypes();
         Set<String> missing = new HashSet<>(this.activityTypes);
         missing.removeAll(ACCEPTED_ANSWER_RULES.keySet());
+        missing.removeAll(EXPOSITORY_TYPES);
         if (!missing.isEmpty()) {
             throw new IllegalStateException(
                     "Tipo sem regra de resposta aceita no ContentValidator: " + missing);
+        }
+        Set<String> both = new HashSet<>(EXPOSITORY_TYPES);
+        both.retainAll(ACCEPTED_ANSWER_RULES.keySet());
+        if (!both.isEmpty()) {
+            throw new IllegalStateException(
+                    "Tipo expositivo com regra de resposta aceita no ContentValidator: " + both);
         }
     }
 
@@ -460,9 +480,13 @@ public final class ContentValidator {
                 String type = activities.get(i).path("type").asString(null);
                 // Tipo fora da união já é erro de schema.
                 if (type != null && this.activityTypes.contains(type)) {
-                    ACCEPTED_ANSWER_RULES
-                            .get(type)
-                            .check(activities.get(i), "/activities/" + i, file, report);
+                    for (Map<String, ActivityRule> rules :
+                            List.of(ACCEPTED_ANSWER_RULES, TYPE_RULES)) {
+                        ActivityRule rule = rules.get(type);
+                        if (rule != null) {
+                            rule.check(activities.get(i), "/activities/" + i, file, report);
+                        }
+                    }
                 }
             }
         }
@@ -660,6 +684,42 @@ public final class ContentValidator {
         }
     }
 
+    /**
+     * Perguntas do Diálogo: cada {@code ask} ({@code name}, {@code country}) aparece no máximo uma
+     * vez na Atividade. Valor fora do {@code enum} já é erro de schema.
+     */
+    private static void checkDialogueAsks(
+            JsonNode activity, String pointer, String file, Report report) {
+        Map<String, List<Integer>> asks = new LinkedHashMap<>();
+        JsonNode lines = activity.path("lines");
+        if (!lines.isArray()) {
+            // lines fora do formato já é erro de schema.
+            return;
+        }
+        for (int i = 0; i < lines.size(); i++) {
+            JsonNode ask = lines.get(i).path("ask");
+            if (ask.isString()) {
+                asks.computeIfAbsent(ask.asString(), key -> new ArrayList<>()).add(i);
+            }
+        }
+        asks.forEach((ask, positions) -> {
+            if (positions.size() > 1) {
+                for (int i : positions) {
+                    report.add(
+                            file,
+                            pointer + "/lines/" + i + "/ask",
+                            lines.get(i).path("lineKey").asString(null),
+                            ContentRule.DUPLICATE_ASK,
+                            "A pergunta "
+                                    + ask
+                                    + " aparece em "
+                                    + positions.size()
+                                    + " falas do Diálogo; ela pode aparecer no máximo uma vez.");
+                }
+            }
+        });
+    }
+
     private void checkSchema(JsonNode document, String schemaId, String file, Report report) {
         for (Error error : this.schemas.schema(schemaId).validate(document)) {
             String pointer = JsonPointers.of(error.getInstanceLocation());
@@ -721,7 +781,7 @@ public final class ContentValidator {
     }
 
     @FunctionalInterface
-    private interface AcceptedAnswerRule {
+    private interface ActivityRule {
 
         void check(JsonNode activity, String pointer, String file, Report report);
     }

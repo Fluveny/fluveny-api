@@ -4,12 +4,15 @@
       "Activity" : {
         "discriminator" : {
           "mapping" : {
-            "choice" : "#/components/schemas/ChoiceActivity"
+            "choice" : "#/components/schemas/ChoiceActivity",
+            "dialogue" : "#/components/schemas/DialogueActivity"
           },
           "propertyName" : "type"
         },
         "oneOf" : [ {
           "$ref" : "#/components/schemas/ChoiceActivity"
+        }, {
+          "$ref" : "#/components/schemas/DialogueActivity"
         } ],
         "properties" : {
           "type" : {
@@ -21,12 +24,15 @@
       "ActivityStudentView" : {
         "discriminator" : {
           "mapping" : {
-            "choice" : "#/components/schemas/ChoiceActivityStudentView"
+            "choice" : "#/components/schemas/ChoiceActivityStudentView",
+            "dialogue" : "#/components/schemas/DialogueActivityStudentView"
           },
           "propertyName" : "type"
         },
         "oneOf" : [ {
           "$ref" : "#/components/schemas/ChoiceActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/DialogueActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -435,6 +441,73 @@
         }, {
           "$ref" : "#/components/schemas/PronounVariants"
         } ]
+      },
+      "DialogueActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DialogueLine"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "dialogue" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "lines", "title", "type" ],
+        "type" : "object"
+      },
+      "DialogueActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "lines" : {
+            "items" : {
+              "$ref" : "#/components/schemas/DialogueLine"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "dialogue" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "lines", "title", "type" ],
+        "type" : "object"
+      },
+      "DialogueLine" : {
+        "properties" : {
+          "ask" : {
+            "enum" : [ "name", "country" ],
+            "type" : "string"
+          },
+          "lineKey" : {
+            "type" : "string"
+          },
+          "speaker" : {
+            "description" : "O nome exibido de quem fala.",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "text" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "lineKey", "speaker", "text" ],
+        "type" : "object"
       },
       "ItemResult" : {
         "properties" : {
@@ -996,7 +1069,7 @@
     },
     "/api/v1/visitor/completions" : {
       "post" : {
-        "description" : "Conclui uma Atividade sem correção (VIEWED ou SKIPPED), sem XP. receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade.",
+        "description" : "Conclui uma Atividade sem correção, sem XP. receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: hoje só o dialogue, com VIEWED; SKIPPED fica reservado a um Tipo futuro. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
         "operationId" : "completeVisitorActivity",
         "requestBody" : {
           "content" : {

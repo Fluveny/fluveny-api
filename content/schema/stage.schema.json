@@ -21,12 +21,16 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["choice"] }
+        "type": { "enum": ["choice", "dialogue"] }
       },
       "allOf": [
         {
           "if": { "properties": { "type": { "const": "choice" } }, "required": ["type"] },
           "then": { "$ref": "activities/choice.schema.json" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "dialogue" } }, "required": ["type"] },
+          "then": { "$ref": "activities/dialogue.schema.json" }
         }
       ]
     }

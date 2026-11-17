@@ -6,7 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * Resposta de uma Tentativa, específica do Tipo e descrita no JSON Schema ({@code $defs.answer} de
- * cada Tipo). Também é o formato do {@code expected} do Resultado (AD-6).
+ * cada Tipo). Também é o formato do {@code expected} do Resultado (AD-6). Os Tipos expositivos,
+ * como o Diálogo, não têm Answer: não há Tentativa deles, só conclusão.
  */
 @JsonTypeInfo(
         use = JsonTypeInfo.Id.NAME,

@@ -91,7 +91,8 @@ jobs:
             exit 0
           fi
           docker run --rm -v "$RUNNER_TEMP:/base" -v "$PWD/openapi:/head" tufin/oasdiff:v1.38.0 \
-            breaking /base/base-openapi.json /head/openapi.json --fail-on ERR
+            breaking /base/base-openapi.json /head/openapi.json --fail-on ERR \
+            --severity-levels /head/oasdiff-levels.txt
 
   publish-workflow:
     name: Publicação (API efêmera)

@@ -58,6 +58,39 @@
         }
       ],
       "xp": 10
+    },
+    {
+      "activityKey": "s1-hi-alex",
+      "type": "dialogue",
+      "title": "Meet Alex",
+      "lines": [
+        {
+          "lineKey": "hello",
+          "speaker": "Alex",
+          "text": "Hi! I'm Alex. [[Nice to meet you|nice-to-meet-you]]!"
+        },
+        {
+          "lineKey": "ask-name",
+          "speaker": "Alex",
+          "text": "What's your name?",
+          "ask": "name"
+        },
+        {
+          "lineKey": "ask-country",
+          "speaker": "Alex",
+          "text": "Nice to meet you, {name}! Where are you from?",
+          "ask": "country"
+        },
+        {
+          "lineKey": "cool",
+          "speaker": "Alex",
+          "text": {
+            "he": "Cool! He [[is from|be-from]] {country}.",
+            "she": "Cool! She [[is from|be-from]] {country}.",
+            "they": "Cool! They [[are from|be-from]] {country}."
+          }
+        }
+      ]
     }
   ]
 }

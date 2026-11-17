@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.content.validation;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import com.fluveny.fluveny_backend.content.publication.UnitBundle;
 import java.nio.file.Path;
@@ -93,9 +94,8 @@ class ContentValidatorBundleTest {
         assertThat(VALIDATOR.validateBundle("unit-1", bundle))
                 .extracting(ContentError::pointer, ContentError::rule)
                 .contains(
-                        org.assertj.core.groups.Tuple.tuple("/hash", ContentRule.INVALID_BUNDLE),
-                        org.assertj.core.groups.Tuple.tuple(
-                                "/stageKey", ContentRule.INVALID_BUNDLE));
+                        tuple("/hash", ContentRule.INVALID_BUNDLE),
+                        tuple("/stageKey", ContentRule.INVALID_BUNDLE));
     }
 
     @Test
@@ -106,8 +106,8 @@ class ContentValidatorBundleTest {
         assertThat(VALIDATOR.validateBundle("unit-1", bundle))
                 .extracting(ContentError::file, ContentError::rule)
                 .contains(
-                        org.assertj.core.groups.Tuple.tuple("media.json", ContentRule.MISSING_FILE),
-                        org.assertj.core.groups.Tuple.tuple("", ContentRule.INVALID_BUNDLE));
+                        tuple("media.json", ContentRule.MISSING_FILE),
+                        tuple("", ContentRule.INVALID_BUNDLE));
     }
 
     @Test
@@ -117,5 +117,78 @@ class ContentValidatorBundleTest {
         bundle.putArray("stages");
         bundle.putObject("media");
         assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    // História 1.13: o Diálogo.
+
+    /** O Diálogo de {@code s1-meet-alex} na fixture válida ({@code /activities/1}). */
+    private static ObjectNode dialogue(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/1");
+    }
+
+    private static final String S1 = "units/unit-1/stages/s1-meet-alex.json";
+
+    @Test
+    void aRepeatedAskIsRejected() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) dialogue(bundle).at("/lines/3")).put("ask", "name");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::file, ContentError::pointer, ContentError::rule)
+                .containsExactly(
+                        tuple(S1, "/activities/1/lines/1/ask", ContentRule.DUPLICATE_ASK),
+                        tuple(S1, "/activities/1/lines/3/ask", ContentRule.DUPLICATE_ASK));
+    }
+
+    @Test
+    void aDialogueWithoutAsksIsValid() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        for (var line : dialogue(bundle).get("lines")) {
+            ((ObjectNode) line).remove("ask");
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "ask=age",
+                "lines=empty",
+                "xp=10",
+                "speaker=empty",
+                "extra-property=x",
+                "lines=object"
+            })
+    void anInvalidDialogueIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode dialogue = dialogue(bundle);
+        ObjectNode line = (ObjectNode) dialogue.at("/lines/1");
+        switch (change) {
+            case "ask=age" -> line.put("ask", "age");
+            case "lines=empty" -> dialogue.putArray("lines");
+            case "xp=10" -> dialogue.put("xp", 10);
+            case "speaker=empty" -> line.put("speaker", "");
+            case "lines=object" -> dialogue.putObject("lines").put("ask", "name");
+            default -> line.put("correctAnswer", "x");
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/1");
+                    assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
+                });
+    }
+
+    @Test
+    void aRepeatedLineKeyAndAnUnknownPlaceholderAreRejected() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) dialogue(bundle).at("/lines/1")).put("lineKey", "hello");
+        ((ObjectNode) dialogue(bundle).at("/lines/2")).put("text", "Where are you from, {age}?");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/1/lines/0/lineKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/1/lines/1/lineKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/1/lines/2/text", ContentRule.UNKNOWN_PLACEHOLDER));
     }
 }

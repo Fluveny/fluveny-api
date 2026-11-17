@@ -1,0 +1,33 @@
+{
+  "activityKey": "s1-hi-alex",
+  "type": "dialogue",
+  "title": "Meet Alex",
+  "lines": [
+    {
+      "lineKey": "hello",
+      "speaker": "Alex",
+      "text": "Hi! I'm Alex. [[Nice to meet you|nice-to-meet-you]]!"
+    },
+    {
+      "lineKey": "ask-name",
+      "speaker": "Alex",
+      "text": "What's your name?",
+      "ask": "name"
+    },
+    {
+      "lineKey": "ask-country",
+      "speaker": "Alex",
+      "text": {
+        "he": "Nice to meet you, {name}! He is from Canada. Where are you from?",
+        "she": "Nice to meet you, {name}! She is from Canada. Where are you from?",
+        "they": "Nice to meet you, {name}! They are from Canada. Where are you from?"
+      },
+      "ask": "country"
+    },
+    {
+      "lineKey": "bye",
+      "speaker": "Alex",
+      "text": "**{country}**! Cool!"
+    }
+  ]
+}

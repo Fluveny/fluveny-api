@@ -34,6 +34,12 @@ public enum ContentRule {
      */
     MISSING_ACCEPTED_ANSWER,
 
+    /**
+     * O mesmo {@code ask} ({@code name} ou {@code country}) em mais de uma fala do Diálogo: cada
+     * pergunta aparece no máximo uma vez por Atividade (história 1.13).
+     */
+    DUPLICATE_ASK,
+
     /** {@code mediaKey} fora do manifesto {@code content/media.json}. */
     MEDIA_NOT_FOUND,
 

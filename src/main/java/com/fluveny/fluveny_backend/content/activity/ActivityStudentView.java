@@ -15,14 +15,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
         property = "type",
         visible = true)
 @Schema(
-        oneOf = {ChoiceActivityStudentView.class},
+        oneOf = {ChoiceActivityStudentView.class, DialogueActivityStudentView.class},
         discriminatorProperty = "type",
         discriminatorMapping = {
             @DiscriminatorMapping(
                     value = ChoiceActivity.TYPE,
-                    schema = ChoiceActivityStudentView.class)
+                    schema = ChoiceActivityStudentView.class),
+            @DiscriminatorMapping(
+                    value = DialogueActivity.TYPE,
+                    schema = DialogueActivityStudentView.class)
         })
-public sealed interface ActivityStudentView permits ChoiceActivityStudentView {
+public sealed interface ActivityStudentView
+        permits ChoiceActivityStudentView, DialogueActivityStudentView {
 
     String type();
 

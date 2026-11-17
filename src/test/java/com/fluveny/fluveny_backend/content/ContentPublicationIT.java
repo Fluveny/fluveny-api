@@ -16,6 +16,7 @@ import com.fluveny.fluveny_backend.platform.meta.ActivityTypeSource;
 import com.fluveny.fluveny_backend.platform.meta.ActivityTypeSupport;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
@@ -77,6 +78,7 @@ class ContentPublicationIT {
         this.mongo.dropCollection("unit_pointers");
         this.indexes.ensure();
         Types.SINCE.set("0.0.0");
+        Types.DIALOGUE_SINCE.set("0.0.0");
     }
 
     static ObjectNode validBundle() throws Exception {
@@ -224,6 +226,22 @@ class ContentPublicationIT {
         assertThat(versions()).isZero();
     }
 
+    /**
+     * História 1.13: o Diálogo com o {@code sinceAppVersion} nulo do source real do {@code
+     * learning} não é publicado fora do perfil local.
+     */
+    @Test
+    void aDialogueWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+        Types.DIALOGUE_SINCE.set(null);
+        publish(UNIT, validBundle())
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
+                .andExpect(jsonPath("$.errors.length()").value(1))
+                .andExpect(jsonPath("$.errors[0].pointer").value("/activities/1/type"))
+                .andExpect(jsonPath("$.errors[0].key").value("s1-hi-alex"));
+        assertThat(versions()).isZero();
+    }
+
     @Test
     void theUnitKeyOfThePathMustMatchTheBundle() throws Exception {
         publish("/api/v1/admin/content/units/unit-9/versions", validBundle())
@@ -317,7 +335,7 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.data.title").value("Unit 1: Hello!"))
                 .andExpect(jsonPath("$.data.stages[0].stageKey").value("s1-meet-alex"))
                 .andExpect(jsonPath("$.data.stages[0].title").value("Meet Alex"))
-                .andExpect(jsonPath("$.data.stages[0].activityCount").value(1))
+                .andExpect(jsonPath("$.data.stages[0].activityCount").value(2))
                 .andExpect(jsonPath("$.data.stages[1].stageKey").value("s2-where-from"))
                 .andExpect(
                         jsonPath("$.data.usefulExpressions[0].expressionKey")
@@ -335,7 +353,9 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.data.activities[0].type").value("choice"))
                 .andExpect(
                         jsonPath("$.data.activities[0].items[0].correctOptionKey").doesNotExist())
-                .andExpect(jsonPath("$.data.activities[0].items[0].justification").doesNotExist());
+                .andExpect(jsonPath("$.data.activities[0].items[0].justification").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[1].type").value("dialogue"))
+                .andExpect(jsonPath("$.data.activities[1].lines[1].ask").value("name"));
         this.mvc
                 .perform(get("/api/v1/units/unit-1/stages/s2-where-from"))
                 .andExpect(status().isUnauthorized())
@@ -420,7 +440,7 @@ class ContentPublicationIT {
         }
         assertThat(scanned).contains("activities", "items", "options", "mediaKey");
         JsonNode stage = json(this.mvc.perform(get("/api/v1/units/unit-1/stages/s1-meet-alex")));
-        assertThat(stage.at("/data/activities").size()).isEqualTo(2);
+        assertThat(stage.at("/data/activities").size()).isEqualTo(3);
     }
 
     static Set<String> keys(JsonNode node, Set<String> keys) {
@@ -436,18 +456,28 @@ class ContentPublicationIT {
     }
 
     /**
-     * O Tipo {@code choice} com o {@code sinceAppVersion} que cada teste quiser. Vem antes do
-     * source real do {@code learning} (nulo): na publicação, o primeiro source vence.
+     * Os Tipos {@code choice} e {@code dialogue} com o {@code sinceAppVersion} que cada teste
+     * quiser. Vêm antes do source real do {@code learning} (nulo): na publicação, o primeiro source
+     * vence. Com {@code DIALOGUE_SINCE} nulo, o {@code dialogue} fica de fora e vale o source real.
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {
 
         static final AtomicReference<String> SINCE = new AtomicReference<>("0.0.0");
 
+        static final AtomicReference<String> DIALOGUE_SINCE = new AtomicReference<>("0.0.0");
+
         @Bean
         @Order(Ordered.HIGHEST_PRECEDENCE)
-        ActivityTypeSource testChoiceType() {
-            return () -> List.of(new ActivityTypeSupport("choice", SINCE.get()));
+        ActivityTypeSource testChoiceAndDialogueTypes() {
+            return () -> {
+                List<ActivityTypeSupport> types = new ArrayList<>();
+                types.add(new ActivityTypeSupport("choice", SINCE.get()));
+                if (DIALOGUE_SINCE.get() != null) {
+                    types.add(new ActivityTypeSupport("dialogue", DIALOGUE_SINCE.get()));
+                }
+                return types;
+            };
         }
     }
 }

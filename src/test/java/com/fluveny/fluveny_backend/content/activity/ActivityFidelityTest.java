@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fluveny.fluveny_backend.content.validation.ContentSchemas;
 import com.fluveny.fluveny_backend.content.validation.ContentSchemas.Resolved;
+import com.fluveny.fluveny_backend.content.validation.ContentValidator;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.annotations.media.DiscriminatorMapping;
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -32,7 +34,8 @@ import tools.jackson.databind.json.JsonMapper;
  * Teste de fidelidade da AD-6: o JSON Schema de {@code content/schema/} e as famílias Java ({@link
  * Activity}, {@link ActivityStudentView}, {@link Answer}) descrevem o mesmo formato. O lado do
  * OpenAPI vem do {@code ModelConverters} do springdoc, com o mesmo conversor do {@link ContentText}
- * que a aplicação registra, porque nenhuma rota expõe as famílias ainda.
+ * que a aplicação registra, porque nenhuma rota expõe as famílias ainda. Os Tipos expositivos
+ * ({@link ContentValidator#EXPOSITORY_TYPES}) não têm Answer nem {@code $defs.answer}.
  */
 class ActivityFidelityTest {
 
@@ -59,12 +62,13 @@ class ActivityFidelityTest {
         Set<String> schemaTypes = schemaTypes();
         assertThat(schemaTypes).as("Tipos no schema").isNotEmpty();
         for (Class<?> family : FAMILIES) {
+            Set<String> expected = typesOf(family);
             assertThat(permittedTypes(family).keySet())
                     .as("permits de %s", family.getSimpleName())
-                    .isEqualTo(schemaTypes);
+                    .isEqualTo(expected);
             assertThat(mappingTypes(family).keySet())
                     .as("discriminatorMapping de %s", family.getSimpleName())
-                    .isEqualTo(schemaTypes);
+                    .isEqualTo(expected);
             assertThat(mappingTypes(family))
                     .as("classe de cada type no mapping de %s", family.getSimpleName())
                     .isEqualTo(permittedTypes(family));
@@ -74,6 +78,31 @@ class ActivityFidelityTest {
             assertThat(Set.of(annotation.oneOf()))
                     .as("oneOf de %s", family.getSimpleName())
                     .isEqualTo(Set.copyOf(permittedTypes(family).values()));
+        }
+    }
+
+    /** Os Tipos da família: todos os do schema, menos os expositivos no Answer. */
+    static Set<String> typesOf(Class<?> family) {
+        Set<String> types = new TreeSet<>(schemaTypes());
+        if (family == Answer.class) {
+            types.removeAll(ContentValidator.EXPOSITORY_TYPES);
+        }
+        return types;
+    }
+
+    @Test
+    void expositoryTypesHaveNoAnswerNorSecrets() {
+        assertThat(schemaTypes()).containsAll(ContentValidator.EXPOSITORY_TYPES);
+        for (String type : ContentValidator.EXPOSITORY_TYPES) {
+            JsonNode schema =
+                    SCHEMAS.document(
+                            ContentSchemas.ID_PREFIX + "activities/" + type + ".schema.json");
+            assertThat(schema.at("/$defs/answer").isMissingNode())
+                    .as("%s sem $defs.answer", type)
+                    .isTrue();
+            assertThat(schema.toString())
+                    .as("%s sem segredo", type)
+                    .doesNotContain(ContentSchemas.SECRET);
         }
     }
 
@@ -155,6 +184,9 @@ class ActivityFidelityTest {
                                                                     ActivityStudentView.class,
                                                                     type)))
                                             .isEqualTo(schemaShape(activity, true))));
+            if (ContentValidator.EXPOSITORY_TYPES.contains(type)) {
+                continue;
+            }
             tests.add(
                     DynamicTest.dynamicTest(
                             type + ": Answer",
@@ -369,7 +401,7 @@ class ActivityFidelityTest {
     /** As fixtures da família, de todos os Tipos. */
     static List<Path> fixturesOf(Class<?> family) throws IOException, URISyntaxException {
         List<Path> all = new ArrayList<>();
-        for (String type : schemaTypes()) {
+        for (String type : typesOf(family)) {
             all.addAll(fixturesOf(family, type));
         }
         return all;
@@ -394,11 +426,23 @@ class ActivityFidelityTest {
     @Test
     void requiredFieldsCannotBeMissing() throws Exception {
         for (Path file : fixturesOf(Activity.class)) {
-            var activity = (tools.jackson.databind.node.ObjectNode) STRICT.readTree(file.toFile());
-            activity.remove("xp");
-            assertThatThrownBy(() -> STRICT.treeToValue(activity, Activity.class))
-                    .as("%s sem xp", file.getFileName())
-                    .hasMessageContaining("xp");
+            JsonNode original = STRICT.readTree(file.toFile());
+            JsonNode schema =
+                    SCHEMAS.document(
+                            ContentSchemas.ID_PREFIX
+                                    + "activities/"
+                                    + original.path("type").asString()
+                                    + ".schema.json");
+            for (JsonNode name : schema.path("required")) {
+                if ("type".equals(name.asString())) {
+                    continue;
+                }
+                var activity = (tools.jackson.databind.node.ObjectNode) original.deepCopy();
+                activity.remove(name.asString());
+                assertThatThrownBy(() -> STRICT.treeToValue(activity, Activity.class))
+                        .as("%s sem %s", file.getFileName(), name.asString())
+                        .hasMessageContaining(name.asString());
+            }
         }
     }
 
@@ -478,6 +522,22 @@ class ActivityFidelityTest {
     void studentViewRejectsSecretFields() throws Exception {
         for (Path file : fixturesOf(Activity.class)) {
             JsonNode activity = STRICT.readTree(file.toFile());
+            String id =
+                    ContentSchemas.ID_PREFIX
+                            + "activities/"
+                            + activity.path("type").asString()
+                            + ".schema.json";
+            if (!SCHEMAS.document(id).toString().contains("\"" + ContentSchemas.SECRET + "\"")) {
+                // Sem segredo (Diálogo), a visão do aluno é a própria Atividade.
+                assertThat(
+                                (JsonNode)
+                                        STRICT.valueToTree(
+                                                STRICT.treeToValue(
+                                                        activity, ActivityStudentView.class)))
+                        .as("%s lido como visão do aluno", file.getFileName())
+                        .isEqualTo(activity);
+                continue;
+            }
             assertThatThrownBy(() -> STRICT.treeToValue(activity, ActivityStudentView.class))
                     .as("%s lido como visão do aluno", file.getFileName())
                     .hasMessageContaining("Unrecognized property");
@@ -490,14 +550,12 @@ class ActivityFidelityTest {
         for (String type : schemaTypes()) {
             String id = ContentSchemas.ID_PREFIX + "activities/" + type + ".schema.json";
             Resolved activity = new Resolved(id, SCHEMAS.document(id));
-            Map<Class<?>, Object> shapes =
-                    Map.of(
-                            Activity.class,
-                            schemaShape(activity, false),
-                            ActivityStudentView.class,
-                            schemaShape(activity, true),
-                            Answer.class,
-                            schemaShape(SCHEMAS.resolve(id, "#/$defs/answer"), false));
+            Map<Class<?>, Object> shapes = new HashMap<>();
+            shapes.put(Activity.class, schemaShape(activity, false));
+            shapes.put(ActivityStudentView.class, schemaShape(activity, true));
+            if (!ContentValidator.EXPOSITORY_TYPES.contains(type)) {
+                shapes.put(Answer.class, schemaShape(SCHEMAS.resolve(id, "#/$defs/answer"), false));
+            }
             for (var entry : shapes.entrySet()) {
                 List<JsonNode> instances = new ArrayList<>();
                 for (Path file : fixturesOf(entry.getKey(), type)) {
