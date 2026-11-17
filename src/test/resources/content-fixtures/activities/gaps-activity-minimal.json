@@ -1,0 +1,14 @@
+{
+  "activityKey": "s2-gaps",
+  "type": "gaps",
+  "title": "Gaps",
+  "mode": "typed",
+  "lines": ["A ___."],
+  "items": [
+    {
+      "itemKey": "a-gap",
+      "accepted": ["b"]
+    }
+  ],
+  "xp": 5
+}

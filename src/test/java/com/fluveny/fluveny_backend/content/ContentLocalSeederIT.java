@@ -68,8 +68,11 @@ class ContentLocalSeederIT {
                 // História 1.16: o Associar, sem o gabarito.
                 .andExpect(jsonPath("$.data.activities[5].type").value("match"))
                 .andExpect(
-                        jsonPath("$.data.activities[5].items[0].correctResponseKey")
-                                .doesNotExist());
+                        jsonPath("$.data.activities[5].items[0].correctResponseKey").doesNotExist())
+                // História 1.17: as Lacunas, sem as respostas aceitas.
+                .andExpect(jsonPath("$.data.activities[6].type").value("gaps"))
+                .andExpect(jsonPath("$.data.activities[6].items[0].accepted").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[7].type").value("gaps"));
 
         this.mvc.perform(post("/local/reset")).andExpect(status().isOk());
         this.mvc

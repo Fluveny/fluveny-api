@@ -132,7 +132,8 @@ class RouteDeclarationScanTest {
                                 + "{\"type\":\"cards\",\"sinceAppVersion\":null},"
                                 + "{\"type\":\"expression\",\"sinceAppVersion\":null},"
                                 + "{\"type\":\"speech\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"match\",\"sinceAppVersion\":null}]}}");
+                                + "{\"type\":\"match\",\"sinceAppVersion\":null},"
+                                + "{\"type\":\"gaps\",\"sinceAppVersion\":null}]}}");
 
         HttpResponse<String> missing = get("/api/v1/qualquer");
         assertThat(missing.statusCode()).isEqualTo(404);

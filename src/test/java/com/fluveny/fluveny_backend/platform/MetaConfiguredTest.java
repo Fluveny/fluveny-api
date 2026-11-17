@@ -43,7 +43,7 @@ class MetaConfiguredTest {
                 .perform(get("/api/v1/meta"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.minAppVersion").value("1.4.0"))
-                .andExpect(jsonPath("$.data.activityTypes.length()").value(9))
+                .andExpect(jsonPath("$.data.activityTypes.length()").value(10))
                 .andExpect(jsonPath("$.data.activityTypes[0].type").value("multiple-choice"))
                 .andExpect(jsonPath("$.data.activityTypes[0].sinceAppVersion").value("1.0.0"))
                 .andExpect(jsonPath("$.data.activityTypes[1].type").value("fill-in"))
@@ -65,7 +65,10 @@ class MetaConfiguredTest {
                 .andExpect(jsonPath("$.data.activityTypes[7].sinceAppVersion").value(nullValue()))
                 // História 1.16: o Associar.
                 .andExpect(jsonPath("$.data.activityTypes[8].type").value("match"))
-                .andExpect(jsonPath("$.data.activityTypes[8].sinceAppVersion").value(nullValue()));
+                .andExpect(jsonPath("$.data.activityTypes[8].sinceAppVersion").value(nullValue()))
+                // História 1.17: as Lacunas.
+                .andExpect(jsonPath("$.data.activityTypes[9].type").value("gaps"))
+                .andExpect(jsonPath("$.data.activityTypes[9].sinceAppVersion").value(nullValue()));
     }
 
     @TestConfiguration(proxyBeanMethods = false)

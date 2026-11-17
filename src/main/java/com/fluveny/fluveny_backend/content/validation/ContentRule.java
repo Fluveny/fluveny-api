@@ -30,9 +30,23 @@ public enum ContentRule {
 
     /**
      * Atividade avaliada sem resposta aceita (na Escolha, {@code correctOptionKey} fora das opções;
-     * no Associar, {@code correctResponseKey} fora de {@code responses} ou repetido entre itens).
+     * no Associar, {@code correctResponseKey} fora de {@code responses} ou repetido entre itens;
+     * nas Lacunas do {@code bank}, item sem resposta aceita no banco ou banco sem palavras para
+     * todos os itens ao mesmo tempo).
      */
     MISSING_ACCEPTED_ANSWER,
+
+    /**
+     * Lacunas cujo número de {@code ___} nas {@code lines} difere do número de {@code items}, em
+     * alguma variante de pronome (história 1.17).
+     */
+    GAP_COUNT_MISMATCH,
+
+    /**
+     * Lacunas com {@code bank} no {@code mode} {@code typed}, ou sem {@code bank} no {@code mode}
+     * {@code bank} (história 1.17).
+     */
+    BANK_MODE_MISMATCH,
 
     /**
      * O mesmo {@code ask} ({@code name} ou {@code country}) em mais de uma fala do Diálogo: cada

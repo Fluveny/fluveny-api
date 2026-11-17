@@ -1,0 +1,17 @@
+{
+  "type": "gaps",
+  "items": [
+    {
+      "itemKey": "s1-complete-gaps-im",
+      "value": "I'm"
+    },
+    {
+      "itemKey": "s1-complete-gaps-is",
+      "value": "are"
+    },
+    {
+      "itemKey": "s1-complete-gaps-name",
+      "value": "{name}"
+    }
+  ]
+}
