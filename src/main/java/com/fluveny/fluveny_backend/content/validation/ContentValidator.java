@@ -909,8 +909,13 @@ public final class ContentValidator {
             // Sem banco no bank é BANK_MODE_MISMATCH; banco fora de lista é erro de schema.
             return;
         }
-        Set<Integer> uncovered = new TreeSet<>();
-        boolean notEnough = false;
+        // Só o banco muda por pronome aqui (a resposta aceita vale em qualquer variante).
+        boolean variants = false;
+        for (JsonNode word : bank) {
+            variants |= word.path("text").isObject();
+        }
+        Map<Integer, List<String>> uncovered = new TreeMap<>();
+        List<String> notEnough = new ArrayList<>();
         for (String pronoun : PRONOUNS) {
             List<Set<Integer>> candidates = new ArrayList<>();
             for (int i = 0; i < items.size(); i++) {
@@ -931,28 +936,43 @@ public final class ContentValidator {
                     }
                 }
                 if (words.isEmpty()) {
-                    uncovered.add(i);
+                    uncovered.computeIfAbsent(i, key -> new ArrayList<>()).add(pronoun);
                 }
                 candidates.add(words);
             }
-            notEnough |= maxMatching(candidates, bank.size()) < items.size();
+            if (maxMatching(candidates, bank.size()) < items.size()) {
+                notEnough.add(pronoun);
+            }
         }
-        for (int i : uncovered) {
-            report.add(
-                    file,
-                    pointer + "/items/" + i + "/accepted",
-                    items.get(i).path("itemKey").asString(null),
-                    ContentRule.MISSING_ACCEPTED_ANSWER,
-                    "Nenhuma resposta aceita do item está no banco (bank).");
-        }
-        if (uncovered.isEmpty() && notEnough) {
+        boolean withVariants = variants;
+        uncovered.forEach((i, pronouns) ->
+                report.add(
+                        file,
+                        pointer + "/items/" + i + "/accepted",
+                        items.get(i).path("itemKey").asString(null),
+                        ContentRule.MISSING_ACCEPTED_ANSWER,
+                        "Nenhuma resposta aceita do item está no banco (bank)"
+                                + inVariants(withVariants, pronouns)
+                                + "."));
+        if (uncovered.isEmpty() && !notEnough.isEmpty()) {
             report.add(
                     file,
                     pointer + "/bank",
                     activity.path("activityKey").asString(null),
                     ContentRule.MISSING_ACCEPTED_ANSWER,
-                    "O banco (bank) não tem palavras para todos os itens ao mesmo tempo.");
+                    "O banco (bank) não tem palavras para todos os itens ao mesmo tempo"
+                            + inVariants(variants, notEnough)
+                            + ".");
         }
+    }
+
+    /** ", na variante she" (ou "nas variantes he, she") quando o conteúdo tem variantes. */
+    private static String inVariants(boolean variants, List<String> pronouns) {
+        if (!variants) {
+            return "";
+        }
+        return (pronouns.size() == 1 ? ", na variante " : ", nas variantes ")
+                + String.join(", ", pronouns);
     }
 
     /**

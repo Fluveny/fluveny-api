@@ -702,6 +702,11 @@ class ContentValidatorBundleTest {
                                 "/activities/6/bank",
                                 "s1-gaps-bank",
                                 ContentRule.MISSING_ACCEPTED_ANSWER));
+        // Sem variantes no banco, a mensagem não cita pronome.
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::message)
+                .containsExactly(
+                        "O banco (bank) não tem palavras para todos os itens ao mesmo tempo.");
         // Com outro "am" no banco, cada item tem a sua palavra.
         ((ArrayNode) gaps(bundle, BANK).get("bank"))
                 .addObject()
@@ -719,11 +724,47 @@ class ContentValidatorBundleTest {
                 .put("she", "is")
                 .put("they", "am");
         assertThat(VALIDATOR.validateBundle("unit-1", bundle))
-                .extracting(ContentError::pointer, ContentError::rule)
+                .extracting(ContentError::pointer, ContentError::rule, ContentError::message)
                 .containsExactly(
                         tuple(
                                 "/activities/6/items/0/accepted",
-                                ContentRule.MISSING_ACCEPTED_ANSWER));
+                                ContentRule.MISSING_ACCEPTED_ANSWER,
+                                // O "am" só existe na variante they.
+                                "Nenhuma resposta aceita do item está no banco (bank), nas"
+                                        + " variantes he, she."));
+    }
+
+    @Test
+    void aBankShortInOneVariantNamesTheVariant() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        // O segundo item aceita "am" ou "meet"; na variante they, o banco só tem um "am".
+        ((ArrayNode) gaps(bundle, BANK).at("/items/1/accepted")).add("am");
+        ((ObjectNode) gaps(bundle, BANK).at("/bank/1"))
+                .putObject("text")
+                .put("he", "meet")
+                .put("she", "meet")
+                .put("they", "is");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::message)
+                .containsExactly(
+                        tuple(
+                                "/activities/6/bank",
+                                "O banco (bank) não tem palavras para todos os itens ao mesmo"
+                                        + " tempo, na variante they."));
+    }
+
+    /** Qualquer variante de pronome da resposta aceita vale: o corretor também aceita todas. */
+    @Test
+    void anyPronounVariantOfTheAcceptedAnswerMayBeInTheBank() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) gaps(bundle, BANK).at("/items/0/accepted"))
+                .removeAll()
+                .addObject()
+                .put("he", "is")
+                .put("she", "is")
+                .put("they", "are");
+        assertThat(gaps(bundle, BANK).at("/bank/2/text").asString()).isEqualTo("is");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
     }
 
     @Test
@@ -748,15 +789,17 @@ class ContentValidatorBundleTest {
                 .containsExactly(tuple("/activities/6/bank", ContentRule.BANK_MODE_MISMATCH));
     }
 
-    @Test
-    void anItemWithoutAcceptedIsOnlyMissingAcceptedAnswer() throws Exception {
+    /** No banco, o item sem {@code accepted} não vira também "nenhuma resposta no banco". */
+    @ParameterizedTest
+    @ValueSource(ints = {BANK, TYPED})
+    void anItemWithoutAcceptedIsOnlyMissingAcceptedAnswer(int index) throws Exception {
         ObjectNode bundle = bundle("valid");
-        ((ObjectNode) gaps(bundle, TYPED).at("/items/0")).remove("accepted");
+        ((ObjectNode) gaps(bundle, index).at("/items/0")).remove("accepted");
         assertThat(VALIDATOR.validateBundle("unit-1", bundle))
                 .extracting(ContentError::pointer, ContentError::rule)
                 .containsExactly(
                         tuple(
-                                "/activities/7/items/0/accepted",
+                                "/activities/" + index + "/items/0/accepted",
                                 ContentRule.MISSING_ACCEPTED_ANSWER));
     }
 

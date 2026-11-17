@@ -687,18 +687,21 @@
             "type" : "string"
           },
           "bank" : {
+            "description" : "O banco de palavras, só no mode bank (ausente no typed), na ordem do conteúdo, com os distratores: o App embaralha.",
             "items" : {
               "$ref" : "#/components/schemas/GapsWord"
             },
             "type" : "array"
           },
           "items" : {
+            "description" : "Um item por lacuna, na ordem dos ___ nas linhas (linha a linha).",
             "items" : {
               "$ref" : "#/components/schemas/GapsItem"
             },
             "type" : "array"
           },
           "lines" : {
+            "description" : "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
             "items" : {
               "$ref" : "#/components/schemas/ContentText"
             },
@@ -732,18 +735,21 @@
             "type" : "string"
           },
           "bank" : {
+            "description" : "O banco de palavras, só no mode bank (ausente no typed), na ordem do conteúdo, com os distratores: o App embaralha.",
             "items" : {
               "$ref" : "#/components/schemas/GapsWord"
             },
             "type" : "array"
           },
           "items" : {
+            "description" : "Um item por lacuna, na ordem dos ___ nas linhas (linha a linha).",
             "items" : {
               "$ref" : "#/components/schemas/GapsItemStudentView"
             },
             "type" : "array"
           },
           "lines" : {
+            "description" : "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
             "items" : {
               "$ref" : "#/components/schemas/ContentText"
             },

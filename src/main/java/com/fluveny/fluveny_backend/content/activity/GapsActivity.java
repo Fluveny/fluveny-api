@@ -25,9 +25,24 @@ public record GapsActivity(
                         requiredMode = RequiredMode.REQUIRED,
                         allowableValues = {MODE_BANK, MODE_TYPED})
                 String mode,
-        @Schema(requiredMode = RequiredMode.REQUIRED) List<ContentText> lines,
-        @Schema(requiredMode = RequiredMode.REQUIRED) List<GapsItem> items,
-        List<GapsWord> bank,
+        @Schema(
+                        requiredMode = RequiredMode.REQUIRED,
+                        description =
+                                "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é"
+                                        + " uma lacuna.")
+                List<ContentText> lines,
+        @Schema(
+                        requiredMode = RequiredMode.REQUIRED,
+                        description =
+                                "Um item por lacuna, na ordem dos ___ nas linhas (linha a"
+                                        + " linha).")
+                List<GapsItem> items,
+        @Schema(
+                        description =
+                                "O banco de palavras, só no mode bank (ausente no typed), na"
+                                        + " ordem do conteúdo, com os distratores: o App"
+                                        + " embaralha.")
+                List<GapsWord> bank,
         @Schema(requiredMode = RequiredMode.REQUIRED) Integer xp)
         implements Activity {
 
