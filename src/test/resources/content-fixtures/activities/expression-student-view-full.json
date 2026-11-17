@@ -1,0 +1,11 @@
+{
+  "activityKey": "s1-nice-to-meet-you",
+  "type": "expression",
+  "title": "Useful expression",
+  "speaker": "Alex",
+  "sentence": {
+    "he": "Hi, {name}! He is Alex. [[Nice to meet you|nice-to-meet-you]]! He [[is from|be-from]] **Canada**.",
+    "she": "Hi, {name}! She is Alex. [[Nice to meet you|nice-to-meet-you]]! She [[is from|be-from]] **Canada**.",
+    "they": "Hi, {name}! They are Alex. [[Nice to meet you|nice-to-meet-you]]! They [[are from|be-from]] **Canada**."
+  }
+}

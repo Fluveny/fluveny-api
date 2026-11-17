@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fluveny.fluveny_backend.content.activity.Activity;
+import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceAnswer;
 import com.fluveny.fluveny_backend.content.activity.ChoiceAnswerItem;
@@ -11,12 +12,15 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
+import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
@@ -261,6 +265,31 @@ class GraderTest {
                                 DialogueActivity.TYPE,
                                 List.of(new ChoiceAnswerItem("hello", "x"))))) {
             assertThatThrownBy(() -> Grader.grade(dialogue, given, StudentVars.NONE))
+                    .isInstanceOfSatisfying(
+                            ApiException.class,
+                            ex -> {
+                                assertThat(ex.getStatus().value()).isEqualTo(400);
+                                assertThat(ex.getCode()).isEqualTo(Grader.INVALID_ANSWER);
+                            });
+        }
+    }
+
+    /** História 1.14: os Cartões e a Expressão são expositivos; nenhuma resposta é aceita. */
+    @ParameterizedTest
+    @ValueSource(strings = {CardsActivity.TYPE, ExpressionActivity.TYPE})
+    void cardsAndExpressionAreNeverGraded(String type) throws Exception {
+        Activity activity;
+        try (InputStream in =
+                GraderTest.class.getResourceAsStream(
+                        "/content-fixtures/activities/" + type + "-activity-full.json")) {
+            activity = JsonMapper.builder().build().readValue(in, Activity.class);
+        }
+        assertThat(activity.type()).isEqualTo(type);
+        for (ChoiceAnswer given :
+                List.of(
+                        answer(ALL_RIGHT),
+                        new ChoiceAnswer(type, List.of(new ChoiceAnswerItem("hello", "x"))))) {
+            assertThatThrownBy(() -> Grader.grade(activity, given, StudentVars.NONE))
                     .isInstanceOfSatisfying(
                             ApiException.class,
                             ex -> {

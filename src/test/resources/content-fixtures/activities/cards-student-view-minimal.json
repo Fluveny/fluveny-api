@@ -1,0 +1,17 @@
+{
+  "activityKey": "s1-cards",
+  "type": "cards",
+  "title": "Hello",
+  "blocks": [
+    {
+      "blockKey": "hello",
+      "title": "Hello",
+      "items": [
+        {
+          "itemKey": "s1-cards-hello",
+          "text": "Hello!"
+        }
+      ]
+    }
+  ]
+}

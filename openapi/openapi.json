@@ -4,8 +4,10 @@
       "Activity" : {
         "discriminator" : {
           "mapping" : {
+            "cards" : "#/components/schemas/CardsActivity",
             "choice" : "#/components/schemas/ChoiceActivity",
-            "dialogue" : "#/components/schemas/DialogueActivity"
+            "dialogue" : "#/components/schemas/DialogueActivity",
+            "expression" : "#/components/schemas/ExpressionActivity"
           },
           "propertyName" : "type"
         },
@@ -13,6 +15,10 @@
           "$ref" : "#/components/schemas/ChoiceActivity"
         }, {
           "$ref" : "#/components/schemas/DialogueActivity"
+        }, {
+          "$ref" : "#/components/schemas/CardsActivity"
+        }, {
+          "$ref" : "#/components/schemas/ExpressionActivity"
         } ],
         "properties" : {
           "type" : {
@@ -24,8 +30,10 @@
       "ActivityStudentView" : {
         "discriminator" : {
           "mapping" : {
+            "cards" : "#/components/schemas/CardsActivityStudentView",
             "choice" : "#/components/schemas/ChoiceActivityStudentView",
-            "dialogue" : "#/components/schemas/DialogueActivityStudentView"
+            "dialogue" : "#/components/schemas/DialogueActivityStudentView",
+            "expression" : "#/components/schemas/ExpressionActivityStudentView"
           },
           "propertyName" : "type"
         },
@@ -33,6 +41,10 @@
           "$ref" : "#/components/schemas/ChoiceActivityStudentView"
         }, {
           "$ref" : "#/components/schemas/DialogueActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/CardsActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/ExpressionActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -237,6 +249,89 @@
           }
         },
         "required" : [ "items", "outcome", "resultPct", "xpAwarded" ],
+        "type" : "object"
+      },
+      "CardBlock" : {
+        "properties" : {
+          "blockKey" : {
+            "type" : "string"
+          },
+          "emoji" : {
+            "description" : "O ícone do bloco, um emoji. Texto puro, não é texto do conteúdo: não aceita placeholder nem marcação.",
+            "maxLength" : 16,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CardItem"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "blockKey", "items", "title" ],
+        "type" : "object"
+      },
+      "CardItem" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          },
+          "text" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "itemKey", "text" ],
+        "type" : "object"
+      },
+      "CardsActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "blocks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CardBlock"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "cards" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "blocks", "title", "type" ],
+        "type" : "object"
+      },
+      "CardsActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "blocks" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CardBlock"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "cards" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "blocks", "title", "type" ],
         "type" : "object"
       },
       "ChoiceActivity" : {
@@ -507,6 +602,56 @@
           }
         },
         "required" : [ "lineKey", "speaker", "text" ],
+        "type" : "object"
+      },
+      "ExpressionActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "sentence" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A frase, com os termos marcados como [[texto|expressionKey]]: ao menos um em cada variante."
+          },
+          "speaker" : {
+            "description" : "O nome exibido de quem diz a frase.",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "expression" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "sentence", "speaker", "title", "type" ],
+        "type" : "object"
+      },
+      "ExpressionActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "sentence" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A frase, com os termos marcados como [[texto|expressionKey]]: ao menos um em cada variante."
+          },
+          "speaker" : {
+            "description" : "O nome exibido de quem diz a frase.",
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "expression" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "sentence", "speaker", "title", "type" ],
         "type" : "object"
       },
       "ItemResult" : {
@@ -1069,7 +1214,7 @@
     },
     "/api/v1/visitor/completions" : {
       "post" : {
-        "description" : "Conclui uma Atividade sem correção, sem XP. receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: hoje só o dialogue, com VIEWED; SKIPPED fica reservado a um Tipo futuro. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
+        "description" : "Conclui uma Atividade sem correção, sem XP. receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: hoje os expositivos dialogue, cards e expression, com VIEWED; SKIPPED fica reservado a um Tipo futuro. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
         "operationId" : "completeVisitorActivity",
         "requestBody" : {
           "content" : {

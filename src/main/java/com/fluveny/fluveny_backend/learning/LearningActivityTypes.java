@@ -1,7 +1,9 @@
 package com.fluveny.fluveny_backend.learning;
 
+import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
+import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
 import com.fluveny.fluveny_backend.platform.meta.ActivityTypeSource;
 import com.fluveny.fluveny_backend.platform.meta.ActivityTypeSupport;
@@ -20,17 +22,28 @@ import org.springframework.stereotype.Component;
 public class LearningActivityTypes implements ActivityTypeSource {
 
     /**
-     * As conclusões ({@code completions}) que cada Tipo aceita (história 1.13). O Diálogo só é
-     * visto; a Escolha não se conclui sem Tentativa. Tipo fora do mapa não aceita nenhuma.
+     * As conclusões ({@code completions}) que cada Tipo aceita (histórias 1.13 e 1.14). Os
+     * expositivos (Diálogo, Cartões de expressões, Expressão Útil destacada) só são vistos; a
+     * Escolha não se conclui sem Tentativa. Tipo fora do mapa não aceita nenhuma.
      */
     private static final Map<String, Set<Outcome>> COMPLETIONS =
-            Map.of(DialogueActivity.TYPE, Set.of(Outcome.VIEWED), ChoiceActivity.TYPE, Set.of());
+            Map.of(
+                    DialogueActivity.TYPE,
+                    Set.of(Outcome.VIEWED),
+                    CardsActivity.TYPE,
+                    Set.of(Outcome.VIEWED),
+                    ExpressionActivity.TYPE,
+                    Set.of(Outcome.VIEWED),
+                    ChoiceActivity.TYPE,
+                    Set.of());
 
     @Override
     public List<ActivityTypeSupport> activityTypes() {
         return List.of(
                 new ActivityTypeSupport(ChoiceActivity.TYPE, null),
-                new ActivityTypeSupport(DialogueActivity.TYPE, null));
+                new ActivityTypeSupport(DialogueActivity.TYPE, null),
+                new ActivityTypeSupport(CardsActivity.TYPE, null),
+                new ActivityTypeSupport(ExpressionActivity.TYPE, null));
     }
 
     /** Os Tipos com regra de conclusão; o teste confere que batem com {@link #activityTypes()}. */

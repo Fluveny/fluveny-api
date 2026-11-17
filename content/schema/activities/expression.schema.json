@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/activities/expression.schema.json",
+  "title": "Expressão Útil destacada",
+  "description": "Tipo Expressão Útil destacada (FR-14, UX-DR73), expositivo: uma frase dita por alguém, com os termos marcados como [[texto|expressionKey]]. Os termos são os marcadores da frase, sem campo paralelo; a frase tem ao menos um (ContentValidator). Sem campo secreto, sem xp e sem Answer: a visão do aluno é a Atividade inteira, e a conclusão é VIEWED.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activityKey", "type", "title", "speaker", "sentence"],
+  "properties": {
+    "activityKey": { "$ref": "../key.schema.json" },
+    "type": { "const": "expression" },
+    "title": { "$ref": "../text.schema.json" },
+    "speaker": {
+      "description": "O nome exibido de quem diz a frase (ex. Alex).",
+      "type": "string",
+      "minLength": 1
+    },
+    "sentence": { "$ref": "../text.schema.json" }
+  }
+}

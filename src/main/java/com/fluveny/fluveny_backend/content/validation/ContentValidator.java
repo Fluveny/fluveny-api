@@ -1,7 +1,9 @@
 package com.fluveny.fluveny_backend.content.validation;
 
+import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
+import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
 import com.networknt.schema.Error;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -16,6 +18,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.StreamReadFeature;
@@ -45,9 +48,12 @@ public final class ContentValidator {
     private static final JsonMapper MAPPER =
             JsonMapper.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build();
 
-    /** Chaves únicas dentro da própria lista (a do Item, a das Expressões Úteis). */
+    /**
+     * Chaves únicas dentro da própria lista (a da opção, a das Expressões Úteis, a da fala e a do
+     * bloco de cartões). O {@code itemKey}, inclusive o do cartão, já é único na Unidade inteira.
+     */
     private static final Set<String> LIST_SCOPED_KEYS =
-            Set.of("optionKey", "expressionKey", "lineKey");
+            Set.of("optionKey", "expressionKey", "lineKey", "blockKey");
 
     /** Chaves únicas na Unidade inteira (AD-5), cada uma no próprio espaço. */
     private static final Set<String> UNIT_SCOPED_KEYS = Set.of("activityKey", "itemKey");
@@ -64,11 +70,23 @@ public final class ContentValidator {
      * Tentativa; a conclusão é por {@code completions}. Ficam fora da exigência de {@link
      * #ACCEPTED_ANSWER_RULES}, e o {@code ActivityFidelityTest} dispensa o Answer deles.
      */
-    public static final Set<String> EXPOSITORY_TYPES = Set.of(DialogueActivity.TYPE);
+    public static final Set<String> EXPOSITORY_TYPES =
+            Set.of(DialogueActivity.TYPE, CardsActivity.TYPE, ExpressionActivity.TYPE);
 
     /** Regras de um Tipo que o JSON Schema não expressa, além da resposta aceita. */
     private static final Map<String, ActivityRule> TYPE_RULES =
-            Map.of(DialogueActivity.TYPE, ContentValidator::checkDialogueAsks);
+            Map.of(
+                    DialogueActivity.TYPE,
+                    ContentValidator::checkDialogueAsks,
+                    ExpressionActivity.TYPE,
+                    ContentValidator::checkExpressionTerm);
+
+    /**
+     * Um termo {@code [[texto|expressionKey]]}. Marcação malformada (texto ou chave em branco) e
+     * chave fora das {@code usefulExpressions} são do {@link MarkupChecker} ({@code
+     * INVALID_MARKUP}).
+     */
+    private static final Pattern TERM = Pattern.compile("\\[\\[([^\\[\\]|]*)\\|([^\\[\\]|]*)]]");
 
     private final ContentSchemas schemas;
 
@@ -716,6 +734,35 @@ public final class ContentValidator {
                                     + positions.size()
                                     + " falas do Diálogo; ela pode aparecer no máximo uma vez.");
                 }
+            }
+        });
+    }
+
+    /**
+     * Frase da Expressão Útil destacada (história 1.14): ao menos um termo {@code
+     * [[texto|expressionKey]]}, em cada variante de pronome. Frase fora do formato já é erro de
+     * schema.
+     */
+    private static void checkExpressionTerm(
+            JsonNode activity, String pointer, String file, Report report) {
+        JsonNode sentence = activity.path("sentence");
+        Map<String, JsonNode> texts = new LinkedHashMap<>();
+        if (sentence.isString()) {
+            texts.put("", sentence);
+        } else if (sentence.isObject()) {
+            for (var variant : sentence.properties()) {
+                texts.put("/" + JsonPointers.escape(variant.getKey()), variant.getValue());
+            }
+        }
+        texts.forEach((at, text) -> {
+            if (text.isString() && !TERM.matcher(text.asString()).find()) {
+                report.add(
+                        file,
+                        pointer + "/sentence" + at,
+                        activity.path("activityKey").asString(null),
+                        ContentRule.MISSING_EXPRESSION_TERM,
+                        "A frase da Expressão Útil destacada precisa de ao menos um termo"
+                                + " [[texto|expressionKey]].");
             }
         });
     }

@@ -191,4 +191,153 @@ class ContentValidatorBundleTest {
                         tuple("/activities/1/lines/1/lineKey", ContentRule.DUPLICATE_KEY),
                         tuple("/activities/1/lines/2/text", ContentRule.UNKNOWN_PLACEHOLDER));
     }
+
+    // História 1.14: os Cartões de expressões e a Expressão Útil destacada.
+
+    /** Os Cartões de {@code s1-meet-alex} na fixture válida ({@code /activities/2}). */
+    private static ObjectNode cards(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/2");
+    }
+
+    /** A Expressão de {@code s1-meet-alex} na fixture válida ({@code /activities/3}). */
+    private static ObjectNode expression(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/3");
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "blocks=empty",
+                "items=empty",
+                "xp=10",
+                "emoji=empty",
+                "emoji=long",
+                "emoji=object",
+                "extra-property=x"
+            })
+    void invalidCardsAreASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode cards = cards(bundle);
+        ObjectNode block = (ObjectNode) cards.at("/blocks/0");
+        switch (change) {
+            case "blocks=empty" -> cards.putArray("blocks");
+            case "items=empty" -> block.putArray("items");
+            case "xp=10" -> cards.put("xp", 10);
+            case "emoji=empty" -> block.put("emoji", "");
+            case "emoji=long" -> block.put("emoji", "x".repeat(17));
+            case "emoji=object" -> block.putObject("emoji").put("he", "x");
+            default -> block.put("audio", "x");
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/2");
+                    assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
+                });
+    }
+
+    @Test
+    void anEmojiIsNotContentText() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        // Placeholder e marcação no emoji ficam como texto: as regras de texto não o veem.
+        ((ObjectNode) cards(bundle).at("/blocks/0")).put("emoji", "{age}**");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void cardTextsFollowTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode cards = cards(bundle);
+        ((ObjectNode) cards.at("/blocks/1")).put("blockKey", "say-hello");
+        ((ObjectNode) cards.at("/blocks/0")).put("title", "Hello, {age}!");
+        ((ObjectNode) cards.at("/blocks/0/items/0")).put("text", "[[Hi|nao-existe]]!");
+        ((ObjectNode) cards.at("/blocks/1/items/0")).putObject("text").put("he", "He is.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/2/blocks/0/blockKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/2/blocks/1/blockKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/2/blocks/0/title", ContentRule.UNKNOWN_PLACEHOLDER),
+                        tuple("/activities/2/blocks/0/items/0/text", ContentRule.INVALID_MARKUP),
+                        tuple(
+                                "/activities/2/blocks/1/items/0/text",
+                                ContentRule.PRONOUN_VARIANTS_MISSING));
+    }
+
+    @Test
+    void aCardItemKeyIsUniqueInTheUnit() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) cards(bundle).at("/blocks/1/items/0")).put("itemKey", "s1-greetings-hello");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/0/items/0/itemKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/2/blocks/1/items/0/itemKey", ContentRule.DUPLICATE_KEY));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "Nice to meet you!",
+                "**Nice to meet you**!",
+                "[Nice to meet you](nice-to-meet-you)"
+            })
+    void aSentenceWithoutATermIsRejected(String sentence) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        expression(bundle).put("sentence", sentence);
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .filteredOn(error -> error.rule() == ContentRule.MISSING_EXPRESSION_TERM)
+                .extracting(ContentError::file, ContentError::pointer, ContentError::key)
+                .containsExactly(tuple(S1, "/activities/3/sentence", "s1-nice-to-meet-you"));
+    }
+
+    /** Termo com texto em branco é marcação malformada, do MarkupChecker, e só ela. */
+    @Test
+    void aBlankTermIsOnlyInvalidMarkup() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        expression(bundle).put("sentence", "[[ |nice-to-meet-you]]!");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(tuple("/activities/3/sentence", ContentRule.INVALID_MARKUP));
+    }
+
+    @Test
+    void eachPronounVariantOfTheSentenceNeedsATerm() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) expression(bundle).get("sentence")).put("she", "Hi! She is Alex.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(
+                        tuple("/activities/3/sentence/she", ContentRule.MISSING_EXPRESSION_TERM));
+    }
+
+    @Test
+    void aTermWithAnUnknownExpressionKeyIsInvalidMarkup() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        expression(bundle).put("sentence", "[[x|nao-existe]]");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(tuple("/activities/3/sentence", ContentRule.INVALID_MARKUP));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"speaker=empty", "sentence=", "xp=10", "terms=x"})
+    void anInvalidExpressionIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode expression = expression(bundle);
+        switch (change) {
+            case "speaker=empty" -> expression.put("speaker", "");
+            case "sentence=" -> expression.remove("sentence");
+            case "xp=10" -> expression.put("xp", 10);
+            default -> expression.putArray("terms").add("x");
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/3");
+                    assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
+                });
+    }
 }
