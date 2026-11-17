@@ -68,15 +68,42 @@ final class SpeechMatcher {
         return (long) found * THRESHOLD_DENOMINATOR >= (long) expected.size() * THRESHOLD_NUMERATOR;
     }
 
-    /** As palavras que contam, normalizadas, na ordem do texto. */
+    /** As palavras que contam, normalizadas, na ordem do texto. Os placeholders saem. */
     static List<String> words(String text) {
+        return words(text, false);
+    }
+
+    /**
+     * As palavras normalizadas como em {@link #words(String)}, mas com os placeholders mantidos,
+     * cada um como uma palavra ({@code {name}}). É a normalização das Lacunas (história 1.17), em
+     * que o token vale como palavra.
+     */
+    static List<String> wordsKeepingPlaceholders(String text) {
+        return words(text, true);
+    }
+
+    private static List<String> words(String text, boolean keepPlaceholders) {
         String plain =
                 TERM.matcher(text)
                         .replaceAll(match -> Matcher.quoteReplacement(" " + match.group(1) + " "));
-        plain = PLACEHOLDER.matcher(plain).replaceAll(" ");
-        plain = CURLY_APOSTROPHES.matcher(plain.toLowerCase(Locale.ROOT)).replaceAll("'");
-        plain = NOT_WORD.matcher(plain).replaceAll(" ");
         List<String> words = new ArrayList<>();
+        Matcher placeholder = PLACEHOLDER.matcher(plain);
+        int start = 0;
+        while (placeholder.find()) {
+            addWords(plain.substring(start, placeholder.start()), words);
+            if (keepPlaceholders) {
+                words.add("{" + placeholder.group(1).toLowerCase(Locale.ROOT) + "}");
+            }
+            start = placeholder.end();
+        }
+        addWords(plain.substring(start), words);
+        return words;
+    }
+
+    /** Normaliza um trecho sem placeholder e acrescenta as palavras dele. */
+    private static void addWords(String segment, List<String> words) {
+        String plain = CURLY_APOSTROPHES.matcher(segment.toLowerCase(Locale.ROOT)).replaceAll("'");
+        plain = NOT_WORD.matcher(plain).replaceAll(" ");
         for (String token : plain.trim().split(" +")) {
             String expanded = CONTRACTIONS.get(stripQuotes(token));
             for (String word : (expanded != null) ? expanded.split(" ") : new String[] {token}) {
@@ -86,7 +113,6 @@ final class SpeechMatcher {
                 }
             }
         }
-        return words;
     }
 
     /** Tira apóstrofos usados como aspas nas pontas ({@code 'hello'}). */

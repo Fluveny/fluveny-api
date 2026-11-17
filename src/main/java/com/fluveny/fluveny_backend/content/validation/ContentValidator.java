@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.GapsActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.networknt.schema.Error;
@@ -12,10 +13,13 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
@@ -53,11 +57,11 @@ public final class ContentValidator {
 
     /**
      * Chaves únicas dentro da própria lista (a da opção, a das Expressões Úteis, a da fala, a do
-     * bloco de cartões e a da resposta do Associar). O {@code itemKey}, inclusive o do cartão, já é
-     * único na Unidade inteira.
+     * bloco de cartões, a da resposta do Associar e a da palavra do banco das Lacunas). O {@code
+     * itemKey}, inclusive o do cartão, já é único na Unidade inteira.
      */
     private static final Set<String> LIST_SCOPED_KEYS =
-            Set.of("optionKey", "expressionKey", "lineKey", "blockKey", "responseKey");
+            Set.of("optionKey", "expressionKey", "lineKey", "blockKey", "responseKey", "wordKey");
 
     /** Chaves únicas na Unidade inteira (AD-5), cada uma no próprio espaço. */
     private static final Set<String> UNIT_SCOPED_KEYS = Set.of("activityKey", "itemKey");
@@ -73,7 +77,9 @@ public final class ContentValidator {
                     SpeechActivity.TYPE,
                     ContentValidator::checkSpeechAnswer,
                     MatchActivity.TYPE,
-                    ContentValidator::checkMatchAnswer);
+                    ContentValidator::checkMatchAnswer,
+                    GapsActivity.TYPE,
+                    ContentValidator::checkGapsAnswer);
 
     /**
      * Os Tipos expositivos (história 1.13): sem Answer, sem regra de resposta aceita e sem
@@ -91,7 +97,9 @@ public final class ContentValidator {
                     ExpressionActivity.TYPE,
                     ContentValidator::checkExpressionTerm,
                     SpeechActivity.TYPE,
-                    ContentValidator::checkSpeechWords);
+                    ContentValidator::checkSpeechWords,
+                    GapsActivity.TYPE,
+                    ContentValidator::checkGapsShape);
 
     /**
      * Um termo {@code [[texto|expressionKey]]}. Marcação malformada (texto ou chave em branco) e
@@ -102,6 +110,12 @@ public final class ContentValidator {
 
     /** Um placeholder, com o mesmo padrão do {@code ContentRenderer}. */
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{([^{}\\s]+)}");
+
+    /** Uma lacuna das Lacunas: três ou mais {@code _}. */
+    private static final Pattern GAP = Pattern.compile("_{3,}");
+
+    /** As variantes de pronome, na ordem do texto. */
+    private static final List<String> PRONOUNS = List.of("he", "she", "they");
 
     /** Uma letra ou um número: o que faz uma palavra contar no critério da Fala. */
     private static final Pattern WORD_CHAR = Pattern.compile("[\\p{L}\\p{N}]");
@@ -860,6 +874,206 @@ public final class ContentValidator {
                 }
             }
         });
+    }
+
+    /**
+     * Resposta aceita das Lacunas (história 1.17): cada item tem {@code accepted}, e no {@code
+     * bank} ao menos uma resposta aceita de cada item está no banco, com palavras para todos os
+     * itens ao mesmo tempo (um emparelhamento item a palavra), em cada variante de pronome. A
+     * comparação aqui é mais estrita que a do corretor (só caixa e espaços): o que passa aqui, o
+     * corretor aceita. Lista fora do formato já é erro de schema.
+     */
+    private static void checkGapsAnswer(
+            JsonNode activity, String pointer, String file, Report report) {
+        JsonNode items = activity.path("items");
+        if (!items.isArray()) {
+            return;
+        }
+        boolean complete = true;
+        for (int i = 0; i < items.size(); i++) {
+            JsonNode accepted = items.get(i).path("accepted");
+            if (!accepted.isArray() || accepted.isEmpty()) {
+                complete = false;
+                report.add(
+                        file,
+                        pointer + "/items/" + i + "/accepted",
+                        items.get(i).path("itemKey").asString(null),
+                        ContentRule.MISSING_ACCEPTED_ANSWER,
+                        "O item não tem accepted (as respostas aceitas).");
+            }
+        }
+        JsonNode bank = activity.path("bank");
+        if (!complete
+                || !GapsActivity.MODE_BANK.equals(activity.path("mode").asString(null))
+                || !bank.isArray()) {
+            // Sem banco no bank é BANK_MODE_MISMATCH; banco fora de lista é erro de schema.
+            return;
+        }
+        // Só o banco muda por pronome aqui (a resposta aceita vale em qualquer variante).
+        boolean variants = false;
+        for (JsonNode word : bank) {
+            variants |= word.path("text").isObject();
+        }
+        Map<Integer, List<String>> uncovered = new TreeMap<>();
+        List<String> notEnough = new ArrayList<>();
+        for (String pronoun : PRONOUNS) {
+            List<Set<Integer>> candidates = new ArrayList<>();
+            for (int i = 0; i < items.size(); i++) {
+                Set<String> forms = new HashSet<>();
+                for (JsonNode accepted : items.get(i).path("accepted")) {
+                    for (String pronounForm : PRONOUNS) {
+                        String form = variant(accepted, pronounForm);
+                        if (form != null) {
+                            forms.add(bankForm(form));
+                        }
+                    }
+                }
+                Set<Integer> words = new HashSet<>();
+                for (int w = 0; w < bank.size(); w++) {
+                    String text = variant(bank.get(w).path("text"), pronoun);
+                    if (text != null && forms.contains(bankForm(text))) {
+                        words.add(w);
+                    }
+                }
+                if (words.isEmpty()) {
+                    uncovered.computeIfAbsent(i, key -> new ArrayList<>()).add(pronoun);
+                }
+                candidates.add(words);
+            }
+            if (maxMatching(candidates, bank.size()) < items.size()) {
+                notEnough.add(pronoun);
+            }
+        }
+        boolean withVariants = variants;
+        uncovered.forEach((i, pronouns) ->
+                report.add(
+                        file,
+                        pointer + "/items/" + i + "/accepted",
+                        items.get(i).path("itemKey").asString(null),
+                        ContentRule.MISSING_ACCEPTED_ANSWER,
+                        "Nenhuma resposta aceita do item está no banco (bank)"
+                                + inVariants(withVariants, pronouns)
+                                + "."));
+        if (uncovered.isEmpty() && !notEnough.isEmpty()) {
+            report.add(
+                    file,
+                    pointer + "/bank",
+                    activity.path("activityKey").asString(null),
+                    ContentRule.MISSING_ACCEPTED_ANSWER,
+                    "O banco (bank) não tem palavras para todos os itens ao mesmo tempo"
+                            + inVariants(variants, notEnough)
+                            + ".");
+        }
+    }
+
+    /** ", na variante she" (ou "nas variantes he, she") quando o conteúdo tem variantes. */
+    private static String inVariants(boolean variants, List<String> pronouns) {
+        if (!variants) {
+            return "";
+        }
+        return (pronouns.size() == 1 ? ", na variante " : ", nas variantes ")
+                + String.join(", ", pronouns);
+    }
+
+    /**
+     * Forma e banco das Lacunas (história 1.17): o número de lacunas ({@code ___}) nas linhas é
+     * igual ao de itens em cada variante de pronome, e o {@code bank} existe só no {@code mode}
+     * {@code bank}. Lista fora do formato já é erro de schema.
+     */
+    private static void checkGapsShape(
+            JsonNode activity, String pointer, String file, Report report) {
+        String activityKey = activity.path("activityKey").asString(null);
+        JsonNode lines = activity.path("lines");
+        JsonNode items = activity.path("items");
+        if (lines.isArray() && items.isArray()) {
+            Set<String> mismatches = new LinkedHashSet<>();
+            for (String pronoun : PRONOUNS) {
+                int gaps = 0;
+                for (JsonNode line : lines) {
+                    String text = variant(line, pronoun);
+                    if (text != null) {
+                        Matcher gap = GAP.matcher(text);
+                        while (gap.find()) {
+                            gaps++;
+                        }
+                    }
+                }
+                if (gaps != items.size()) {
+                    mismatches.add(
+                            gaps + " lacuna" + ((gaps == 1) ? "" : "s") + " (" + pronoun + ")");
+                }
+            }
+            if (!mismatches.isEmpty()) {
+                report.add(
+                        file,
+                        pointer + "/lines",
+                        activityKey,
+                        ContentRule.GAP_COUNT_MISMATCH,
+                        "As linhas têm "
+                                + String.join(", ", mismatches)
+                                + " para "
+                                + items.size()
+                                + " itens; cada ___ precisa de um item, na ordem.");
+            }
+        }
+        String mode = activity.path("mode").asString(null);
+        boolean hasBank = activity.has("bank");
+        if (GapsActivity.MODE_TYPED.equals(mode) && hasBank) {
+            report.add(
+                    file,
+                    pointer + "/bank",
+                    activityKey,
+                    ContentRule.BANK_MODE_MISMATCH,
+                    "O banco (bank) existe só no mode bank.");
+        } else if (GapsActivity.MODE_BANK.equals(mode) && !hasBank) {
+            report.add(
+                    file,
+                    pointer + "/bank",
+                    activityKey,
+                    ContentRule.BANK_MODE_MISMATCH,
+                    "O mode bank precisa do banco (bank).");
+        }
+    }
+
+    /** A variante de pronome do texto; a string vale para todas. {@code null} fora do formato. */
+    private static String variant(JsonNode text, String pronoun) {
+        if (text.isString()) {
+            return text.asString();
+        }
+        JsonNode variant = text.path(pronoun);
+        return variant.isString() ? variant.asString() : null;
+    }
+
+    /** O texto comparado entre o banco e as respostas aceitas: sem caixa e espaços colapsados. */
+    private static String bankForm(String text) {
+        return text.trim().replaceAll("\\s+", " ").toLowerCase(Locale.ROOT);
+    }
+
+    /** O maior emparelhamento item a palavra (caminhos aumentantes; são poucos itens). */
+    private static int maxMatching(List<Set<Integer>> candidates, int words) {
+        int[] owner = new int[words];
+        Arrays.fill(owner, -1);
+        int matched = 0;
+        for (int i = 0; i < candidates.size(); i++) {
+            if (augment(i, candidates, owner, new boolean[words])) {
+                matched++;
+            }
+        }
+        return matched;
+    }
+
+    private static boolean augment(
+            int item, List<Set<Integer>> candidates, int[] owner, boolean[] seen) {
+        for (int word : candidates.get(item)) {
+            if (!seen[word]) {
+                seen[word] = true;
+                if (owner[word] < 0 || augment(owner[word], candidates, owner, seen)) {
+                    owner[word] = item;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     /**

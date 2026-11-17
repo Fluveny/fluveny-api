@@ -605,4 +605,296 @@ class ContentValidatorBundleTest {
                     assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
                 });
     }
+
+    // História 1.17: as Lacunas.
+
+    /** As Lacunas do banco ({@code /activities/6}) e as digitadas ({@code /activities/7}). */
+    private static ObjectNode gaps(ObjectNode bundle, int index) {
+        return (ObjectNode) bundle.at("/stages/0/activities/" + index);
+    }
+
+    private static final int BANK = 6;
+
+    private static final int TYPED = 7;
+
+    @Test
+    void moreGapsThanItemsIsAGapCountMismatch() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) gaps(bundle, BANK).get("lines")).set(0, "Hi! I ___ ___ Alex.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(
+                        ContentError::file,
+                        ContentError::pointer,
+                        ContentError::key,
+                        ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                S1,
+                                "/activities/6/lines",
+                                "s1-gaps-bank",
+                                ContentRule.GAP_COUNT_MISMATCH));
+    }
+
+    @Test
+    void fewerGapsThanItemsIsAGapCountMismatch() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) gaps(bundle, TYPED).get("lines")).set(1, "My name is Ana.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(tuple("/activities/7/lines", ContentRule.GAP_COUNT_MISMATCH));
+    }
+
+    @Test
+    void theGapCountIsCheckedInEachPronounVariant() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ArrayNode lines = (ArrayNode) gaps(bundle, TYPED).get("lines");
+        lines.addObject().put("he", "He ___.").put("she", "She is.").put("they", "They ___.");
+        ((ArrayNode) gaps(bundle, TYPED).get("items"))
+                .addObject()
+                .put("itemKey", "s1-gaps-typed-extra")
+                .putArray("accepted")
+                .add("is");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .singleElement()
+                .satisfies(error -> {
+                    assertThat(error.pointer()).isEqualTo("/activities/7/lines");
+                    assertThat(error.rule()).isEqualTo(ContentRule.GAP_COUNT_MISMATCH);
+                    assertThat(error.message()).contains("(she)").doesNotContain("(he)");
+                });
+    }
+
+    @Test
+    void longerUnderscoresAreOneGap() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) gaps(bundle, TYPED).get("lines")).set(1, "My name is ______.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void anItemWithoutAnAcceptedAnswerInTheBankIsMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) gaps(bundle, BANK).at("/bank/1")).put("text", "met");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/6/items/1/accepted",
+                                "s1-gaps-bank-meet",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void theBankComparisonIgnoresCaseAndSpaces() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) gaps(bundle, BANK).at("/bank/1")).put("text", " Meet ");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void aBankWithoutWordsForAllItemsAtOnceIsMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        // Os dois itens aceitam só "am", e o banco tem um "am".
+        ((ArrayNode) gaps(bundle, BANK).at("/items/1/accepted")).set(0, "am");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/6/bank",
+                                "s1-gaps-bank",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+        // Sem variantes no banco, a mensagem não cita pronome.
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::message)
+                .containsExactly(
+                        "O banco (bank) não tem palavras para todos os itens ao mesmo tempo.");
+        // Com outro "am" no banco, cada item tem a sua palavra.
+        ((ArrayNode) gaps(bundle, BANK).get("bank"))
+                .addObject()
+                .put("wordKey", "am-again")
+                .put("text", "am");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void theBankIsCheckedInEachPronounVariant() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) gaps(bundle, BANK).at("/bank/0"))
+                .putObject("text")
+                .put("he", "is")
+                .put("she", "is")
+                .put("they", "am");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule, ContentError::message)
+                .containsExactly(
+                        tuple(
+                                "/activities/6/items/0/accepted",
+                                ContentRule.MISSING_ACCEPTED_ANSWER,
+                                // O "am" só existe na variante they.
+                                "Nenhuma resposta aceita do item está no banco (bank), nas"
+                                        + " variantes he, she."));
+    }
+
+    @Test
+    void aBankShortInOneVariantNamesTheVariant() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        // O segundo item aceita "am" ou "meet"; na variante they, o banco só tem um "am".
+        ((ArrayNode) gaps(bundle, BANK).at("/items/1/accepted")).add("am");
+        ((ObjectNode) gaps(bundle, BANK).at("/bank/1"))
+                .putObject("text")
+                .put("he", "meet")
+                .put("she", "meet")
+                .put("they", "is");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::message)
+                .containsExactly(
+                        tuple(
+                                "/activities/6/bank",
+                                "O banco (bank) não tem palavras para todos os itens ao mesmo"
+                                        + " tempo, na variante they."));
+    }
+
+    /** Qualquer variante de pronome da resposta aceita vale: o corretor também aceita todas. */
+    @Test
+    void anyPronounVariantOfTheAcceptedAnswerMayBeInTheBank() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) gaps(bundle, BANK).at("/items/0/accepted"))
+                .removeAll()
+                .addObject()
+                .put("he", "is")
+                .put("she", "is")
+                .put("they", "are");
+        assertThat(gaps(bundle, BANK).at("/bank/2/text").asString()).isEqualTo("is");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void aTypedGapsWithABankIsABankModeMismatch() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        gaps(bundle, TYPED).set("bank", gaps(bundle, BANK).get("bank").deepCopy());
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/7/bank",
+                                "s1-gaps-typed",
+                                ContentRule.BANK_MODE_MISMATCH));
+    }
+
+    @Test
+    void aBankGapsWithoutTheBankIsABankModeMismatch() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        gaps(bundle, BANK).remove("bank");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(tuple("/activities/6/bank", ContentRule.BANK_MODE_MISMATCH));
+    }
+
+    /** No banco, o item sem {@code accepted} não vira também "nenhuma resposta no banco". */
+    @ParameterizedTest
+    @ValueSource(ints = {BANK, TYPED})
+    void anItemWithoutAcceptedIsOnlyMissingAcceptedAnswer(int index) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) gaps(bundle, index).at("/items/0")).remove("accepted");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/" + index + "/items/0/accepted",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void aRepeatedWordKeyIsADuplicateKey() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) gaps(bundle, BANK).at("/bank/2")).put("wordKey", "am");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple("/activities/6/bank/0/wordKey", "am", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/6/bank/2/wordKey", "am", ContentRule.DUPLICATE_KEY));
+    }
+
+    @Test
+    void gapsTextsFollowTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) gaps(bundle, TYPED).at("/items/1/accepted")).set(0, "{age}");
+        ((ArrayNode) gaps(bundle, TYPED).get("lines")).set(0, "[[Hi|nao-existe]] ___ {name}.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/7/items/1/accepted/0", ContentRule.UNKNOWN_PLACEHOLDER),
+                        tuple("/activities/7/lines/0", ContentRule.INVALID_MARKUP));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "mode=",
+                "mode=drag",
+                "lines=0",
+                "lines=7",
+                "items=0",
+                "items=9",
+                "accepted=0",
+                "accepted=6",
+                "bank=1",
+                "bank=13",
+                "word-text=",
+                "xp=",
+                "extra-property=x"
+            })
+    void anInvalidGapsIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode gaps = gaps(bundle, BANK);
+        ArrayNode lines = (ArrayNode) gaps.get("lines");
+        ArrayNode items = (ArrayNode) gaps.get("items");
+        ArrayNode bank = (ArrayNode) gaps.get("bank");
+        switch (change) {
+            case "mode=" -> gaps.remove("mode");
+            case "mode=drag" -> gaps.put("mode", "drag");
+            case "lines=0" -> lines.removeAll();
+            case "lines=7" -> {
+                for (int i = 0; i < 5; i++) {
+                    lines.add("Ok.");
+                }
+            }
+            case "items=0" -> items.removeAll();
+            case "items=9" -> {
+                for (int i = 0; i < 7; i++) {
+                    lines.set(0, lines.get(0).asString() + " ___");
+                    items.addObject()
+                            .put("itemKey", "s1-extra-" + i)
+                            .putArray("accepted")
+                            .add("am");
+                }
+            }
+            case "accepted=0" -> ((ArrayNode) items.get(0).get("accepted")).removeAll();
+            case "accepted=6" -> {
+                for (int i = 0; i < 5; i++) {
+                    ((ArrayNode) items.get(0).get("accepted")).add("x" + i);
+                }
+            }
+            case "bank=1" -> {
+                bank.remove(2);
+                bank.remove(1);
+            }
+            case "bank=13" -> {
+                for (int i = 0; i < 10; i++) {
+                    bank.addObject().put("wordKey", "extra-" + i).put("text", "x");
+                }
+            }
+            case "word-text=" -> ((ObjectNode) bank.get(0)).remove("text");
+            case "xp=" -> gaps.remove("xp");
+            case "extra-property=x" -> gaps.put("shuffle", true);
+            default -> throw new IllegalArgumentException(change);
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .anySatisfy(
+                        error -> assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION))
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/6");
+                });
+    }
 }

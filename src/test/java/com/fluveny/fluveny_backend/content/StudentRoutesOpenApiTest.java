@@ -159,9 +159,9 @@ class StudentRoutesOpenApiTest {
                                 .getResponse()
                                 .getContentAsString(StandardCharsets.UTF_8));
         // História 1.15: as alternativas da Fala ficam na SpeechActivity. História 1.16: o
-        // gabarito do Associar fica no MatchItem.
+        // gabarito do Associar fica no MatchItem. História 1.17: o das Lacunas, no GapsItem.
         Set<String> full = new TreeSet<>();
-        for (String name : Set.of("ChoiceItem", "SpeechActivity", "MatchItem")) {
+        for (String name : Set.of("ChoiceItem", "SpeechActivity", "MatchItem", "GapsItem")) {
             full.addAll(api.at("/components/schemas/" + name + "/properties").propertyNames());
         }
         assertThat(full).containsAll(secretNames());
@@ -173,5 +173,9 @@ class StudentRoutesOpenApiTest {
                 .contains("correctResponseKey", "justification");
         assertThat(api.at("/components/schemas/MatchItemStudentView/properties").propertyNames())
                 .containsExactlyInAnyOrder("itemKey", "line");
+        assertThat(api.at("/components/schemas/GapsItem/properties").propertyNames())
+                .contains("accepted", "justification");
+        assertThat(api.at("/components/schemas/GapsItemStudentView/properties").propertyNames())
+                .containsExactly("itemKey");
     }
 }

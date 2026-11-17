@@ -8,6 +8,7 @@
             "choice" : "#/components/schemas/ChoiceActivity",
             "dialogue" : "#/components/schemas/DialogueActivity",
             "expression" : "#/components/schemas/ExpressionActivity",
+            "gaps" : "#/components/schemas/GapsActivity",
             "match" : "#/components/schemas/MatchActivity",
             "speech" : "#/components/schemas/SpeechActivity"
           },
@@ -25,6 +26,8 @@
           "$ref" : "#/components/schemas/SpeechActivity"
         }, {
           "$ref" : "#/components/schemas/MatchActivity"
+        }, {
+          "$ref" : "#/components/schemas/GapsActivity"
         } ],
         "properties" : {
           "type" : {
@@ -40,6 +43,7 @@
             "choice" : "#/components/schemas/ChoiceActivityStudentView",
             "dialogue" : "#/components/schemas/DialogueActivityStudentView",
             "expression" : "#/components/schemas/ExpressionActivityStudentView",
+            "gaps" : "#/components/schemas/GapsActivityStudentView",
             "match" : "#/components/schemas/MatchActivityStudentView",
             "speech" : "#/components/schemas/SpeechActivityStudentView"
           },
@@ -57,6 +61,8 @@
           "$ref" : "#/components/schemas/SpeechActivityStudentView"
         }, {
           "$ref" : "#/components/schemas/MatchActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/GapsActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -81,6 +87,7 @@
         "discriminator" : {
           "mapping" : {
             "choice" : "#/components/schemas/ChoiceAnswer",
+            "gaps" : "#/components/schemas/GapsAnswer",
             "match" : "#/components/schemas/MatchAnswer",
             "speech" : "#/components/schemas/SpeechAnswer"
           },
@@ -92,6 +99,8 @@
           "$ref" : "#/components/schemas/SpeechAnswer"
         }, {
           "$ref" : "#/components/schemas/MatchAnswer"
+        }, {
+          "$ref" : "#/components/schemas/GapsAnswer"
         } ],
         "properties" : {
           "type" : {
@@ -670,6 +679,172 @@
           }
         },
         "required" : [ "activityKey", "sentence", "speaker", "title", "type" ],
+        "type" : "object"
+      },
+      "GapsActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "bank" : {
+            "description" : "O banco de palavras, só no mode bank (ausente no typed), na ordem do conteúdo, com os distratores: o App embaralha.",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsWord"
+            },
+            "type" : "array"
+          },
+          "items" : {
+            "description" : "Um item por lacuna, na ordem dos ___ nas linhas (linha a linha).",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsItem"
+            },
+            "type" : "array"
+          },
+          "lines" : {
+            "description" : "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "mode" : {
+            "enum" : [ "bank", "typed" ],
+            "type" : "string"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "gaps" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "items", "lines", "mode", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "GapsActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "bank" : {
+            "description" : "O banco de palavras, só no mode bank (ausente no typed), na ordem do conteúdo, com os distratores: o App embaralha.",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsWord"
+            },
+            "type" : "array"
+          },
+          "items" : {
+            "description" : "Um item por lacuna, na ordem dos ___ nas linhas (linha a linha).",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsItemStudentView"
+            },
+            "type" : "array"
+          },
+          "lines" : {
+            "description" : "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "mode" : {
+            "enum" : [ "bank", "typed" ],
+            "type" : "string"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "gaps" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "items", "lines", "mode", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "GapsAnswer" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GapsAnswerItem"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "gaps" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "items", "type" ],
+        "type" : "object"
+      },
+      "GapsAnswerItem" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          },
+          "value" : {
+            "description" : "O valor da lacuna, com as Variáveis do Aluno trocadas pelos tokens ({name}). Em branco é 400 INVALID_ANSWER.",
+            "maxLength" : 100,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "itemKey", "value" ],
+        "type" : "object"
+      },
+      "GapsItem" : {
+        "properties" : {
+          "accepted" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "itemKey" : {
+            "type" : "string"
+          },
+          "justification" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "accepted", "itemKey" ],
+        "type" : "object"
+      },
+      "GapsItemStudentView" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "itemKey" ],
+        "type" : "object"
+      },
+      "GapsWord" : {
+        "properties" : {
+          "text" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "wordKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "text", "wordKey" ],
         "type" : "object"
       },
       "ItemResult" : {

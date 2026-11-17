@@ -197,6 +197,58 @@
         }
       ],
       "xp": 9
+    },
+    {
+      "activityKey": "s1-gaps-bank",
+      "type": "gaps",
+      "title": "Complete the Gaps",
+      "prompt": "Toque nas palavras para completar.",
+      "mode": "bank",
+      "lines": [
+        "Hi! I ___ Alex.",
+        "Nice to ___ you!"
+      ],
+      "items": [
+        {
+          "itemKey": "s1-gaps-bank-am",
+          "accepted": ["am"],
+          "justification": "Com **I**, usamos **am**."
+        },
+        {
+          "itemKey": "s1-gaps-bank-meet",
+          "accepted": ["meet"]
+        }
+      ],
+      "bank": [
+        { "wordKey": "am", "text": "am" },
+        { "wordKey": "meet", "text": "meet" },
+        { "wordKey": "is", "text": "is" }
+      ],
+      "xp": 6
+    },
+    {
+      "activityKey": "s1-gaps-typed",
+      "type": "gaps",
+      "title": "Complete the Gaps",
+      "prompt": "Digite as palavras que faltam.",
+      "mode": "typed",
+      "lines": [
+        "Hi Alex! ___ {name}.",
+        "My name is ___."
+      ],
+      "items": [
+        {
+          "itemKey": "s1-gaps-typed-im",
+          "accepted": ["I'm", "I am"],
+          "justification": "Para dizer o nome, use **I'm**."
+        },
+        {
+          "itemKey": "s1-gaps-typed-name",
+          "accepted": ["{name}"],
+          "justification": "Aqui vai o seu nome."
+        }
+      ],
+      "xp": 6
     }
   ]
 }

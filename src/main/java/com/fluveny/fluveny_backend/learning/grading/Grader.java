@@ -11,6 +11,10 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.GapsActivity;
+import com.fluveny.fluveny_backend.content.activity.GapsAnswer;
+import com.fluveny.fluveny_backend.content.activity.GapsAnswerItem;
+import com.fluveny.fluveny_backend.content.activity.GapsItem;
 import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchAnswer;
 import com.fluveny.fluveny_backend.content.activity.MatchAnswerItem;
@@ -44,13 +48,13 @@ public final class Grader {
     /**
      * Corrige a resposta contra a Atividade completa.
      *
-     * @param studentVars as Variáveis do Aluno; a Escolha e o Associar não usam, e a Fala só usa o
-     *     pronome para escolher a variante do {@code expected}
+     * @param studentVars as Variáveis do Aluno; a Escolha e o Associar não usam, e a Fala e as
+     *     Lacunas só usam o pronome para escolher a variante do {@code expected}
      * @throws ApiException {@code 400 INVALID_ANSWER} se a resposta é de outro Tipo, não cobre
      *     todos os itens, repete item ou usa chave que não existe, se o Associar liga duas falas à
-     *     mesma resposta, se a transcrição da Fala está em branco ou passa de 500 caracteres, ou se
-     *     a Atividade é de Tipo expositivo (Diálogo, Cartões de expressões, Expressão Útil
-     *     destacada)
+     *     mesma resposta, se a transcrição da Fala está em branco ou passa de 500 caracteres, se o
+     *     valor de uma lacuna está em branco ou passa de 100 caracteres, ou se a Atividade é de
+     *     Tipo expositivo (Diálogo, Cartões de expressões, Expressão Útil destacada)
      */
     public static GradeResult grade(Activity activity, Answer answer, StudentVars studentVars) {
         Objects.requireNonNull(activity, "activity");
@@ -74,6 +78,7 @@ public final class Grader {
                                     + " conclusão.");
             case SpeechActivity speech -> speech(speech, (SpeechAnswer) answer, studentVars);
             case MatchActivity match -> match(match, (MatchAnswer) answer);
+            case GapsActivity gaps -> gaps(gaps, (GapsAnswer) answer, studentVars);
         };
     }
 
@@ -210,6 +215,76 @@ public final class Grader {
                 List.of(new GradeResult.Item(activity.activityKey(), right, null)),
                 right ? activity.xp() : 0,
                 new SpeechAnswer(SpeechActivity.TYPE, expected));
+    }
+
+    /**
+     * Tamanho máximo do valor de uma lacuna ({@code $defs.answerItem} de {@code gaps.schema.json}),
+     * em code points.
+     */
+    static final int MAX_GAP_VALUE = 100;
+
+    /**
+     * Lacunas (história 1.17, FR-19): um Item por lacuna, com a justificativa do item (que pode
+     * faltar). A lacuna está certa quando o valor é igual a uma resposta aceita, ou a uma variante
+     * de pronome dela, depois da normalização da Fala; os tokens ({@code {name}}) ficam e contam
+     * como palavras ({@link SpeechMatcher#wordsKeepingPlaceholders}). O {@code expected} é a
+     * primeira resposta aceita de cada item, crua, na variante do pronome do aluno.
+     */
+    private static GradeResult gaps(
+            GapsActivity activity, GapsAnswer answer, StudentVars studentVars) {
+        Map<String, GapsItem> items = new HashMap<>();
+        activity.items().forEach(item -> items.put(item.itemKey(), item));
+        Map<String, String> given = new HashMap<>();
+        for (GapsAnswerItem value : answer.items()) {
+            if (value == null) {
+                throw invalid("A resposta tem uma lacuna vazia.");
+            }
+            if (!items.containsKey(value.itemKey())) {
+                throw invalid("A resposta tem um item que não existe na Atividade.");
+            }
+            if (given.put(value.itemKey(), value.value()) != null) {
+                throw invalid("A resposta repete um item.");
+            }
+            if (value.value().isBlank()) {
+                throw invalid("A resposta tem uma lacuna em branco.");
+            }
+            if (value.value().codePointCount(0, value.value().length()) > MAX_GAP_VALUE) {
+                throw invalid("O valor de uma lacuna passa de " + MAX_GAP_VALUE + " caracteres.");
+            }
+        }
+        if (given.size() != items.size()) {
+            throw invalid("A resposta precisa cobrir todos os itens da Atividade.");
+        }
+        List<GradeResult.Item> results = new ArrayList<>();
+        List<GapsAnswerItem> expected = new ArrayList<>();
+        int correct = 0;
+        for (GapsItem item : activity.items()) {
+            List<String> value = SpeechMatcher.wordsKeepingPlaceholders(given.get(item.itemKey()));
+            List<String> forms = new ArrayList<>();
+            item.accepted().forEach(accepted -> addForms(forms, accepted));
+            boolean right =
+                    !value.isEmpty()
+                            && forms.stream()
+                                    .anyMatch(form ->
+                                            value.equals(
+                                                    SpeechMatcher.wordsKeepingPlaceholders(form)));
+            if (right) {
+                correct++;
+            }
+            results.add(new GradeResult.Item(item.itemKey(), right, item.justification()));
+            expected.add(
+                    new GapsAnswerItem(
+                            item.itemKey(),
+                            ContentRenderer.render(
+                                    item.accepted().get(0), Map.of(), studentVars.pronounSet())));
+        }
+        int pct = percent(correct, activity.items().size());
+        return new GradeResult(
+                Outcome.GRADED,
+                pct,
+                results,
+                (int) Math.round((long) activity.xp() * pct / 100.0),
+                new GapsAnswer(GapsActivity.TYPE, expected));
     }
 
     /** O texto, ou cada variante de pronome dele: o Visitante não manda pronome. */

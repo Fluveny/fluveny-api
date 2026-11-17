@@ -1,0 +1,56 @@
+{
+  "activityKey": "s1-complete-gaps",
+  "type": "gaps",
+  "title": "Complete the Gaps",
+  "prompt": "Complete com as palavras do banco, {name}.",
+  "mode": "bank",
+  "lines": [
+    "Hi! ___ Alex.",
+    {
+      "he": "He ___ from Brazil.",
+      "she": "She ___ from Brazil.",
+      "they": "They ___ from Brazil."
+    },
+    "My name is ___."
+  ],
+  "items": [
+    {
+      "itemKey": "s1-complete-gaps-im",
+      "accepted": ["I'm", "I am"],
+      "justification": "Usamos **I'm** para dizer o nome."
+    },
+    {
+      "itemKey": "s1-complete-gaps-is",
+      "accepted": [
+        {
+          "he": "is",
+          "she": "is",
+          "they": "are"
+        }
+      ],
+      "justification": {
+        "he": "With **he**, we use **is**.",
+        "she": "With **she**, we use **is**.",
+        "they": "With **they**, we use **are**."
+      }
+    },
+    {
+      "itemKey": "s1-complete-gaps-name",
+      "accepted": ["{name}"]
+    }
+  ],
+  "bank": [
+    { "wordKey": "im", "text": "I'm" },
+    {
+      "wordKey": "is",
+      "text": {
+        "he": "is",
+        "she": "is",
+        "they": "are"
+      }
+    },
+    { "wordKey": "name", "text": "{name}" },
+    { "wordKey": "am", "text": "am" }
+  ],
+  "xp": 10
+}

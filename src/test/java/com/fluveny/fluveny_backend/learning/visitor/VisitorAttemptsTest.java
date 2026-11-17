@@ -1171,6 +1171,183 @@ class VisitorAttemptsTest {
         assertThat(this.content.attempts).isEmpty();
     }
 
+    // História 1.17: as Lacunas.
+
+    private static final String GAPS_BANK = "s1-gaps-bank";
+
+    private static final String GAPS_TYPED = "s1-gaps-typed";
+
+    private ObjectNode gaps(String activityKey, String... values) {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("attemptId", UUID.randomUUID().toString());
+        body.put("deviceId", this.deviceId);
+        body.put("versionId", this.versionId);
+        body.put("activityKey", activityKey);
+        body.put("type", "gaps");
+        ObjectNode answer = body.putObject("answer");
+        answer.put("type", "gaps");
+        ArrayNode items = answer.putArray("items");
+        for (int i = 0; i < values.length; i += 2) {
+            items.addObject().put("itemKey", values[i]).put("value", values[i + 1]);
+        }
+        body.put("studyTimeMs", 2500);
+        return body;
+    }
+
+    @Test
+    void theStageServesTheGapsWithoutTheAcceptedAnswers() throws Exception {
+        JsonNode body =
+                json(
+                        this.mvc
+                                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                                .andExpect(status().isOk())
+                                .andExpect(
+                                        jsonPath("$.data.activities[6].activityKey")
+                                                .value(GAPS_BANK))
+                                .andExpect(jsonPath("$.data.activities[6].mode").value("bank"))
+                                .andExpect(
+                                        jsonPath("$.data.activities[6].lines[0]")
+                                                .value("Hi! I ___ Alex."))
+                                .andExpect(
+                                        jsonPath("$.data.activities[6].bank[*].wordKey")
+                                                .value(
+                                                        org.hamcrest.Matchers.contains(
+                                                                "am", "meet", "is")))
+                                .andExpect(jsonPath("$.data.activities[7].mode").value("typed"))
+                                .andExpect(jsonPath("$.data.activities[7].bank").doesNotExist()));
+        assertThat(keys(body.at("/data/activities/6"))).doesNotContain("accepted", "justification");
+        assertThat(keys(body.at("/data/activities/7"))).doesNotContain("accepted", "justification");
+    }
+
+    @Test
+    void aBankGapsHitCarriesTheReceiptTheExpectedAndTheJustifications() throws Exception {
+        JsonNode body =
+                json(
+                        send(
+                                        ATTEMPTS,
+                                        gaps(
+                                                GAPS_BANK,
+                                                "s1-gaps-bank-am",
+                                                "am",
+                                                "s1-gaps-bank-meet",
+                                                "meet"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("GRADED"))
+                                .andExpect(jsonPath("$.data.resultPct").value(100))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(6))
+                                .andExpect(jsonPath("$.data.items.length()").value(2))
+                                .andExpect(
+                                        jsonPath("$.data.items[0].justification")
+                                                .value("Com **I**, usamos **am**."))
+                                .andExpect(jsonPath("$.data.items[1].justification").doesNotExist())
+                                .andExpect(jsonPath("$.data.expected.type").value("gaps"))
+                                .andExpect(
+                                        jsonPath("$.data.expected.items[1].value").value("meet")));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(GAPS_BANK);
+        assertThat(payload.resultPct()).isEqualTo(100);
+        assertThat(payload.xpAwarded()).isEqualTo(6);
+    }
+
+    /** Variações e o token: {@code i am} vale {@code I'm}, e o nome vai como {@code {name}}. */
+    @Test
+    void aTypedGapsAcceptsVariationsAndTheNameToken() throws Exception {
+        send(ATTEMPTS, gaps(GAPS_TYPED, "s1-gaps-typed-im", "i am", "s1-gaps-typed-name", "{name}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100))
+                .andExpect(jsonPath("$.data.expected.items[0].value").value("I'm"))
+                .andExpect(jsonPath("$.data.expected.items[1].value").value("{name}"));
+    }
+
+    /** Um de dois: 50%, XP proporcional e nada do gabarito. */
+    @Test
+    void aPartialGapsHasProportionalXpAndNoExpected() throws Exception {
+        JsonNode body =
+                json(
+                        send(
+                                        ATTEMPTS,
+                                        gaps(
+                                                GAPS_TYPED,
+                                                "s1-gaps-typed-im",
+                                                "I'm.",
+                                                "s1-gaps-typed-name",
+                                                "Ana"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.resultPct").value(50))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(3))
+                                .andExpect(jsonPath("$.data.items[0].correct").value(true))
+                                .andExpect(jsonPath("$.data.items[1].correct").value(false)));
+        assertThat(keys(body)).doesNotContain("expected", "justification");
+    }
+
+    /** "Ver resposta" depois de um Erro: a primeira resposta aceita de cada item, sem XP. */
+    @Test
+    void revealAfterAGapsMissDisclosesTheExpectedWithoutXp() throws Exception {
+        ObjectNode attempt = gaps(GAPS_BANK, "s1-gaps-bank-am", "is", "s1-gaps-bank-meet", "meet");
+        send(ATTEMPTS, attempt)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(50))
+                .andExpect(jsonPath("$.data.expected").doesNotExist());
+        send(REVEAL, attempt)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                .andExpect(jsonPath("$.data.expected.items[0].itemKey").value("s1-gaps-bank-am"))
+                .andExpect(jsonPath("$.data.expected.items[0].value").value("am"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "missing-item",
+                "repeated-item",
+                "unknown-item",
+                "blank-value",
+                "long-value"
+            })
+    void anInvalidGapsAnswerIs400AndNotStored(String change) throws Exception {
+        ObjectNode body =
+                switch (change) {
+                    case "missing-item" -> gaps(GAPS_TYPED, "s1-gaps-typed-im", "I'm");
+                    case "repeated-item" ->
+                            gaps(
+                                    GAPS_TYPED,
+                                    "s1-gaps-typed-im",
+                                    "I'm",
+                                    "s1-gaps-typed-im",
+                                    "I am",
+                                    "s1-gaps-typed-name",
+                                    "{name}");
+                    case "unknown-item" ->
+                            gaps(GAPS_TYPED, "s1-gaps-typed-im", "I'm", "s1-nao-existe", "{name}");
+                    case "blank-value" ->
+                            gaps(
+                                    GAPS_TYPED,
+                                    "s1-gaps-typed-im",
+                                    "  ",
+                                    "s1-gaps-typed-name",
+                                    "{name}");
+                    case "long-value" ->
+                            gaps(
+                                    GAPS_TYPED,
+                                    "s1-gaps-typed-im",
+                                    "a".repeat(101),
+                                    "s1-gaps-typed-name",
+                                    "{name}");
+                    default -> throw new IllegalArgumentException(change);
+                };
+        expectProblem(send(ATTEMPTS, body), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SKIPPED", "VIEWED"})
+    void gapsCannotBeCompletedWithoutAnAttempt(String outcome) throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion(GAPS_BANK, outcome)), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
     private static java.util.Set<String> keys(JsonNode node) {
         java.util.Set<String> keys = new java.util.TreeSet<>();
         collect(node, keys);
