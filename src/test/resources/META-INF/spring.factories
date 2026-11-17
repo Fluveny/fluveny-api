@@ -1,0 +1,3 @@
+# Põe o segredo de proxy do teste (TestProxySecret, história 1.6) em toda requisição do MockMvc.
+org.springframework.test.context.ContextCustomizerFactory=\
+com.fluveny.fluveny_backend.TestProxySecret$MockMvcHeaderFactory

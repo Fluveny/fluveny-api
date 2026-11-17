@@ -1,5 +1,6 @@
 # CI: segredos, build, testes, contrato (oasdiff), o workflow de publicação contra uma API efêmera
-# e o build da imagem em todo PR e em todo push na main. A imagem só é publicada no GHCR em push na main.
+# e o build da imagem em todo PR e em todo push na main. A imagem só é publicada no GHCR em push na
+# main, e aí o job "Deploy em homologação" chama o deploy hook do Render com a imagem do commit.
 name: CI
 
 on:
@@ -114,7 +115,8 @@ jobs:
       - name: actionlint
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color \
-            .github/workflows/publish-content.yml .github/workflows/ci.yml
+            .github/workflows/publish-content.yml .github/workflows/ci.yml \
+            .github/workflows/keep-warm.yml
 
       - uses: jdx/mise-action@v5
         with:
@@ -145,6 +147,12 @@ jobs:
           export FLUVENY_RECEIPT_KEY="$RECEIPT_KEY"
           # Origens da CORS (história 1.22), obrigatórias em prod; o job não usa navegador.
           export FLUVENY_WEB_ORIGINS=https://app.fluveny.test
+          # Segredo de proxy (história 1.6), obrigatório em prod; gerado no job e mascarado. O
+          # script e os curl abaixo o leem do ambiente, como o publish-content.yml.
+          PROXY_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::$PROXY_SECRET"
+          echo "FLUVENY_PROXY_SECRET=$PROXY_SECRET" >> "$GITHUB_ENV"
+          export FLUVENY_PROXY_SECRET="$PROXY_SECRET"
           SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_ci \
           FLUVENY_DEPLOY_TOKEN_SHA256="$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)" \
             nohup java -jar target/fluveny-backend-*.jar > "$RUNNER_TEMP/api.log" 2>&1 &
@@ -198,6 +206,12 @@ jobs:
           fi
           grep -q "A API respondeu 403:" "$RUNNER_TEMP/forbidden.txt"
           grep -q "^ACCESS_DENIED:" "$RUNNER_TEMP/forbidden.txt"
+          # Sem o segredo de proxy (chamada direta ao host, pulando o Worker): 403.
+          if FLUVENY_PROXY_SECRET='' node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" 2> "$RUNNER_TEMP/no-proxy.txt"; then
+            echo "::error::A publicação passou sem o segredo de proxy."; exit 1
+          fi
+          grep -q "A API respondeu 403:" "$RUNNER_TEMP/no-proxy.txt"
+          grep -q "^ACCESS_DENIED:" "$RUNNER_TEMP/no-proxy.txt"
 
       - name: Candidata nova fica fora do ponteiro e do registro
         run: |
@@ -212,7 +226,7 @@ jobs:
           CANDIDATE="$(grep '^version-id=' "$RUNNER_TEMP/new-candidate.out" | cut -d= -f2)"
           test "$CANDIDATE" != "$PUBLISHED"
           # O ponteiro continua na versão publicada.
-          curl -fsS "$API_URL/api/v1/units/unit-coming-soon" | grep -q "\"versionId\":\"$PUBLISHED\""
+          curl -fsS -H "X-Fluveny-Proxy: $FLUVENY_PROXY_SECRET" "$API_URL/api/v1/units/unit-coming-soon" | grep -q "\"versionId\":\"$PUBLISHED\""
           # A API que tem a candidata a acha; um registro sem ela recusa, e o job de produção pararia.
           node scripts/content-bundle.mjs check unit-coming-soon "$CANDIDATE" --api "$API_URL"
           if node scripts/content-bundle.mjs check unit-coming-soon "$CANDIDATE" --api "$EMPTY_API_URL" 2> "$RUNNER_TEMP/missing.txt"; then
@@ -222,7 +236,7 @@ jobs:
 
       - name: O aluno vê a Unidade em breve
         run: |
-          curl -fsS "$API_URL/api/v1/units" | tee "$RUNNER_TEMP/units.json"
+          curl -fsS -H "X-Fluveny-Proxy: $FLUVENY_PROXY_SECRET" "$API_URL/api/v1/units" | tee "$RUNNER_TEMP/units.json"
           node -e 'const {data}=JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")); if (data.length !== 1 || data[0].unitKey !== "unit-coming-soon" || data[0].comingSoon !== true) process.exit(1)' "$RUNNER_TEMP/units.json"
 
       - name: Log da API
@@ -268,27 +282,41 @@ jobs:
           tags: fluveny-api:smoke
           cache-from: type=gha
 
-      # A chave dos recibos (história 1.12) é obrigatória em prod; gerada aqui e mascarada. As
-      # origens da CORS (história 1.22) também são obrigatórias; o smoke não usa navegador.
+      # A chave dos recibos (história 1.12) e o segredo de proxy (história 1.6) são obrigatórios
+      # em prod; gerados aqui e mascarados. As origens da CORS (história 1.22) também são
+      # obrigatórias; o smoke não usa navegador. Sem o segredo, só o health check passa.
       - name: Smoke da imagem
         run: |
           FLUVENY_RECEIPT_KEY="$(openssl rand -base64 32)"
           echo "::add-mask::$FLUVENY_RECEIPT_KEY"
           export FLUVENY_RECEIPT_KEY
+          FLUVENY_PROXY_SECRET="$(openssl rand -hex 32)"
+          echo "::add-mask::$FLUVENY_PROXY_SECRET"
+          export FLUVENY_PROXY_SECRET
           docker run -d --name api-smoke --network host \
             -e SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_smoke \
             -e FLUVENY_RECEIPT_KEY \
             -e FLUVENY_WEB_ORIGINS=https://app.fluveny.test \
+            -e FLUVENY_PROXY_SECRET \
             fluveny-api:smoke
+          status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
+          up=false
           for _ in $(seq 1 60); do
-            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/meta)" = "200" ]; then
-              exit 0
-            fi
+            if [ "$(status http://localhost:8080/api/v1/meta)" = "200" ]; then up=true; break; fi
             sleep 2
           done
-          docker logs api-smoke
-          echo "::error::A imagem não respondeu 200 em /api/v1/meta."
-          exit 1
+          if [ "$up" != true ]; then
+            docker logs api-smoke
+            echo "::error::A imagem não respondeu 200 em /api/v1/meta."
+            exit 1
+          fi
+          without="$(status http://localhost:8080/api/v1/units)"
+          with="$(status -H "X-Fluveny-Proxy: $FLUVENY_PROXY_SECRET" http://localhost:8080/api/v1/units)"
+          if [ "$without" != 403 ] || [ "$with" != 200 ]; then
+            docker logs api-smoke
+            echo "::error::/api/v1/units sem o segredo de proxy respondeu $without (esperado 403) e com ele, $with (esperado 200)."
+            exit 1
+          fi
 
       - id: meta
         uses: docker/metadata-action@v5
@@ -306,3 +334,29 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # Deploy em homologação (história 1.6): o Render roda a imagem sha-<sha> do commit, nunca uma
+  # main mais nova. O deploy hook fica só no secret RENDER_DEPLOY_HOOK_URL do Environment homolog;
+  # sem ele, o job avisa e não falha. O Render faz o deploy depois de responder ao hook.
+  deploy-homolog:
+    name: Deploy em homologação
+    needs: image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: homolog
+    concurrency:
+      group: deploy-homolog
+      cancel-in-progress: false
+    steps:
+      - name: Deploy hook do Render
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          IMAGE: ghcr.io/fluveny/fluveny-api:sha-${{ github.sha }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::warning::Sem o secret RENDER_DEPLOY_HOOK_URL no Environment homolog; deploy pulado."
+            exit 0
+          fi
+          curl -fsS -o /dev/null -X POST -G --data-urlencode "imgURL=$IMAGE" "$RENDER_DEPLOY_HOOK_URL"
+          echo "Deploy pedido ao Render: $IMAGE"

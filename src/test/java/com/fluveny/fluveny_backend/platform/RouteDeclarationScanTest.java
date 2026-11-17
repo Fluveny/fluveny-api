@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.platform;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fluveny.fluveny_backend.TestProxySecret;
 import com.fluveny.fluveny_backend.platform.security.RouteDeclaration;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -154,6 +155,8 @@ class RouteDeclarationScanTest {
                 HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()) {
             return client.send(
                     HttpRequest.newBuilder(URI.create("http://localhost:" + this.port + path))
+                            // O segredo de proxy do perfil prod (TestProxySecret, história 1.6).
+                            .header(TestProxySecret.HEADER, TestProxySecret.value())
                             .build(),
                     HttpResponse.BodyHandlers.ofString());
         }

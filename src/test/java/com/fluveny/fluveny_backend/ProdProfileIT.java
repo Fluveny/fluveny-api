@@ -15,9 +15,9 @@ import org.springframework.core.env.StandardEnvironment;
 /**
  * Sem {@code SPRING_PROFILES_ACTIVE} o perfil é {@code prod} (AD-18), e em {@code prod} a API não
  * sobe sem {@code SPRING_DATA_MONGODB_URI}, sem {@code FLUVENY_RECEIPT_KEY} (história 1.12) nem sem
- * {@code FLUVENY_WEB_ORIGINS} (história 1.22), ou com a chave ou a origem inválida. O ambiente do
- * teste não lê as variáveis nem as propriedades da JVM, para a variável estar ausente de fato mesmo
- * que a máquina a tenha.
+ * {@code FLUVENY_WEB_ORIGINS} (história 1.22) nem sem {@code FLUVENY_PROXY_SECRET} (história 1.6),
+ * ou com a chave, a origem ou o segredo inválido. O ambiente do teste não lê as variáveis nem as
+ * propriedades da JVM, para a variável estar ausente de fato mesmo que a máquina a tenha.
  */
 class ProdProfileIT {
 
@@ -77,6 +77,8 @@ class ProdProfileIT {
                                         "c2hvcnQ=",
                                         "FLUVENY_WEB_ORIGINS",
                                         "https://app.fluveny.test",
+                                        "FLUVENY_PROXY_SECRET",
+                                        TestProxySecret.generate(),
                                         "fluveny.mongo.indexes-on-startup",
                                         "false")));
         Throwable failure =
@@ -118,11 +120,52 @@ class ProdProfileIT {
                                 TestReceiptKey.generate(),
                                 "FLUVENY_WEB_ORIGINS",
                                 origins,
+                                "FLUVENY_PROXY_SECRET",
+                                TestProxySecret.generate(),
                                 "fluveny.mongo.indexes-on-startup",
                                 "false"));
 
         assertThat(failure).isNotNull();
         assertThat(rootMessage(failure)).contains("FLUVENY_WEB_ORIGINS precisa ser uma lista");
+    }
+
+    @Test
+    void refusesToStartWithoutTheProxySecret() {
+        Throwable failure =
+                start(
+                        Map.of(
+                                "SPRING_DATA_MONGODB_URI",
+                                "mongodb://localhost:27017/fluveny_unit_tests",
+                                "FLUVENY_RECEIPT_KEY",
+                                TestReceiptKey.generate(),
+                                "FLUVENY_WEB_ORIGINS",
+                                "https://app.fluveny.test"));
+
+        assertThat(failure).isNotNull();
+        assertThat(rootMessage(failure))
+                .contains("Perfil prod sem variável de ambiente obrigatória: FLUVENY_PROXY_SECRET");
+    }
+
+    @Test
+    void refusesToStartWithAnInvalidProxySecret() {
+        Throwable failure =
+                start(
+                        Map.of(
+                                "SPRING_DATA_MONGODB_URI",
+                                "mongodb://localhost:27017/fluveny_unit_tests",
+                                "FLUVENY_RECEIPT_KEY",
+                                TestReceiptKey.generate(),
+                                "FLUVENY_WEB_ORIGINS",
+                                "https://app.fluveny.test",
+                                "FLUVENY_PROXY_SECRET",
+                                "short-secret-never-logged",
+                                "fluveny.mongo.indexes-on-startup",
+                                "false"));
+
+        assertThat(failure).isNotNull();
+        assertThat(rootMessage(failure))
+                .contains("FLUVENY_PROXY_SECRET precisa ter")
+                .doesNotContain("short-secret-never-logged");
     }
 
     private static Throwable start(Map<String, String> properties) {

@@ -1,0 +1,7 @@
+headers {
+  X-Fluveny-Proxy: {{proxySecret}}
+}
+
+docs {
+  Toda requisição leva o segredo de proxy (história 1.6), como o Worker da Cloudflare. Em homologação, preencha a variável secreta proxySecret do ambiente homolog no Bruno (fica só na sua máquina, nunca no git). No local o filtro fica desligado e o cabeçalho é ignorado.
+}
