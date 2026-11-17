@@ -143,6 +143,8 @@ jobs:
           RECEIPT_KEY="$(openssl rand -base64 32)"
           echo "::add-mask::$RECEIPT_KEY"
           export FLUVENY_RECEIPT_KEY="$RECEIPT_KEY"
+          # Origens da CORS (história 1.22), obrigatórias em prod; o job não usa navegador.
+          export FLUVENY_WEB_ORIGINS=https://app.fluveny.test
           SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_ci \
           FLUVENY_DEPLOY_TOKEN_SHA256="$(printf '%s' "$TOKEN" | sha256sum | cut -d' ' -f1)" \
             nohup java -jar target/fluveny-backend-*.jar > "$RUNNER_TEMP/api.log" 2>&1 &
@@ -266,7 +268,8 @@ jobs:
           tags: fluveny-api:smoke
           cache-from: type=gha
 
-      # A chave dos recibos (história 1.12) é obrigatória em prod; gerada aqui e mascarada.
+      # A chave dos recibos (história 1.12) é obrigatória em prod; gerada aqui e mascarada. As
+      # origens da CORS (história 1.22) também são obrigatórias; o smoke não usa navegador.
       - name: Smoke da imagem
         run: |
           FLUVENY_RECEIPT_KEY="$(openssl rand -base64 32)"
@@ -275,6 +278,7 @@ jobs:
           docker run -d --name api-smoke --network host \
             -e SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_smoke \
             -e FLUVENY_RECEIPT_KEY \
+            -e FLUVENY_WEB_ORIGINS=https://app.fluveny.test \
             fluveny-api:smoke
           for _ in $(seq 1 60); do
             if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/v1/meta)" = "200" ]; then

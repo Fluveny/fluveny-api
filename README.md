@@ -29,6 +29,8 @@ mise run up                  # API em http://localhost:8080, perfil local
 
 O `mise run up` sobe a API no perfil `local` com um `mongo:8` em replica set de um nó, do Testcontainers (`./mvnw spring-boot:test-run`, pela `LocalFluvenyApplication` dos testes). Não precisa de `.env` nem de Mongo instalado. O Swagger UI fica em http://localhost:8080/swagger-ui/index.html.
 
+A CORS do perfil `local` aceita o App web do `npx expo start --web` (`http://localhost:8081`), com `EXPO_PUBLIC_API_URL=http://localhost:8080` no App. Para o teste no aparelho, ponha `FLUVENY_WEB_ORIGINS` no ambiente ou no `.env.local` com a origem que o navegador do aparelho usa (por exemplo `http://192.168.0.10:8081`), e aponte o `EXPO_PUBLIC_API_URL` do App para o IP da máquina também (`http://192.168.0.10:8080`). A variável troca o padrão, então liste de novo o `http://localhost:8081` se quiser os dois.
+
 O Mongo é efêmero: cada `up` começa com o banco vazio, e o `LocalDataLoader` roda os carregadores dos módulos quando a API fica pronta. Com a API no ar, em outro terminal:
 
 | Tarefa | O que faz |
@@ -164,7 +166,7 @@ mise run check   # ./mvnw -B -ntp spotless:check verify
   - o `LocalDataLoaderIT` confirma que os carregadores rodam na partida, que rodar de novo não duplica e que o reset apaga o banco;
   - o `ContentPublicationIT` cobre a publicação (nova, repetida, candidata, inválida, Tipo não suportado, `unitKey` divergente, token) e as rotas do aluno, com a varredura de segredos; o `ContentLocalSeederIT` confirma que o perfil `local` publica `content/units/` sozinho, inclusive depois do reset;
   - o `MongoUriBindingIT` passa a URI do container como `SPRING_DATA_MONGODB_URI` e confirma que a API conecta por ela, no perfil `prod` padrão;
-  - o `ProdProfileIT` confirma que, sem perfil e sem `SPRING_DATA_MONGODB_URI` ou `FLUVENY_RECEIPT_KEY`, a API não sobe e a falha cita a variável, e que com a `FLUVENY_RECEIPT_KEY` inválida ela também não sobe. Os testes no perfil `prod` recebem uma `FLUVENY_RECEIPT_KEY` gerada na execução pela extensão `TestReceiptKey`.
+  - o `ProdProfileIT` confirma que, sem perfil e sem `SPRING_DATA_MONGODB_URI` ou `FLUVENY_RECEIPT_KEY`, a API não sobe e a falha cita a variável, e que com a `FLUVENY_RECEIPT_KEY` inválida ela também não sobe. Ele também confirma que a API não sobe sem `FLUVENY_WEB_ORIGINS` ou com uma origem fora do formato. Os testes no perfil `prod` recebem uma `FLUVENY_RECEIPT_KEY` gerada na execução pela extensão `TestReceiptKey` e uma `FLUVENY_WEB_ORIGINS` de teste pela `TestWebOrigins`.
 
 Para rodar só os unitários (incluindo o `ModularityTest`), sem Docker: `./mvnw -B -ntp test`.
 
@@ -182,6 +184,7 @@ Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
 | `FLUVENY_MIN_APP_VERSION` | Opcional, padrão `0.0.0`. Versão mínima do App, devolvida em `GET /api/v1/meta`. Precisa estar no formato `X.Y.Z`; vazia ou em outro formato, a API não sobe. A publicação recusa Tipo com `sinceAppVersion` acima dela. |
 | `FLUVENY_DEPLOY_TOKEN_SHA256` | Opcional. O sha256, em hex, do token de deploy do ambiente (o token fica só no GitHub Environment, como `FLUVENY_DEPLOY_TOKEN`). Sem ela, toda publicação é negada e a API sobe normalmente; fora do formato (64 dígitos hex), a API não sobe. Gere com `printf '%s' "$TOKEN" \| shasum -a 256`. |
 | `FLUVENY_RECEIPT_KEY` | Obrigatória no perfil `prod`. Chave HMAC dos recibos do Visitante (história 1.12), em base64 com 32 bytes ou mais; gere com `openssl rand -base64 32`. Fora do formato, a API não sobe. Fora de `prod`, sem ela, a API gera uma chave na partida e avisa no log (os recibos antigos deixam de valer). |
+| `FLUVENY_WEB_ORIGINS` | Obrigatória no perfil `prod`. Origens web aceitas pela CORS de `/api/v1/**` (história 1.22), separadas por vírgula: o App do Aluno na web, por exemplo `https://app.fluveny.com`. Cada origem é `scheme://host[:porta]` (`http` ou `https`), sem caminho, sem barra no fim e sem `*`; fora do formato, a API não sobe. A CORS liga `allowCredentials` (a sessão web será por cookie), aceita `GET`, `POST`, `PUT`, `PATCH` e `DELETE` e os cabeçalhos `Content-Type`, `Accept`, `X-App-Version` e `X-Fluveny-Client`, e expõe o `Retry-After`. No perfil `local`, o padrão é `http://localhost:8081`. Fora de `prod` e do `local`, sem ela, nenhuma origem web passa. Requisição sem `Origin` (o App Android, o curl) não muda. |
 | `FLUVENY_CONTENT_DIR` | Só no perfil `local`. Pasta `content` lida pelo carregador local; padrão `content`. |
 
 Os logs saem no console em JSON (ECS), sem corpo de requisição nem cabeçalhos.
@@ -234,7 +237,7 @@ Os outros módulos usam a `platform` pelas named interfaces `web`, `security` e 
 
 ```bash
 docker build -t fluveny-api:local .
-docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... -e FLUVENY_RECEIPT_KEY=... fluveny-api:local
+docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... -e FLUVENY_RECEIPT_KEY=... -e FLUVENY_WEB_ORIGINS=... fluveny-api:local
 ```
 
 A API escuta na porta 8080 e roda com um usuário sem root. Em todo PR a CI constrói a imagem sem publicar. A cada merge na `main`, publica `ghcr.io/fluveny/fluveny-api:main` e `ghcr.io/fluveny/fluveny-api:sha-<sha>`.
