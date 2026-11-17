@@ -43,7 +43,7 @@ class MetaConfiguredTest {
                 .perform(get("/api/v1/meta"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.minAppVersion").value("1.4.0"))
-                .andExpect(jsonPath("$.data.activityTypes.length()").value(4))
+                .andExpect(jsonPath("$.data.activityTypes.length()").value(5))
                 .andExpect(jsonPath("$.data.activityTypes[0].type").value("multiple-choice"))
                 .andExpect(jsonPath("$.data.activityTypes[0].sinceAppVersion").value("1.0.0"))
                 .andExpect(jsonPath("$.data.activityTypes[1].type").value("fill-in"))
@@ -51,7 +51,10 @@ class MetaConfiguredTest {
                 .andExpect(jsonPath("$.data.activityTypes[2].sinceAppVersion").value("1.4.0"))
                 // O source real do learning, sem @Order, vem por último.
                 .andExpect(jsonPath("$.data.activityTypes[3].type").value("choice"))
-                .andExpect(jsonPath("$.data.activityTypes[3].sinceAppVersion").value(nullValue()));
+                .andExpect(jsonPath("$.data.activityTypes[3].sinceAppVersion").value(nullValue()))
+                // História 1.13: o Diálogo, nulo até a tag do App que o renderiza.
+                .andExpect(jsonPath("$.data.activityTypes[4].type").value("dialogue"))
+                .andExpect(jsonPath("$.data.activityTypes[4].sinceAppVersion").value(nullValue()));
     }
 
     @TestConfiguration(proxyBeanMethods = false)

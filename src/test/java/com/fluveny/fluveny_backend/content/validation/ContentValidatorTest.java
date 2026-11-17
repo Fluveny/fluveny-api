@@ -8,6 +8,8 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -326,10 +328,12 @@ class ContentValidatorTest {
     }
 
     @Test
-    void everyActivityTypeHasAnAcceptedAnswerRule() {
+    void everyActivityTypeHasAnAcceptedAnswerRuleUnlessExpository() {
+        Set<String> types = new TreeSet<>(ContentSchemas.load(SCHEMA_DIR).activityTypes());
+        assertThat(types).containsAll(ContentValidator.EXPOSITORY_TYPES);
+        types.removeAll(ContentValidator.EXPOSITORY_TYPES);
         assertThat(ContentValidator.acceptedAnswerTypes())
-                .containsExactlyInAnyOrderElementsOf(
-                        ContentSchemas.load(SCHEMA_DIR).activityTypes());
+                .containsExactlyInAnyOrderElementsOf(types);
     }
 
     @Test

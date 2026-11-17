@@ -53,7 +53,10 @@ class ContentLocalSeederIT {
         this.mvc
                 .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.activities[0].activityKey").value("s1-greetings"));
+                .andExpect(jsonPath("$.data.activities[0].activityKey").value("s1-greetings"))
+                // História 1.13: o Diálogo, com sinceAppVersion nulo, sobe no perfil local.
+                .andExpect(jsonPath("$.data.activities[1].type").value("dialogue"))
+                .andExpect(jsonPath("$.data.activities[1].lines[2].ask").value("country"));
 
         this.mvc.perform(post("/local/reset")).andExpect(status().isOk());
         this.mvc

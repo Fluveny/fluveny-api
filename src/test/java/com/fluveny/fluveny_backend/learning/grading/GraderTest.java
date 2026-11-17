@@ -10,6 +10,7 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceAnswerItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
+import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -241,5 +242,31 @@ class GraderTest {
                             assertThat(ex.getStatus().value()).isEqualTo(400);
                             assertThat(ex.getCode()).isEqualTo("INVALID_ANSWER");
                         });
+    }
+
+    /** História 1.13: o Diálogo é expositivo; nenhuma resposta é aceita, nem com o type dele. */
+    @Test
+    void aDialogueIsNeverGraded() throws Exception {
+        Activity dialogue;
+        try (InputStream in =
+                GraderTest.class.getResourceAsStream(
+                        "/content-fixtures/activities/dialogue-activity-full.json")) {
+            dialogue = JsonMapper.builder().build().readValue(in, Activity.class);
+        }
+        assertThat(dialogue).isInstanceOf(DialogueActivity.class);
+        for (ChoiceAnswer given :
+                List.of(
+                        answer(ALL_RIGHT),
+                        new ChoiceAnswer(
+                                DialogueActivity.TYPE,
+                                List.of(new ChoiceAnswerItem("hello", "x"))))) {
+            assertThatThrownBy(() -> Grader.grade(dialogue, given, StudentVars.NONE))
+                    .isInstanceOfSatisfying(
+                            ApiException.class,
+                            ex -> {
+                                assertThat(ex.getStatus().value()).isEqualTo(400);
+                                assertThat(ex.getCode()).isEqualTo(Grader.INVALID_ANSWER);
+                            });
+        }
     }
 }

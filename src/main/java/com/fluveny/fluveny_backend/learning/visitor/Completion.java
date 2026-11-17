@@ -9,9 +9,10 @@ import jakarta.validation.constraints.Size;
 import java.util.UUID;
 
 /**
- * A conclusão de uma Atividade sem correção pelo Visitante (história 1.12): vista ou pulada. Vale
- * para qualquer Atividade do Estágio liberado; quais Tipos podem ser pulados fica para as histórias
- * de Tipo.
+ * A conclusão de uma Atividade sem correção pelo Visitante (história 1.12). Vale para as Atividades
+ * do Estágio liberado, na conclusão que o Tipo aceita, senão {@code 409 COMPLETION_NOT_ALLOWED}
+ * (história 1.13). Hoje só o Diálogo aceita, e só {@code VIEWED}; {@code SKIPPED} fica reservado a
+ * um Tipo futuro.
  *
  * @param attemptId gerado pelo App; chave de idempotência, como na Tentativa
  * @param studyTimeMs tempo na Atividade, em milissegundos

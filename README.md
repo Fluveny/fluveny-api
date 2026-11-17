@@ -61,7 +61,7 @@ O conteúdo do curso fica em [`content/`](content/), em JSON, e o formato é o J
 ```text
 content/
   media.json                      # manifesto de mídia: mediaKey → {kind, source, url?}
-  schema/                         # JSON Schema canônico e render-vectors.json
+  schema/                         # JSON Schema canônico, render-vectors.json e countries.json
   units/<unitKey>/
     unit.json                     # unitKey, order, schemaVersion (1), title, stages, usefulExpressions
     stages/<stageKey>.json        # stageKey, title, activities
@@ -84,6 +84,7 @@ Todo texto é uma string ou as três variantes de pronome, sem conjugar nada no 
 - Formatação aceita: `**negrito**` e `[[texto|expressionKey]]`, com um `expressionKey` de `usefulExpressions`. Três ou mais `_` seguidos (`I ___ from Brazil.`) são uma lacuna e ficam como texto.
 - O validador recusa (`INVALID_MARKUP`), e só isto: `**` sem par, negrito vazio (`****`), negrito que cruza o limite de um `[[...]]`, `[[...]]` sem `|`, sem rótulo, sem chave ou com chave inexistente, `[[` ou `]]` soltos, `{` ou `}` sem par, `*` solto (`*x*`), `__` (`__x__`), `~~`, crase, tag HTML (`<b>`) e link markdown (`[x](url)`). Placeholder fora da gramática é `UNKNOWN_PLACEHOLDER`.
 - O `ContentRenderer` (named interface `content :: render`) escolhe a variante (sem escolha do aluno, `they`), troca os placeholders e deixa a formatação como está. Placeholder sem valor fica como está. Os casos de referência ficam em `content/schema/render-vectors.json`, rodados aqui e no App.
+- A lista canônica de países fica em `content/schema/countries.json` (`[{code, name}]`, ISO 3166-1 alfa-2, `name` em inglês, em ordem alfabética de `name`); o App a recebe pelo `api:sync`, e o `CountriesTest` confere a forma. Na pergunta do país do Diálogo (`ask: country`), o App guarda o `name` em inglês do país escolhido, e é ele que o placeholder `{country}` renderiza; `{name}` renderiza o que o aluno digitou. A seleção é `[ASSUMPTION]` até Letras validar (Decisão 1 da 1.13).
 
 ### Mídia
 
@@ -144,7 +145,10 @@ A visão do aluno sai do `StudentViewProjector`, o único projetor: ele percorre
 3. Fixtures em `src/test/resources/content-fixtures/activities/`, com o prefixo exato do Tipo: `<tipo>-activity…`, `<tipo>-student-view…` e `<tipo>-answer…`, com cada campo opcional presente numa e ausente noutra. Nos records, `requireNonNull` nos campos obrigatórios (compact constructor), e número obrigatório como `Integer`.
    - Texto novo debaixo de `oneOf`, `anyOf`, `additionalProperties` ou `prefixItems` faz o `SchemaWalker` falhar o build: as regras de texto não o veriam.
 4. A regra de resposta aceita do Tipo em `ACCEPTED_ANSWER_RULES`, no `ContentValidator`. Sem ela o validador não sobe, e o `ContentValidatorTest` falha.
-5. `./mvnw -B -ntp test`: o `ActivityFidelityTest` falha se schema, `permits`, `@JsonTypeName` e mapping divergirem, ou se propriedades, `required`, tipos e `enum` dos records divergirem do schema.
+   - Tipo expositivo (como o Diálogo, 1.13): sem `$defs.answer`, sem record de Answer e sem regra de resposta aceita. Ele entra em `EXPOSITORY_TYPES` do `ContentValidator`, e o `ActivityFidelityTest` dispensa o Answer. No `Grader`, o ramo lança `400 INVALID_ANSWER`.
+   - Regra que o JSON Schema não expressa (ex. `ask` único no Diálogo) vai em `TYPE_RULES`, no `ContentValidator`.
+5. No `learning`, o Tipo no `LearningActivityTypes`, com `sinceAppVersion` nulo até a tag do App, e as conclusões que ele aceita em `completions` (`COMPLETIONS`; fora delas, `409 COMPLETION_NOT_ALLOWED`).
+6. `./mvnw -B -ntp test`: o `ActivityFidelityTest` falha se schema, `permits`, `@JsonTypeName` e mapping divergirem, ou se propriedades, `required`, tipos e `enum` dos records divergirem do schema.
 
 ## Build e testes
 
@@ -206,6 +210,7 @@ O contrato da API é o OpenAPI 3.1 commitado em [`openapi/openapi.json`](openapi
   Ninguém edita o arquivo nem resolve conflito nele à mão: rebaseie e gere de novo. Rodar o comando sem mudar o código não produz diff.
 - Dentro de `/api/v1`, só mudanças aditivas. O job `Contrato` da CI roda o `oasdiff breaking` entre o arquivo da `main` (em push, o do commit anterior) e o do PR, e falha em quebra.
   - **Permitido:** rota nova, campo novo na resposta, campo opcional novo na requisição, valor novo de `enum` na requisição e remover um campo **opcional** da resposta (o oasdiff 1.38 classifica `response-optional-property-removed` como info). Por isso o App trata todo campo opcional da resposta como opcional de verdade.
+  - **Tipo de Atividade novo** no `oneOf` da resposta (`response-property-one-of-added`) também é permitido: o App que não conhece o Tipo mostra o cartão "Atividade em preparação", e o `sinceAppVersion` de `/api/v1/meta` controla a publicação (AD-11). O `openapi/oasdiff-levels.txt` rebaixa só essa regra para aviso.
   - **Quebra (error no oasdiff, falha a CI):** remover rota, remover ou renomear campo **obrigatório** da resposta, mudar o tipo de um campo, tornar obrigatório um campo da requisição e valor novo de `enum` na resposta (`response-property-enum-value-added`; o App instalado não conhece o valor).
 
 ## Autorização

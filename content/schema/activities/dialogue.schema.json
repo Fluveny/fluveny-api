@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/activities/dialogue.schema.json",
+  "title": "Diálogo",
+  "description": "Tipo Diálogo (FR-13), expositivo: falas em sequência, e uma fala pode fazer a pergunta do nome ou do país do aluno (ask). Sem campo secreto, sem xp e sem Answer: a visão do aluno é a Atividade inteira, e a conclusão é VIEWED. Cada valor de ask aparece no máximo uma vez por Atividade (ContentValidator).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activityKey", "type", "title", "lines"],
+  "properties": {
+    "activityKey": { "$ref": "../key.schema.json" },
+    "type": { "const": "dialogue" },
+    "title": { "$ref": "../text.schema.json" },
+    "lines": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/line" }
+    }
+  },
+  "$defs": {
+    "line": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lineKey", "speaker", "text"],
+      "properties": {
+        "lineKey": { "$ref": "../key.schema.json" },
+        "speaker": {
+          "description": "O nome exibido de quem fala (ex. Alex).",
+          "type": "string",
+          "minLength": 1
+        },
+        "text": { "$ref": "../text.schema.json" },
+        "ask": {
+          "description": "A pergunta que esta fala faz ao aluno: o nome ou o país. A resposta fica no aparelho e nunca chega à API. {name} renderiza o que o aluno digitou; {country} renderiza o name em inglês do país escolhido em countries.json, que o App guarda.",
+          "enum": ["name", "country"]
+        }
+      }
+    }
+  }
+}

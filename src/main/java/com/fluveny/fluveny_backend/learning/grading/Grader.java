@@ -7,6 +7,7 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceAnswer;
 import com.fluveny.fluveny_backend.content.activity.ChoiceAnswerItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
+import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +33,8 @@ public final class Grader {
      *
      * @param studentVars as Variáveis do Aluno; a Escolha não usa
      * @throws ApiException {@code 400 INVALID_ANSWER} se a resposta é de outro Tipo, não cobre
-     *     todos os itens, repete item ou usa chave que não existe
+     *     todos os itens, repete item ou usa chave que não existe, ou se a Atividade é de Tipo
+     *     expositivo (Diálogo)
      */
     public static GradeResult grade(Activity activity, Answer answer, StudentVars studentVars) {
         Objects.requireNonNull(activity, "activity");
@@ -42,6 +44,9 @@ public final class Grader {
         }
         return switch (activity) {
             case ChoiceActivity choice -> choice(choice, (ChoiceAnswer) answer);
+            // Expositivo (história 1.13): não tem Answer nem correção, só conclusão.
+            case DialogueActivity dialogue ->
+                    throw invalid("O Diálogo não tem resposta: conclua pela rota de conclusão.");
         };
     }
 

@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.learning.visitor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -60,7 +61,7 @@ import tools.jackson.databind.node.ObjectNode;
  * Mongo: as coleções de {@code content} e {@code visitor_attempts} ficam em memória, e o conteúdo
  * entra pelo mesmo {@link PublishUnitVersion} da rota admin. Cada teste usa um IP próprio, para o
  * limite por IP de um não vazar no outro. A fixture {@code unit-1} tem {@code s1-greetings} (2
- * itens, xp 10) no Estágio 1 e {@code s2-flags} no Estágio 2.
+ * itens, xp 10) e o Diálogo {@code s1-hi-alex} no Estágio 1 e {@code s2-flags} no Estágio 2.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -77,6 +78,8 @@ class VisitorAttemptsTest {
     private static final String REVEAL = ATTEMPTS + "/reveal";
 
     private static final String COMPLETIONS = "/api/v1/visitor/completions";
+
+    private static final String DIALOGUE = "s1-hi-alex";
 
     /** Um IP por teste, sem colisão no contexto compartilhado. */
     private static final AtomicInteger IPS = new AtomicInteger();
@@ -449,16 +452,14 @@ class VisitorAttemptsTest {
     }
 
     @Test
-    void theFirstAttemptIdReusedOnCompletionsHasNoReceipt() throws Exception {
+    void aCompletionOfAChoiceIsNotAllowedEvenAfterAnAttempt() throws Exception {
         ObjectNode first = halfRight();
         send(ATTEMPTS, first).andExpect(jsonPath("$.data.receipt").exists());
         ObjectNode completion =
                 completion("s1-greetings", "SKIPPED")
                         .put("attemptId", first.get("attemptId").asString());
-        send(COMPLETIONS, completion)
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.outcome").value("SKIPPED"))
-                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        expectProblem(send(COMPLETIONS, completion), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).hasSize(1);
     }
 
     @Test
@@ -520,29 +521,78 @@ class VisitorAttemptsTest {
     }
 
     @Test
-    void aSkippedCompletionCarriesAReceiptWithoutXp() throws Exception {
+    void aViewedDialogueCarriesAReceiptWithoutXp() throws Exception {
         JsonNode body =
                 json(
-                        send(COMPLETIONS, completion("s1-greetings", "SKIPPED"))
+                        send(COMPLETIONS, completion(DIALOGUE, "VIEWED"))
                                 .andExpect(status().isOk())
-                                .andExpect(jsonPath("$.data.outcome").value("SKIPPED"))
+                                .andExpect(jsonPath("$.data.outcome").value("VIEWED"))
                                 .andExpect(jsonPath("$.data.xpAwarded").value(0)));
         ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
-        assertThat(payload.outcome()).isEqualTo(Outcome.SKIPPED);
+        assertThat(payload.activityKey()).isEqualTo(DIALOGUE);
+        assertThat(payload.outcome()).isEqualTo(Outcome.VIEWED);
         assertThat(payload.resultPct()).isZero();
         assertThat(payload.xpAwarded()).isZero();
+        assertThat(this.content.attempts)
+                .containsKey(InMemoryContent.key(UUID.fromString(this.deviceId), DIALOGUE));
+    }
 
-        // Depois da conclusão, a Tentativa é corrigida, mas sem recibo.
-        send(ATTEMPTS, allRight()).andExpect(jsonPath("$.data.receipt").doesNotExist());
+    // História 1.13: a conclusão por Tipo e a Tentativa do Diálogo.
+
+    @Test
+    void theStageServesTheDialogueWithItsLines() throws Exception {
+        this.mvc
+                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.activities[1].activityKey").value(DIALOGUE))
+                .andExpect(jsonPath("$.data.activities[1].type").value("dialogue"))
+                .andExpect(jsonPath("$.data.activities[1].lines.length()").value(4))
+                .andExpect(jsonPath("$.data.activities[1].lines[0].speaker").value("Alex"))
+                .andExpect(jsonPath("$.data.activities[1].lines[0].ask").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[1].lines[1].ask").value("name"))
+                .andExpect(jsonPath("$.data.activities[1].lines[2].ask").value("country"))
+                .andExpect(jsonPath("$.data.activities[1].lines[3].text.they").exists())
+                .andExpect(jsonPath("$.data.activities[1].xp").doesNotExist());
+    }
+
+    @Test
+    void skippingADialogueIsNotAllowedAndNotStored() throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion(DIALOGUE, "SKIPPED")), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"VIEWED", "SKIPPED"})
+    void completingAChoiceIsNotAllowedAndNotStored(String outcome) throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion("s1-greetings", outcome)),
+                409,
+                "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void anAttemptAtADialogueIsInvalidAndNotStored() throws Exception {
+        ObjectNode attempt = allRight().put("activityKey", DIALOGUE).put("type", "dialogue");
+        expectProblem(send(ATTEMPTS, attempt), 400, "INVALID_ANSWER");
+        expectProblem(send(REVEAL, attempt), 400, "INVALID_ANSWER");
+        ObjectNode withoutDevice = attempt.deepCopy();
+        withoutDevice.remove("deviceId");
+        expectProblem(send(ATTEMPTS, withoutDevice), 400, "INVALID_ANSWER");
+        // Com o type da Escolha, o Tipo difere do da Atividade.
+        expectProblem(
+                send(ATTEMPTS, allRight().put("activityKey", DIALOGUE)), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
     }
 
     @Test
     void aViewedCompletionIsIdempotentByAttemptId() throws Exception {
-        ObjectNode completion = completion("s1-greetings", "VIEWED");
+        ObjectNode completion = completion(DIALOGUE, "VIEWED");
         String first = json(send(COMPLETIONS, completion).andExpect(status().isOk())).toString();
         assertThat(first).contains("\"receipt\"");
         assertThat(json(send(COMPLETIONS, completion)).toString()).isEqualTo(first);
-        send(COMPLETIONS, completion("s1-greetings", "VIEWED"))
+        send(COMPLETIONS, completion(DIALOGUE, "VIEWED"))
                 .andExpect(jsonPath("$.data.outcome").value("VIEWED"))
                 .andExpect(jsonPath("$.data.receipt").doesNotExist());
     }
@@ -573,7 +623,7 @@ class VisitorAttemptsTest {
                 "versionId=sha256:abc"
             })
     void aMalformedCompletionIs400(String change) throws Exception {
-        ObjectNode body = completion("s1-greetings", "VIEWED");
+        ObjectNode body = completion(DIALOGUE, "VIEWED");
         String[] parts = change.split("=", 2);
         if (parts[1].isEmpty()) {
             body.remove(parts[0]);
@@ -621,11 +671,12 @@ class VisitorAttemptsTest {
     }
 
     @Test
-    void revealAfterACompletionIsAllowed() throws Exception {
-        send(COMPLETIONS, completion("s1-greetings", "SKIPPED")).andExpect(status().isOk());
-        send(REVEAL, halfRight())
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    void aRefusedCompletionDoesNotUnlockReveal() throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion("s1-greetings", "SKIPPED")),
+                409,
+                "COMPLETION_NOT_ALLOWED");
+        expectProblem(send(REVEAL, halfRight()), 409, "ATTEMPT_REQUIRED");
     }
 
     @Test

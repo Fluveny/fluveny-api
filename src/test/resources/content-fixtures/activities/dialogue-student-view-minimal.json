@@ -1,0 +1,12 @@
+{
+  "activityKey": "s1-hello",
+  "type": "dialogue",
+  "title": "Hello",
+  "lines": [
+    {
+      "lineKey": "hello",
+      "speaker": "Alex",
+      "text": "Hello!"
+    }
+  ]
+}
