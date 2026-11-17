@@ -1,0 +1,26 @@
+{
+  "activityKey": "s2-match",
+  "type": "match",
+  "title": "Match",
+  "items": [
+    {
+      "itemKey": "a-line",
+      "line": "A?"
+    },
+    {
+      "itemKey": "b-line",
+      "line": "B?"
+    }
+  ],
+  "responses": [
+    {
+      "responseKey": "a",
+      "text": "A."
+    },
+    {
+      "responseKey": "b",
+      "text": "B."
+    }
+  ],
+  "xp": 5
+}

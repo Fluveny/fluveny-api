@@ -29,8 +29,8 @@ public enum ContentRule {
     DUPLICATE_KEY,
 
     /**
-     * Atividade avaliada sem resposta aceita (na Escolha, {@code correctOptionKey} fora das
-     * opções).
+     * Atividade avaliada sem resposta aceita (na Escolha, {@code correctOptionKey} fora das opções;
+     * no Associar, {@code correctResponseKey} fora de {@code responses} ou repetido entre itens).
      */
     MISSING_ACCEPTED_ANSWER,
 

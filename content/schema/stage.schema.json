@@ -21,7 +21,7 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["choice", "dialogue", "cards", "expression", "speech"] }
+        "type": { "enum": ["choice", "dialogue", "cards", "expression", "speech", "match"] }
       },
       "allOf": [
         {
@@ -43,6 +43,10 @@
         {
           "if": { "properties": { "type": { "const": "speech" } }, "required": ["type"] },
           "then": { "$ref": "activities/speech.schema.json" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "match" } }, "required": ["type"] },
+          "then": { "$ref": "activities/match.schema.json" }
         }
       ]
     }

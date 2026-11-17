@@ -64,7 +64,12 @@ class ContentLocalSeederIT {
                 .andExpect(jsonPath("$.data.activities[3].speaker").value("Alex"))
                 // História 1.15: a Fala, sem as alternativas.
                 .andExpect(jsonPath("$.data.activities[4].type").value("speech"))
-                .andExpect(jsonPath("$.data.activities[4].alternatives").doesNotExist());
+                .andExpect(jsonPath("$.data.activities[4].alternatives").doesNotExist())
+                // História 1.16: o Associar, sem o gabarito.
+                .andExpect(jsonPath("$.data.activities[5].type").value("match"))
+                .andExpect(
+                        jsonPath("$.data.activities[5].items[0].correctResponseKey")
+                                .doesNotExist());
 
         this.mvc.perform(post("/local/reset")).andExpect(status().isOk());
         this.mvc

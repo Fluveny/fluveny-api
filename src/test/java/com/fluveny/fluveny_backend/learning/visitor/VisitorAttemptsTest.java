@@ -981,6 +981,196 @@ class VisitorAttemptsTest {
         assertThat(this.content.attempts).isEmpty();
     }
 
+    // História 1.16: o Associar.
+
+    private static final String MATCH = "s1-speech-bubbles";
+
+    private static final String[] MATCH_RIGHT = {
+        "s1-speech-bubbles-hi", "hi-alex",
+        "s1-speech-bubbles-nice", "nice-too",
+        "s1-speech-bubbles-from", "from-country"
+    };
+
+    private ObjectNode match(String... pairs) {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("attemptId", UUID.randomUUID().toString());
+        body.put("deviceId", this.deviceId);
+        body.put("versionId", this.versionId);
+        body.put("activityKey", MATCH);
+        body.put("type", "match");
+        ObjectNode answer = body.putObject("answer");
+        answer.put("type", "match");
+        ArrayNode items = answer.putArray("items");
+        for (int i = 0; i < pairs.length; i += 2) {
+            items.addObject().put("itemKey", pairs[i]).put("responseKey", pairs[i + 1]);
+        }
+        body.put("studyTimeMs", 2500);
+        return body;
+    }
+
+    @Test
+    void theStageServesTheMatchWithoutTheAnswerKey() throws Exception {
+        JsonNode body =
+                json(
+                        this.mvc
+                                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                                .andExpect(status().isOk())
+                                .andExpect(
+                                        jsonPath("$.data.activities[5].activityKey").value(MATCH))
+                                .andExpect(jsonPath("$.data.activities[5].type").value("match"))
+                                .andExpect(jsonPath("$.data.activities[5].items.length()").value(3))
+                                .andExpect(
+                                        jsonPath("$.data.activities[5].items[0].line")
+                                                .value("Hi! I'm Alex. What's your name?"))
+                                .andExpect(
+                                        jsonPath("$.data.activities[5].responses[*].responseKey")
+                                                .value(
+                                                        org.hamcrest.Matchers.contains(
+                                                                "hi-alex",
+                                                                "nice-too",
+                                                                "from-country",
+                                                                "goodbye")))
+                                .andExpect(
+                                        jsonPath("$.data.activities[5].responses[0].text")
+                                                .value("Hi Alex! I'm {name}."))
+                                .andExpect(jsonPath("$.data.activities[5].xp").value(9)));
+        assertThat(keys(body.at("/data/activities/5")))
+                .doesNotContain("correctResponseKey", "justification");
+    }
+
+    @Test
+    void aMatchHitCarriesTheReceiptTheExpectedPairsAndTheJustifications() throws Exception {
+        JsonNode body =
+                json(
+                        send(ATTEMPTS, match(MATCH_RIGHT))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("GRADED"))
+                                .andExpect(jsonPath("$.data.resultPct").value(100))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(9))
+                                .andExpect(jsonPath("$.data.items.length()").value(3))
+                                .andExpect(jsonPath("$.data.items[0].correct").value(true))
+                                .andExpect(
+                                        jsonPath("$.data.items[0].justification")
+                                                .value("Respondemos ao **Hi** com o nosso nome."))
+                                .andExpect(jsonPath("$.data.items[1].justification").doesNotExist())
+                                .andExpect(jsonPath("$.data.expected.type").value("match"))
+                                .andExpect(
+                                        jsonPath("$.data.expected.items[2].itemKey")
+                                                .value("s1-speech-bubbles-from"))
+                                .andExpect(
+                                        jsonPath("$.data.expected.items[2].responseKey")
+                                                .value("from-country")));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(MATCH);
+        assertThat(payload.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(payload.resultPct()).isEqualTo(100);
+        assertThat(payload.xpAwarded()).isEqualTo(9);
+        assertThat(this.content.attempts).hasSize(1);
+    }
+
+    /** Dois de três, com o distrator no terceiro: 67%, XP proporcional e nada do gabarito. */
+    @Test
+    void aPartialMatchHasProportionalXpAndNoExpected() throws Exception {
+        JsonNode body =
+                json(
+                        send(
+                                        ATTEMPTS,
+                                        match(
+                                                "s1-speech-bubbles-hi", "hi-alex",
+                                                "s1-speech-bubbles-nice", "nice-too",
+                                                "s1-speech-bubbles-from", "goodbye"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.resultPct").value(67))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(6))
+                                .andExpect(jsonPath("$.data.items[0].correct").value(true))
+                                .andExpect(jsonPath("$.data.items[1].correct").value(true))
+                                .andExpect(jsonPath("$.data.items[2].correct").value(false))
+                                .andExpect(jsonPath("$.data.receipt").exists()));
+        assertThat(keys(body)).doesNotContain("expected", "justification", "responseKey");
+        assertThat(body.toString()).doesNotContain("from-country");
+    }
+
+    /** "Ver resposta" depois de um Erro: os pares certos e as justificativas, sem XP. */
+    @Test
+    void revealAfterAMatchMissDisclosesTheCorrectPairsWithoutXp() throws Exception {
+        ObjectNode attempt =
+                match(
+                        "s1-speech-bubbles-hi", "goodbye",
+                        "s1-speech-bubbles-nice", "nice-too",
+                        "s1-speech-bubbles-from", "from-country");
+        send(ATTEMPTS, attempt)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(67))
+                .andExpect(jsonPath("$.data.expected").doesNotExist());
+        send(REVEAL, attempt)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.outcome").value("GRADED"))
+                .andExpect(jsonPath("$.data.resultPct").value(67))
+                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                .andExpect(jsonPath("$.data.items[0].correct").value(false))
+                .andExpect(
+                        jsonPath("$.data.items[0].justification")
+                                .value("Respondemos ao **Hi** com o nosso nome."))
+                .andExpect(jsonPath("$.data.expected.type").value("match"))
+                .andExpect(jsonPath("$.data.expected.items.length()").value(3))
+                .andExpect(
+                        jsonPath("$.data.expected.items[0].itemKey").value("s1-speech-bubbles-hi"))
+                .andExpect(jsonPath("$.data.expected.items[0].responseKey").value("hi-alex"))
+                .andExpect(jsonPath("$.data.expected.items[1].responseKey").value("nice-too"))
+                .andExpect(jsonPath("$.data.expected.items[2].responseKey").value("from-country"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "missing-item",
+                "repeated-item",
+                "repeated-response",
+                "unknown-item",
+                "unknown-response"
+            })
+    void anInvalidMatchAnswerIs400AndNotStored(String change) throws Exception {
+        ObjectNode body =
+                switch (change) {
+                    case "missing-item" ->
+                            match(
+                                    "s1-speech-bubbles-hi", "hi-alex",
+                                    "s1-speech-bubbles-nice", "nice-too");
+                    case "repeated-item" ->
+                            match(
+                                    "s1-speech-bubbles-hi", "hi-alex",
+                                    "s1-speech-bubbles-hi", "goodbye",
+                                    "s1-speech-bubbles-nice", "nice-too",
+                                    "s1-speech-bubbles-from", "from-country");
+                    case "repeated-response" ->
+                            match(
+                                    "s1-speech-bubbles-hi", "hi-alex",
+                                    "s1-speech-bubbles-nice", "hi-alex",
+                                    "s1-speech-bubbles-from", "from-country");
+                    case "unknown-item" ->
+                            match(
+                                    "s1-speech-bubbles-hi", "hi-alex",
+                                    "s1-speech-bubbles-nice", "nice-too",
+                                    "s1-nao-existe", "from-country");
+                    case "unknown-response" ->
+                            match(
+                                    "s1-speech-bubbles-hi", "hi-alex",
+                                    "s1-speech-bubbles-nice", "nice-too",
+                                    "s1-speech-bubbles-from", "nao-existe");
+                    default -> throw new IllegalArgumentException(change);
+                };
+        expectProblem(send(ATTEMPTS, body), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"SKIPPED", "VIEWED"})
+    void aMatchCannotBeCompletedWithoutAnAttempt(String outcome) throws Exception {
+        expectProblem(send(COMPLETIONS, completion(MATCH, outcome)), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
     private static java.util.Set<String> keys(JsonNode node) {
         java.util.Set<String> keys = new java.util.TreeSet<>();
         collect(node, keys);
