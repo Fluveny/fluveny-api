@@ -79,6 +79,7 @@ class ContentPublicationIT {
         this.indexes.ensure();
         Types.SINCE.set("0.0.0");
         Types.DIALOGUE_SINCE.set("0.0.0");
+        Types.EXPRESSIONS_SINCE.set("0.0.0");
     }
 
     static ObjectNode validBundle() throws Exception {
@@ -242,6 +243,25 @@ class ContentPublicationIT {
         assertThat(versions()).isZero();
     }
 
+    /**
+     * História 1.14: os Cartões de expressões e a Expressão Útil destacada com o {@code
+     * sinceAppVersion} nulo do source real do {@code learning} não são publicados fora do perfil
+     * local.
+     */
+    @Test
+    void cardsAndExpressionWithoutSinceAppVersionAre422AndNothingIsStored() throws Exception {
+        Types.EXPRESSIONS_SINCE.set(null);
+        publish(UNIT, validBundle())
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
+                .andExpect(jsonPath("$.errors.length()").value(2))
+                .andExpect(jsonPath("$.errors[0].pointer").value("/activities/2/type"))
+                .andExpect(jsonPath("$.errors[0].key").value("s1-greeting-cards"))
+                .andExpect(jsonPath("$.errors[1].pointer").value("/activities/3/type"))
+                .andExpect(jsonPath("$.errors[1].key").value("s1-nice-to-meet-you"));
+        assertThat(versions()).isZero();
+    }
+
     @Test
     void theUnitKeyOfThePathMustMatchTheBundle() throws Exception {
         publish("/api/v1/admin/content/units/unit-9/versions", validBundle())
@@ -335,7 +355,7 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.data.title").value("Unit 1: Hello!"))
                 .andExpect(jsonPath("$.data.stages[0].stageKey").value("s1-meet-alex"))
                 .andExpect(jsonPath("$.data.stages[0].title").value("Meet Alex"))
-                .andExpect(jsonPath("$.data.stages[0].activityCount").value(2))
+                .andExpect(jsonPath("$.data.stages[0].activityCount").value(4))
                 .andExpect(jsonPath("$.data.stages[1].stageKey").value("s2-where-from"))
                 .andExpect(
                         jsonPath("$.data.usefulExpressions[0].expressionKey")
@@ -355,7 +375,22 @@ class ContentPublicationIT {
                         jsonPath("$.data.activities[0].items[0].correctOptionKey").doesNotExist())
                 .andExpect(jsonPath("$.data.activities[0].items[0].justification").doesNotExist())
                 .andExpect(jsonPath("$.data.activities[1].type").value("dialogue"))
-                .andExpect(jsonPath("$.data.activities[1].lines[1].ask").value("name"));
+                .andExpect(jsonPath("$.data.activities[1].lines[1].ask").value("name"))
+                // História 1.14: iguais ao conteúdo, com o [[...]] cru.
+                .andExpect(jsonPath("$.data.activities[2].type").value("cards"))
+                .andExpect(jsonPath("$.data.activities[2].blocks[0].emoji").value("👋"))
+                .andExpect(
+                        jsonPath("$.data.activities[2].blocks[0].items[1].text")
+                                .value("[[Nice to meet you|nice-to-meet-you]], {name}!"))
+                .andExpect(jsonPath("$.data.activities[2].blocks[1].emoji").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[3].type").value("expression"))
+                .andExpect(jsonPath("$.data.activities[3].speaker").value("Alex"))
+                .andExpect(
+                        jsonPath("$.data.activities[3].sentence.they")
+                                .value(
+                                        "Hi, {name}! They are Alex. [[Nice to meet"
+                                                + " you|nice-to-meet-you]]! They [[are"
+                                                + " from|be-from]] **Canada**."));
         this.mvc
                 .perform(get("/api/v1/units/unit-1/stages/s2-where-from"))
                 .andExpect(status().isUnauthorized())
@@ -440,7 +475,7 @@ class ContentPublicationIT {
         }
         assertThat(scanned).contains("activities", "items", "options", "mediaKey");
         JsonNode stage = json(this.mvc.perform(get("/api/v1/units/unit-1/stages/s1-meet-alex")));
-        assertThat(stage.at("/data/activities").size()).isEqualTo(3);
+        assertThat(stage.at("/data/activities").size()).isEqualTo(5);
     }
 
     static Set<String> keys(JsonNode node, Set<String> keys) {
@@ -456,9 +491,10 @@ class ContentPublicationIT {
     }
 
     /**
-     * Os Tipos {@code choice} e {@code dialogue} com o {@code sinceAppVersion} que cada teste
-     * quiser. Vêm antes do source real do {@code learning} (nulo): na publicação, o primeiro source
-     * vence. Com {@code DIALOGUE_SINCE} nulo, o {@code dialogue} fica de fora e vale o source real.
+     * Os Tipos {@code choice}, {@code dialogue}, {@code cards} e {@code expression} com o {@code
+     * sinceAppVersion} que cada teste quiser. Vêm antes do source real do {@code learning} (nulo):
+     * na publicação, o primeiro source vence. Com {@code DIALOGUE_SINCE} ou {@code
+     * EXPRESSIONS_SINCE} nulo, o Tipo fica de fora e vale o source real.
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {
@@ -467,14 +503,21 @@ class ContentPublicationIT {
 
         static final AtomicReference<String> DIALOGUE_SINCE = new AtomicReference<>("0.0.0");
 
+        /** O dos Cartões de expressões e da Expressão Útil destacada (história 1.14). */
+        static final AtomicReference<String> EXPRESSIONS_SINCE = new AtomicReference<>("0.0.0");
+
         @Bean
         @Order(Ordered.HIGHEST_PRECEDENCE)
-        ActivityTypeSource testChoiceAndDialogueTypes() {
+        ActivityTypeSource testTypes() {
             return () -> {
                 List<ActivityTypeSupport> types = new ArrayList<>();
                 types.add(new ActivityTypeSupport("choice", SINCE.get()));
                 if (DIALOGUE_SINCE.get() != null) {
                     types.add(new ActivityTypeSupport("dialogue", DIALOGUE_SINCE.get()));
+                }
+                if (EXPRESSIONS_SINCE.get() != null) {
+                    types.add(new ActivityTypeSupport("cards", EXPRESSIONS_SINCE.get()));
+                    types.add(new ActivityTypeSupport("expression", EXPRESSIONS_SINCE.get()));
                 }
                 return types;
             };

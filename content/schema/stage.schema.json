@@ -21,7 +21,7 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["choice", "dialogue"] }
+        "type": { "enum": ["choice", "dialogue", "cards", "expression"] }
       },
       "allOf": [
         {
@@ -31,6 +31,14 @@
         {
           "if": { "properties": { "type": { "const": "dialogue" } }, "required": ["type"] },
           "then": { "$ref": "activities/dialogue.schema.json" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "cards" } }, "required": ["type"] },
+          "then": { "$ref": "activities/cards.schema.json" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "expression" } }, "required": ["type"] },
+          "then": { "$ref": "activities/expression.schema.json" }
         }
       ]
     }

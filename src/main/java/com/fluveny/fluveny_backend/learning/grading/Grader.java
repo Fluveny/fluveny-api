@@ -2,12 +2,14 @@ package com.fluveny.fluveny_backend.learning.grading;
 
 import com.fluveny.fluveny_backend.content.activity.Activity;
 import com.fluveny.fluveny_backend.content.activity.Answer;
+import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceAnswer;
 import com.fluveny.fluveny_backend.content.activity.ChoiceAnswerItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceItem;
 import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
+import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,7 +36,7 @@ public final class Grader {
      * @param studentVars as Variáveis do Aluno; a Escolha não usa
      * @throws ApiException {@code 400 INVALID_ANSWER} se a resposta é de outro Tipo, não cobre
      *     todos os itens, repete item ou usa chave que não existe, ou se a Atividade é de Tipo
-     *     expositivo (Diálogo)
+     *     expositivo (Diálogo, Cartões de expressões, Expressão Útil destacada)
      */
     public static GradeResult grade(Activity activity, Answer answer, StudentVars studentVars) {
         Objects.requireNonNull(activity, "activity");
@@ -47,6 +49,15 @@ public final class Grader {
             // Expositivo (história 1.13): não tem Answer nem correção, só conclusão.
             case DialogueActivity dialogue ->
                     throw invalid("O Diálogo não tem resposta: conclua pela rota de conclusão.");
+            // Expositivos (história 1.14).
+            case CardsActivity cards ->
+                    throw invalid(
+                            "Os Cartões de expressões não têm resposta: conclua pela rota de"
+                                    + " conclusão.");
+            case ExpressionActivity expression ->
+                    throw invalid(
+                            "A Expressão Útil destacada não tem resposta: conclua pela rota de"
+                                    + " conclusão.");
         };
     }
 

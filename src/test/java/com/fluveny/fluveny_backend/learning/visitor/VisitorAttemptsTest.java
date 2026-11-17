@@ -586,6 +586,77 @@ class VisitorAttemptsTest {
         assertThat(this.content.attempts).isEmpty();
     }
 
+    // História 1.14: os Cartões de expressões e a Expressão Útil destacada.
+
+    private static final String CARDS = "s1-greeting-cards";
+
+    private static final String EXPRESSION = "s1-nice-to-meet-you";
+
+    @Test
+    void theStageServesCardsAndExpressionAsTheContent() throws Exception {
+        this.mvc
+                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.activities[2].activityKey").value(CARDS))
+                .andExpect(jsonPath("$.data.activities[2].type").value("cards"))
+                .andExpect(jsonPath("$.data.activities[2].blocks.length()").value(2))
+                .andExpect(jsonPath("$.data.activities[2].blocks[0].blockKey").value("say-hello"))
+                .andExpect(jsonPath("$.data.activities[2].blocks[0].emoji").value("👋"))
+                .andExpect(
+                        jsonPath("$.data.activities[2].blocks[0].items[1].text")
+                                .value("[[Nice to meet you|nice-to-meet-you]], {name}!"))
+                .andExpect(jsonPath("$.data.activities[2].blocks[1].emoji").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[2].blocks[1].title.she").exists())
+                .andExpect(jsonPath("$.data.activities[2].xp").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[3].activityKey").value(EXPRESSION))
+                .andExpect(jsonPath("$.data.activities[3].type").value("expression"))
+                .andExpect(jsonPath("$.data.activities[3].speaker").value("Alex"))
+                .andExpect(
+                        jsonPath("$.data.activities[3].sentence.he")
+                                .value(
+                                        "Hi, {name}! He is Alex. [[Nice to meet"
+                                                + " you|nice-to-meet-you]]! He [[is"
+                                                + " from|be-from]] **Canada**."))
+                .andExpect(jsonPath("$.data.activities[3].xp").doesNotExist());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CARDS, EXPRESSION})
+    void viewingCardsOrExpressionCarriesAReceiptWithoutXp(String activityKey) throws Exception {
+        JsonNode body =
+                json(
+                        send(COMPLETIONS, completion(activityKey, "VIEWED"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("VIEWED"))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0)));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(activityKey);
+        assertThat(payload.outcome()).isEqualTo(Outcome.VIEWED);
+        assertThat(payload.xpAwarded()).isZero();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CARDS, EXPRESSION})
+    void skippingCardsOrExpressionIsNotAllowedAndNotStored(String activityKey) throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion(activityKey, "SKIPPED")),
+                409,
+                "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {CARDS + "=cards", EXPRESSION + "=expression"})
+    void anAttemptAtCardsOrExpressionIsInvalidAndNotStored(String target) throws Exception {
+        String[] parts = target.split("=", 2);
+        ObjectNode attempt = allRight().put("activityKey", parts[0]).put("type", parts[1]);
+        expectProblem(send(ATTEMPTS, attempt), 400, "INVALID_ANSWER");
+        expectProblem(send(REVEAL, attempt), 400, "INVALID_ANSWER");
+        expectProblem(
+                send(ATTEMPTS, allRight().put("activityKey", parts[0])), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
     @Test
     void aViewedCompletionIsIdempotentByAttemptId() throws Exception {
         ObjectNode completion = completion(DIALOGUE, "VIEWED");

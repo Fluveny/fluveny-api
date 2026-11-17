@@ -91,6 +91,57 @@
           }
         }
       ]
+    },
+    {
+      "activityKey": "s1-greeting-cards",
+      "type": "cards",
+      "title": "Greetings",
+      "blocks": [
+        {
+          "blockKey": "say-hello",
+          "title": "Say hello",
+          "emoji": "👋",
+          "items": [
+            {
+              "itemKey": "s1-greeting-cards-hi",
+              "text": "Hi!"
+            },
+            {
+              "itemKey": "s1-greeting-cards-nice",
+              "text": "[[Nice to meet you|nice-to-meet-you]], {name}!"
+            }
+          ]
+        },
+        {
+          "blockKey": "say-where",
+          "title": {
+            "he": "Where is he from?",
+            "she": "Where is she from?",
+            "they": "Where are they from?"
+          },
+          "items": [
+            {
+              "itemKey": "s1-greeting-cards-from",
+              "text": {
+                "he": "He [[is from|be-from]] **Canada**.",
+                "she": "She [[is from|be-from]] **Canada**.",
+                "they": "They [[are from|be-from]] **Canada**."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "activityKey": "s1-nice-to-meet-you",
+      "type": "expression",
+      "title": "Useful expression",
+      "speaker": "Alex",
+      "sentence": {
+        "he": "Hi, {name}! He is Alex. [[Nice to meet you|nice-to-meet-you]]! He [[is from|be-from]] **Canada**.",
+        "she": "Hi, {name}! She is Alex. [[Nice to meet you|nice-to-meet-you]]! She [[is from|be-from]] **Canada**.",
+        "they": "Hi, {name}! They are Alex. [[Nice to meet you|nice-to-meet-you]]! They [[are from|be-from]] **Canada**."
+      }
     }
   ]
 }

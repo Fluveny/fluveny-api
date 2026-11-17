@@ -54,8 +54,9 @@ class VisitorAttemptController {
             description =
                     "Conclui uma Atividade sem correção, sem XP. receipt só volta na primeira"
                             + " conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a"
-                            + " sua conclusão: hoje só o dialogue, com VIEWED; SKIPPED fica"
-                            + " reservado a um Tipo futuro. Fora dela, 409 COMPLETION_NOT_ALLOWED.")
+                            + " sua conclusão: hoje os expositivos dialogue, cards e expression,"
+                            + " com VIEWED; SKIPPED fica reservado a um Tipo futuro. Fora dela, 409"
+                            + " COMPLETION_NOT_ALLOWED.")
     @PostMapping("/completions")
     ApiResponse<CompletionResult> complete(@Valid @RequestBody Completion completion) {
         return ApiResponse.of(this.attempts.complete(completion));

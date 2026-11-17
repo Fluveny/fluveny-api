@@ -40,6 +40,12 @@ public enum ContentRule {
      */
     DUPLICATE_ASK,
 
+    /**
+     * Frase da Expressão Útil destacada sem nenhum termo {@code [[texto|expressionKey]]} (história
+     * 1.14). Com variantes de pronome, vale para cada uma.
+     */
+    MISSING_EXPRESSION_TERM,
+
     /** {@code mediaKey} fora do manifesto {@code content/media.json}. */
     MEDIA_NOT_FOUND,
 
