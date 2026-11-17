@@ -153,6 +153,50 @@
         "Hello Alex, my name is {name}."
       ],
       "xp": 10
+    },
+    {
+      "activityKey": "s1-speech-bubbles",
+      "type": "match",
+      "title": "Match the Speech Bubbles",
+      "prompt": "Ligue cada fala do Alex à sua resposta.",
+      "items": [
+        {
+          "itemKey": "s1-speech-bubbles-hi",
+          "line": "Hi! I'm Alex. What's your name?",
+          "correctResponseKey": "hi-alex",
+          "justification": "Respondemos ao **Hi** com o nosso nome."
+        },
+        {
+          "itemKey": "s1-speech-bubbles-nice",
+          "line": "[[Nice to meet you|nice-to-meet-you]]!",
+          "correctResponseKey": "nice-too"
+        },
+        {
+          "itemKey": "s1-speech-bubbles-from",
+          "line": "Where are you from?",
+          "correctResponseKey": "from-country",
+          "justification": "Para dizer de onde você é, use **I am from**."
+        }
+      ],
+      "responses": [
+        {
+          "responseKey": "hi-alex",
+          "text": "Hi Alex! I'm {name}."
+        },
+        {
+          "responseKey": "nice-too",
+          "text": "**Nice to meet you** too!"
+        },
+        {
+          "responseKey": "from-country",
+          "text": "I [[am from|be-from]] {country}."
+        },
+        {
+          "responseKey": "goodbye",
+          "text": "Goodbye!"
+        }
+      ],
+      "xp": 9
     }
   ]
 }

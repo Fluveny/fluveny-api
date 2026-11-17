@@ -158,9 +158,10 @@ class StudentRoutesOpenApiTest {
                                 .andReturn()
                                 .getResponse()
                                 .getContentAsString(StandardCharsets.UTF_8));
-        // História 1.15: as alternativas da Fala ficam na SpeechActivity.
+        // História 1.15: as alternativas da Fala ficam na SpeechActivity. História 1.16: o
+        // gabarito do Associar fica no MatchItem.
         Set<String> full = new TreeSet<>();
-        for (String name : Set.of("ChoiceItem", "SpeechActivity")) {
+        for (String name : Set.of("ChoiceItem", "SpeechActivity", "MatchItem")) {
             full.addAll(api.at("/components/schemas/" + name + "/properties").propertyNames());
         }
         assertThat(full).containsAll(secretNames());
@@ -168,5 +169,9 @@ class StudentRoutesOpenApiTest {
                         api.at("/components/schemas/SpeechActivityStudentView/properties")
                                 .has("alternatives"))
                 .isFalse();
+        assertThat(api.at("/components/schemas/MatchItem/properties").propertyNames())
+                .contains("correctResponseKey", "justification");
+        assertThat(api.at("/components/schemas/MatchItemStudentView/properties").propertyNames())
+                .containsExactlyInAnyOrder("itemKey", "line");
     }
 }

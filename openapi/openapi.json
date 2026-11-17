@@ -8,6 +8,7 @@
             "choice" : "#/components/schemas/ChoiceActivity",
             "dialogue" : "#/components/schemas/DialogueActivity",
             "expression" : "#/components/schemas/ExpressionActivity",
+            "match" : "#/components/schemas/MatchActivity",
             "speech" : "#/components/schemas/SpeechActivity"
           },
           "propertyName" : "type"
@@ -22,6 +23,8 @@
           "$ref" : "#/components/schemas/ExpressionActivity"
         }, {
           "$ref" : "#/components/schemas/SpeechActivity"
+        }, {
+          "$ref" : "#/components/schemas/MatchActivity"
         } ],
         "properties" : {
           "type" : {
@@ -37,6 +40,7 @@
             "choice" : "#/components/schemas/ChoiceActivityStudentView",
             "dialogue" : "#/components/schemas/DialogueActivityStudentView",
             "expression" : "#/components/schemas/ExpressionActivityStudentView",
+            "match" : "#/components/schemas/MatchActivityStudentView",
             "speech" : "#/components/schemas/SpeechActivityStudentView"
           },
           "propertyName" : "type"
@@ -51,6 +55,8 @@
           "$ref" : "#/components/schemas/ExpressionActivityStudentView"
         }, {
           "$ref" : "#/components/schemas/SpeechActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/MatchActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -75,6 +81,7 @@
         "discriminator" : {
           "mapping" : {
             "choice" : "#/components/schemas/ChoiceAnswer",
+            "match" : "#/components/schemas/MatchAnswer",
             "speech" : "#/components/schemas/SpeechAnswer"
           },
           "propertyName" : "type"
@@ -83,6 +90,8 @@
           "$ref" : "#/components/schemas/ChoiceAnswer"
         }, {
           "$ref" : "#/components/schemas/SpeechAnswer"
+        }, {
+          "$ref" : "#/components/schemas/MatchAnswer"
         } ],
         "properties" : {
           "type" : {
@@ -676,6 +685,146 @@
           }
         },
         "required" : [ "correct", "itemKey" ],
+        "type" : "object"
+      },
+      "MatchActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MatchItem"
+            },
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "responses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MatchResponse"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "match" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "items", "responses", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "MatchActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MatchItemStudentView"
+            },
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "responses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MatchResponse"
+            },
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "match" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "items", "responses", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "MatchAnswer" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/MatchAnswerItem"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "match" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "items", "type" ],
+        "type" : "object"
+      },
+      "MatchAnswerItem" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          },
+          "responseKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "itemKey", "responseKey" ],
+        "type" : "object"
+      },
+      "MatchItem" : {
+        "properties" : {
+          "correctResponseKey" : {
+            "type" : "string"
+          },
+          "itemKey" : {
+            "type" : "string"
+          },
+          "justification" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "line" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "correctResponseKey", "itemKey", "line" ],
+        "type" : "object"
+      },
+      "MatchItemStudentView" : {
+        "properties" : {
+          "itemKey" : {
+            "type" : "string"
+          },
+          "line" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "itemKey", "line" ],
+        "type" : "object"
+      },
+      "MatchResponse" : {
+        "properties" : {
+          "responseKey" : {
+            "type" : "string"
+          },
+          "text" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "responseKey", "text" ],
         "type" : "object"
       },
       "MediaContent" : {

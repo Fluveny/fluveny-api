@@ -446,4 +446,163 @@ class ContentValidatorBundleTest {
                 .anySatisfy(
                         error -> assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION));
     }
+
+    // História 1.16: o Associar.
+
+    /** O Associar de {@code s1-meet-alex} na fixture válida ({@code /activities/5}). */
+    private static ObjectNode match(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/5");
+    }
+
+    private static ObjectNode matchItem(ObjectNode bundle, int index) {
+        return (ObjectNode) match(bundle).at("/items/" + index);
+    }
+
+    @Test
+    void aCorrectResponseKeyOutsideTheResponsesIsMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        matchItem(bundle, 1).put("correctResponseKey", "nao-existe");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(
+                        ContentError::file,
+                        ContentError::pointer,
+                        ContentError::key,
+                        ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                S1,
+                                "/activities/5/items/1/correctResponseKey",
+                                "s1-speech-bubbles-nice",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void twoItemsWithTheSameResponseAreMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        // Sobram duas respostas, mas a repetida deixa a Atividade sem solução no par único.
+        matchItem(bundle, 2).put("correctResponseKey", "hi-alex");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/5/items/0/correctResponseKey",
+                                "s1-speech-bubbles-hi",
+                                ContentRule.MISSING_ACCEPTED_ANSWER),
+                        tuple(
+                                "/activities/5/items/2/correctResponseKey",
+                                "s1-speech-bubbles-from",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void anItemWithoutCorrectResponseKeyIsOnlyMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        matchItem(bundle, 0).remove("correctResponseKey");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/5/items/0/correctResponseKey",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void aRepeatedResponseKeyIsADuplicateKey() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) match(bundle).at("/responses/3")).put("responseKey", "nice-too");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/5/responses/1/responseKey",
+                                "nice-too",
+                                ContentRule.DUPLICATE_KEY),
+                        tuple(
+                                "/activities/5/responses/3/responseKey",
+                                "nice-too",
+                                ContentRule.DUPLICATE_KEY));
+    }
+
+    /** O {@code responseKey} é único na lista, não na Unidade: outro Associar pode repetir. */
+    @Test
+    void anotherMatchMayReuseTheResponseKeys() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode copy = match(bundle).deepCopy();
+        copy.put("activityKey", "s1-speech-bubbles-again");
+        for (int i = 0; i < copy.get("items").size(); i++) {
+            ((ObjectNode) copy.at("/items/" + i)).put("itemKey", "s1-again-" + i);
+        }
+        ((ArrayNode) bundle.at("/stages/0/activities")).add(copy);
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void matchTextsFollowTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) match(bundle).at("/responses/0")).put("text", "Hi, {age}!");
+        matchItem(bundle, 0).put("line", "[[Hi|nao-existe]]!");
+        matchItem(bundle, 1).putObject("justification").put("he", "He.").put("she", "She.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/5/items/0/line", ContentRule.INVALID_MARKUP),
+                        tuple(
+                                "/activities/5/items/1/justification",
+                                ContentRule.PRONOUN_VARIANTS_MISSING),
+                        tuple("/activities/5/responses/0/text", ContentRule.UNKNOWN_PLACEHOLDER));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "items=1",
+                "items=7",
+                "responses=9",
+                "prompt=empty",
+                "xp=",
+                "xp=-1",
+                "line=",
+                "text=",
+                "extra-property=x"
+            })
+    void anInvalidMatchIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode match = match(bundle);
+        ArrayNode items = (ArrayNode) match.get("items");
+        ArrayNode responses = (ArrayNode) match.get("responses");
+        switch (change) {
+            case "items=1" -> {
+                items.remove(2);
+                items.remove(1);
+            }
+            case "items=7" -> {
+                for (int i = 0; i < 4; i++) {
+                    responses.addObject().put("responseKey", "extra-" + i).put("text", "Ok.");
+                    items.addObject()
+                            .put("itemKey", "s1-extra-" + i)
+                            .put("line", "Ok?")
+                            .put("correctResponseKey", "extra-" + i);
+                }
+            }
+            case "responses=9" -> {
+                for (int i = 0; i < 5; i++) {
+                    responses.addObject().put("responseKey", "extra-" + i).put("text", "Ok.");
+                }
+            }
+            case "prompt=empty" -> match.put("prompt", "");
+            case "xp=" -> match.remove("xp");
+            case "xp=-1" -> match.put("xp", -1);
+            case "line=" -> ((ObjectNode) items.get(0)).remove("line");
+            case "text=" -> ((ObjectNode) responses.get(0)).remove("text");
+            case "extra-property=x" -> match.put("shuffle", true);
+            default -> throw new IllegalArgumentException(change);
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/5");
+                    assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
+                });
+    }
 }

@@ -1,0 +1,56 @@
+{
+  "activityKey": "s1-speech-bubbles",
+  "type": "match",
+  "title": "Match the Speech Bubbles",
+  "prompt": "Ligue cada fala do Alex à sua resposta, {name}.",
+  "items": [
+    {
+      "itemKey": "s1-speech-bubbles-hi",
+      "line": "Hi! I'm Alex.",
+      "correctResponseKey": "hi-alex",
+      "justification": "Respondemos ao **Hi** com o nosso nome."
+    },
+    {
+      "itemKey": "s1-speech-bubbles-nice",
+      "line": "[[Nice to meet you|nice-to-meet-you]]!",
+      "correctResponseKey": "nice-too",
+      "justification": {
+        "he": "He says **too** to return the greeting.",
+        "she": "She says **too** to return the greeting.",
+        "they": "They say **too** to return the greeting."
+      }
+    },
+    {
+      "itemKey": "s1-speech-bubbles-from",
+      "line": {
+        "he": "Where is he from?",
+        "she": "Where is she from?",
+        "they": "Where are they from?"
+      },
+      "correctResponseKey": "from-country"
+    }
+  ],
+  "responses": [
+    {
+      "responseKey": "hi-alex",
+      "text": "Hi Alex! I'm {name}."
+    },
+    {
+      "responseKey": "nice-too",
+      "text": "**Nice to meet you** too!"
+    },
+    {
+      "responseKey": "from-country",
+      "text": {
+        "he": "He is from {country}.",
+        "she": "She is from {country}.",
+        "they": "They are from {country}."
+      }
+    },
+    {
+      "responseKey": "goodbye",
+      "text": "Goodbye!"
+    }
+  ],
+  "xp": 10
+}

@@ -1,0 +1,17 @@
+{
+  "type": "match",
+  "items": [
+    {
+      "itemKey": "s1-speech-bubbles-hi",
+      "responseKey": "hi-alex"
+    },
+    {
+      "itemKey": "s1-speech-bubbles-nice",
+      "responseKey": "goodbye"
+    },
+    {
+      "itemKey": "s1-speech-bubbles-from",
+      "responseKey": "from-country"
+    }
+  ]
+}

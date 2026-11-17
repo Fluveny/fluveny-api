@@ -11,6 +11,10 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.MatchActivity;
+import com.fluveny.fluveny_backend.content.activity.MatchAnswer;
+import com.fluveny.fluveny_backend.content.activity.MatchAnswerItem;
+import com.fluveny.fluveny_backend.content.activity.MatchItem;
 import com.fluveny.fluveny_backend.content.activity.PronounVariants;
 import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.fluveny.fluveny_backend.content.activity.SpeechAnswer;
@@ -18,9 +22,11 @@ import com.fluveny.fluveny_backend.content.render.ContentRenderer;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import org.springframework.http.HttpStatus;
 
 /**
@@ -38,12 +44,13 @@ public final class Grader {
     /**
      * Corrige a resposta contra a Atividade completa.
      *
-     * @param studentVars as Variáveis do Aluno; a Escolha não usa, e a Fala só usa o pronome para
-     *     escolher a variante do {@code expected}
+     * @param studentVars as Variáveis do Aluno; a Escolha e o Associar não usam, e a Fala só usa o
+     *     pronome para escolher a variante do {@code expected}
      * @throws ApiException {@code 400 INVALID_ANSWER} se a resposta é de outro Tipo, não cobre
-     *     todos os itens, repete item ou usa chave que não existe, se a transcrição da Fala está em
-     *     branco ou passa de 500 caracteres, ou se a Atividade é de Tipo expositivo (Diálogo,
-     *     Cartões de expressões, Expressão Útil destacada)
+     *     todos os itens, repete item ou usa chave que não existe, se o Associar liga duas falas à
+     *     mesma resposta, se a transcrição da Fala está em branco ou passa de 500 caracteres, ou se
+     *     a Atividade é de Tipo expositivo (Diálogo, Cartões de expressões, Expressão Útil
+     *     destacada)
      */
     public static GradeResult grade(Activity activity, Answer answer, StudentVars studentVars) {
         Objects.requireNonNull(activity, "activity");
@@ -66,6 +73,7 @@ public final class Grader {
                             "A Expressão Útil destacada não tem resposta: conclua pela rota de"
                                     + " conclusão.");
             case SpeechActivity speech -> speech(speech, (SpeechAnswer) answer, studentVars);
+            case MatchActivity match -> match(match, (MatchAnswer) answer);
         };
     }
 
@@ -113,6 +121,58 @@ public final class Grader {
                 results,
                 (int) Math.round((long) activity.xp() * pct / 100.0),
                 new ChoiceAnswer(ChoiceActivity.TYPE, expected));
+    }
+
+    /**
+     * Associar (história 1.16, FR-20): como a Escolha, um Item por par, com a justificativa do item
+     * (que pode faltar). A resposta liga cada item a uma resposta da Atividade, sem repetir item
+     * nem resposta (o par único da UI). O {@code expected} são os pares certos, na ordem dos itens.
+     */
+    private static GradeResult match(MatchActivity activity, MatchAnswer answer) {
+        Map<String, MatchItem> items = new HashMap<>();
+        activity.items().forEach(item -> items.put(item.itemKey(), item));
+        Set<String> responses = new HashSet<>();
+        activity.responses().forEach(response -> responses.add(response.responseKey()));
+        Map<String, String> chosen = new HashMap<>();
+        Set<String> used = new HashSet<>();
+        for (MatchAnswerItem given : answer.items()) {
+            if (given == null) {
+                throw invalid("A resposta tem um par vazio.");
+            }
+            if (!items.containsKey(given.itemKey())) {
+                throw invalid("A resposta tem um item que não existe na Atividade.");
+            }
+            if (chosen.put(given.itemKey(), given.responseKey()) != null) {
+                throw invalid("A resposta repete um item.");
+            }
+            if (!responses.contains(given.responseKey())) {
+                throw invalid("A resposta tem uma resposta que não existe na Atividade.");
+            }
+            if (!used.add(given.responseKey())) {
+                throw invalid("A resposta liga duas falas à mesma resposta.");
+            }
+        }
+        if (chosen.size() != items.size()) {
+            throw invalid("A resposta precisa cobrir todos os itens da Atividade.");
+        }
+        List<GradeResult.Item> results = new ArrayList<>();
+        List<MatchAnswerItem> expected = new ArrayList<>();
+        int correct = 0;
+        for (MatchItem item : activity.items()) {
+            boolean right = item.correctResponseKey().equals(chosen.get(item.itemKey()));
+            if (right) {
+                correct++;
+            }
+            results.add(new GradeResult.Item(item.itemKey(), right, item.justification()));
+            expected.add(new MatchAnswerItem(item.itemKey(), item.correctResponseKey()));
+        }
+        int pct = percent(correct, activity.items().size());
+        return new GradeResult(
+                Outcome.GRADED,
+                pct,
+                results,
+                (int) Math.round((long) activity.xp() * pct / 100.0),
+                new MatchAnswer(MatchActivity.TYPE, expected));
     }
 
     /**

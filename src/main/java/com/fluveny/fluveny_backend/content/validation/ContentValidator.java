@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.networknt.schema.Error;
 import java.io.IOException;
@@ -51,11 +52,12 @@ public final class ContentValidator {
             JsonMapper.builder().enable(StreamReadFeature.STRICT_DUPLICATE_DETECTION).build();
 
     /**
-     * Chaves únicas dentro da própria lista (a da opção, a das Expressões Úteis, a da fala e a do
-     * bloco de cartões). O {@code itemKey}, inclusive o do cartão, já é único na Unidade inteira.
+     * Chaves únicas dentro da própria lista (a da opção, a das Expressões Úteis, a da fala, a do
+     * bloco de cartões e a da resposta do Associar). O {@code itemKey}, inclusive o do cartão, já é
+     * único na Unidade inteira.
      */
     private static final Set<String> LIST_SCOPED_KEYS =
-            Set.of("optionKey", "expressionKey", "lineKey", "blockKey");
+            Set.of("optionKey", "expressionKey", "lineKey", "blockKey", "responseKey");
 
     /** Chaves únicas na Unidade inteira (AD-5), cada uma no próprio espaço. */
     private static final Set<String> UNIT_SCOPED_KEYS = Set.of("activityKey", "itemKey");
@@ -69,7 +71,9 @@ public final class ContentValidator {
                     ChoiceActivity.TYPE,
                     ContentValidator::checkChoiceAnswer,
                     SpeechActivity.TYPE,
-                    ContentValidator::checkSpeechAnswer);
+                    ContentValidator::checkSpeechAnswer,
+                    MatchActivity.TYPE,
+                    ContentValidator::checkMatchAnswer);
 
     /**
      * Os Tipos expositivos (história 1.13): sem Answer, sem regra de resposta aceita e sem
@@ -795,6 +799,70 @@ public final class ContentValidator {
     }
 
     /**
+     * Resposta aceita do Associar (história 1.16): cada {@code correctResponseKey} existe e está em
+     * {@code responses}, e dois itens não usam a mesma resposta. Sem isso, o par único da UI
+     * deixaria a Atividade sem solução. Lista fora do formato já é erro de schema.
+     */
+    private static void checkMatchAnswer(
+            JsonNode activity, String pointer, String file, Report report) {
+        JsonNode items = activity.path("items");
+        if (!items.isArray()) {
+            return;
+        }
+        JsonNode responses = activity.path("responses");
+        Set<String> responseKeys = new HashSet<>();
+        for (JsonNode response : responses) {
+            if (response.path("responseKey").isString()) {
+                responseKeys.add(response.get("responseKey").asString());
+            }
+        }
+        Map<String, List<Integer>> uses = new LinkedHashMap<>();
+        for (int i = 0; i < items.size(); i++) {
+            JsonNode item = items.get(i);
+            String at = pointer + "/items/" + i + "/correctResponseKey";
+            String itemKey = item.path("itemKey").asString(null);
+            JsonNode correct = item.path("correctResponseKey");
+            if (!correct.isString()) {
+                report.add(
+                        file,
+                        at,
+                        itemKey,
+                        ContentRule.MISSING_ACCEPTED_ANSWER,
+                        "O item não tem um correctResponseKey válido (a resposta aceita).");
+                continue;
+            }
+            uses.computeIfAbsent(correct.asString(), key -> new ArrayList<>()).add(i);
+            // responses fora de lista já é erro de schema; não repete o erro em cada item.
+            if (responses.isArray() && !responseKeys.contains(correct.asString())) {
+                report.add(
+                        file,
+                        at,
+                        itemKey,
+                        ContentRule.MISSING_ACCEPTED_ANSWER,
+                        "O correctResponseKey "
+                                + correct.asString()
+                                + " não está entre as respostas (responses).");
+            }
+        }
+        uses.forEach((key, positions) -> {
+            if (positions.size() > 1) {
+                for (int i : positions) {
+                    report.add(
+                            file,
+                            pointer + "/items/" + i + "/correctResponseKey",
+                            items.get(i).path("itemKey").asString(null),
+                            ContentRule.MISSING_ACCEPTED_ANSWER,
+                            "O correctResponseKey "
+                                    + key
+                                    + " se repete em "
+                                    + positions.size()
+                                    + " itens; cada item precisa de uma resposta própria.");
+                }
+            }
+        });
+    }
+
+    /**
      * Frase-alvo e alternativas da Fala (história 1.15): cada uma, em cada variante de pronome, tem
      * ao menos uma palavra fora dos placeholders. Texto fora do formato já é erro de schema.
      */
@@ -956,9 +1024,10 @@ public final class ContentValidator {
 
     /**
      * Junta os erros. Um erro de schema que só repete uma regra própria sai do relatório: o {@code
-     * required} de {@code correctOptionKey} (coberto por {@code MISSING_ACCEPTED_ANSWER}) e o
-     * {@code oneOf}, o {@code type} da alternativa string e o {@code required} da variante faltando
-     * (cobertos por {@code PRONOUN_VARIANTS_MISSING}). Qualquer outro erro de schema fica.
+     * required} de {@code correctOptionKey} e de {@code correctResponseKey} (coberto por {@code
+     * MISSING_ACCEPTED_ANSWER}) e o {@code oneOf}, o {@code type} da alternativa string e o {@code
+     * required} da variante faltando (cobertos por {@code PRONOUN_VARIANTS_MISSING}). Qualquer
+     * outro erro de schema fica.
      */
     private static final class Report {
 
