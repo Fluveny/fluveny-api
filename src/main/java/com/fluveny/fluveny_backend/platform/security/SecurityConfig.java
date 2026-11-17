@@ -64,7 +64,7 @@ class SecurityConfig {
         String secret = proxySecret.validSecret();
         if (secret != null) {
             // A borda (AD-18): antes do CorsFilter, e portanto antes do limite de taxa e do token
-            // de deploy, para o limite já ver o IP do CF-Connecting-IP. Fora de prod, sem a
+            // de deploy, para o limite já ver o IP do X-Fluveny-Client-IP. Fora de prod, sem a
             // variável, fica desligado.
             http.addFilterBefore(new ProxySecretFilter(secret, problems), CorsFilter.class);
         }
