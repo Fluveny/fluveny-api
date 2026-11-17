@@ -17,8 +17,10 @@ import org.springframework.web.util.UrlPathHelper;
  * 1.12). O limite por {@code deviceId} fica em {@code learning}, que lê o corpo; este filtro não
  * lê. Estouro responde {@code 429 TOO_MANY_REQUESTS} com {@code Retry-After}.
  *
- * <p>O IP é o {@link HttpServletRequest#getRemoteAddr()}. Atrás de um proxy, é o do proxy até a
- * {@code server.forward-headers-strategy} ser decidida na história 1.6 ([ASSUMPTION]).
+ * <p>O IP é o {@link HttpServletRequest#getRemoteAddr()}. Atrás do Worker (AD-12, AD-18, história
+ * 1.6), o {@link ProxySecretFilter} roda antes e troca o IP pelo {@code CF-Connecting-IP} quando o
+ * segredo de proxy confere; o {@code X-Forwarded-For} nunca é lido, e a {@code
+ * server.forward-headers-strategy} fica desligada.
  */
 final class VisitorRateLimitFilter extends OncePerRequestFilter {
 

@@ -19,6 +19,7 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 /**
  * Cadeia de segurança única da API (AD-12): stateless, sem basic auth, sem formulário e sem a senha
@@ -26,10 +27,15 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
  * enquanto é o token de deploy ({@link DeployTokenFilter}, história 1.7); a sessão (Bearer e
  * cookie) chega nas histórias 2.3 e 4.2. A CORS (história 1.22) vale só para {@code /api/v1/**},
  * com as origens de {@code FLUVENY_WEB_ORIGINS}, e o {@code CorsFilter} roda antes dos filtros de
- * limite de taxa e de token de deploy.
+ * limite de taxa e de token de deploy. O segredo de proxy ({@link ProxySecretFilter}, história 1.6)
+ * roda antes de todos, inclusive do {@code CorsFilter}: sem ele, só o health check passa.
  */
 @Configuration(proxyBeanMethods = false)
-@EnableConfigurationProperties({DeployTokenProperties.class, WebOriginsProperties.class})
+@EnableConfigurationProperties({
+    DeployTokenProperties.class,
+    WebOriginsProperties.class,
+    ProxySecretProperties.class
+})
 class SecurityConfig {
 
     /**
@@ -50,12 +56,21 @@ class SecurityConfig {
             ProblemSecurityHandlers problemHandlers,
             DeployTokenProperties deployToken,
             WebOriginsProperties webOrigins,
+            ProxySecretProperties proxySecret,
             Problems problems,
             Clock clock,
             @Value("${fluveny.visitor.rate-limit.ip-per-minute:300}") int visitorIpPerMinute)
             throws Exception {
+        String secret = proxySecret.validSecret();
+        if (secret != null) {
+            // A borda (AD-18): antes do CorsFilter, e portanto antes do limite de taxa e do token
+            // de deploy, para o limite já ver o IP do CF-Connecting-IP. Fora de prod, sem a
+            // variável, fica desligado.
+            http.addFilterBefore(new ProxySecretFilter(secret, problems), CorsFilter.class);
+        }
         return http
-                // Limite por IP das rotas do Visitante (história 1.12), antes de qualquer outro.
+                // Limite por IP das rotas do Visitante (história 1.12), antes do token de deploy;
+                // depois do segredo de proxy e do CorsFilter.
                 // Também fora dos beans, pelo mesmo motivo do DeployTokenFilter.
                 .addFilterBefore(
                         new VisitorRateLimitFilter(

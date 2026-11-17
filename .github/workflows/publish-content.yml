@@ -1,7 +1,8 @@
 # Publicar conteúdo (AD-4, história 1.7): job manual por ambiente. Envia o pacote
 # {unit, stages, media} de content/units/<unitKey>/ à API do ambiente, com o token
 # de deploy dele (secret FLUVENY_DEPLOY_TOKEN e variável FLUVENY_API_URL do GitHub
-# Environment). Só a API calcula o hash.
+# Environment). Só a API calcula o hash. Toda chamada leva também o segredo de proxy
+# do ambiente (secret FLUVENY_PROXY_SECRET, história 1.6), sem o qual a API responde 403.
 #
 # Produção só publica um hash que já existe em homologação (Decisão 3): grava a
 # versão em prod como candidata (publish=false, ponteiro intacto), confere o hash
@@ -70,6 +71,7 @@ jobs:
       - name: Publicar
         env:
           FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          FLUVENY_PROXY_SECRET: ${{ secrets.FLUVENY_PROXY_SECRET }}
           API_URL: ${{ vars.FLUVENY_API_URL }}
         run: node scripts/content-bundle.mjs publish "$UNIT_KEY" --api "$API_URL"
 
@@ -91,6 +93,7 @@ jobs:
         name: Gravar sem mover o ponteiro
         env:
           FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          FLUVENY_PROXY_SECRET: ${{ secrets.FLUVENY_PROXY_SECRET }}
           API_URL: ${{ vars.FLUVENY_API_URL }}
         run: node scripts/content-bundle.mjs publish "$UNIT_KEY" --api "$API_URL" --publish false
 
@@ -108,6 +111,7 @@ jobs:
       - name: O hash existe em homologação
         env:
           FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          FLUVENY_PROXY_SECRET: ${{ secrets.FLUVENY_PROXY_SECRET }}
           API_URL: ${{ vars.FLUVENY_API_URL }}
           VERSION_ID: ${{ needs.prod-candidate.outputs.version-id }}
         run: node scripts/content-bundle.mjs check "$UNIT_KEY" "$VERSION_ID" --api "$API_URL"
@@ -127,6 +131,7 @@ jobs:
         name: Mover o ponteiro
         env:
           FLUVENY_DEPLOY_TOKEN: ${{ secrets.FLUVENY_DEPLOY_TOKEN }}
+          FLUVENY_PROXY_SECRET: ${{ secrets.FLUVENY_PROXY_SECRET }}
           API_URL: ${{ vars.FLUVENY_API_URL }}
         run: node scripts/content-bundle.mjs publish "$UNIT_KEY" --api "$API_URL"
       - name: Mesmo hash da candidata

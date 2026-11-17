@@ -14,14 +14,20 @@ import org.springframework.util.StringUtils;
  * antes de qualquer bean ser criado, para a falha citar a variável e não um erro de conexão. A
  * chave dos recibos do Visitante ({@code FLUVENY_RECEIPT_KEY}, história 1.12) é obrigatória aqui;
  * fora de {@code prod}, sem ela, {@code learning} gera uma chave na partida. As origens web da CORS
- * ({@code FLUVENY_WEB_ORIGINS}, história 1.22) também: sem elas, o App web não funciona.
+ * ({@code FLUVENY_WEB_ORIGINS}, história 1.22) também: sem elas, o App web não funciona. E o
+ * segredo de proxy ({@code FLUVENY_PROXY_SECRET}, história 1.6): sem ele, a API ficaria aberta a
+ * quem pula o Worker.
  */
 @Component
 @Profile("prod")
 class ProdEnvironmentGuard implements BeanFactoryPostProcessor, EnvironmentAware {
 
     static final List<String> REQUIRED_VARIABLES =
-            List.of("SPRING_DATA_MONGODB_URI", "FLUVENY_RECEIPT_KEY", "FLUVENY_WEB_ORIGINS");
+            List.of(
+                    "SPRING_DATA_MONGODB_URI",
+                    "FLUVENY_RECEIPT_KEY",
+                    "FLUVENY_WEB_ORIGINS",
+                    "FLUVENY_PROXY_SECRET");
 
     private Environment environment;
 

@@ -166,7 +166,7 @@ mise run check   # ./mvnw -B -ntp spotless:check verify
   - o `LocalDataLoaderIT` confirma que os carregadores rodam na partida, que rodar de novo não duplica e que o reset apaga o banco;
   - o `ContentPublicationIT` cobre a publicação (nova, repetida, candidata, inválida, Tipo não suportado, `unitKey` divergente, token) e as rotas do aluno, com a varredura de segredos; o `ContentLocalSeederIT` confirma que o perfil `local` publica `content/units/` sozinho, inclusive depois do reset;
   - o `MongoUriBindingIT` passa a URI do container como `SPRING_DATA_MONGODB_URI` e confirma que a API conecta por ela, no perfil `prod` padrão;
-  - o `ProdProfileIT` confirma que, sem perfil e sem `SPRING_DATA_MONGODB_URI` ou `FLUVENY_RECEIPT_KEY`, a API não sobe e a falha cita a variável, e que com a `FLUVENY_RECEIPT_KEY` inválida ela também não sobe. Ele também confirma que a API não sobe sem `FLUVENY_WEB_ORIGINS` ou com uma origem fora do formato. Os testes no perfil `prod` recebem uma `FLUVENY_RECEIPT_KEY` gerada na execução pela extensão `TestReceiptKey` e uma `FLUVENY_WEB_ORIGINS` de teste pela `TestWebOrigins`.
+  - o `ProdProfileIT` confirma que, sem perfil e sem `SPRING_DATA_MONGODB_URI` ou `FLUVENY_RECEIPT_KEY`, a API não sobe e a falha cita a variável, e que com a `FLUVENY_RECEIPT_KEY` inválida ela também não sobe. Ele também confirma que a API não sobe sem `FLUVENY_WEB_ORIGINS` ou com uma origem fora do formato, nem sem `FLUVENY_PROXY_SECRET` ou com um segredo fora do formato. Os testes no perfil `prod` recebem uma `FLUVENY_RECEIPT_KEY` gerada na execução pela extensão `TestReceiptKey`, uma `FLUVENY_WEB_ORIGINS` de teste pela `TestWebOrigins` e um `FLUVENY_PROXY_SECRET` gerado pela `TestProxySecret`. Com o segredo, o filtro de borda liga em todo teste, então a `TestProxySecret` também põe o `X-Fluveny-Proxy` em toda requisição do MockMvc (por `META-INF/spring.factories`); o `ProxySecretTest` monta um MockMvc sem ele para provar a recusa, e cliente HTTP de verdade passa `TestProxySecret.HEADER` com `TestProxySecret.value()`.
 
 Para rodar só os unitários (incluindo o `ModularityTest`), sem Docker: `./mvnw -B -ntp test`.
 
@@ -185,6 +185,7 @@ Toda configuração vem do ambiente. Nenhum segredo fica em arquivo.
 | `FLUVENY_DEPLOY_TOKEN_SHA256` | Opcional. O sha256, em hex, do token de deploy do ambiente (o token fica só no GitHub Environment, como `FLUVENY_DEPLOY_TOKEN`). Sem ela, toda publicação é negada e a API sobe normalmente; fora do formato (64 dígitos hex), a API não sobe. Gere com `printf '%s' "$TOKEN" \| shasum -a 256`. |
 | `FLUVENY_RECEIPT_KEY` | Obrigatória no perfil `prod`. Chave HMAC dos recibos do Visitante (história 1.12), em base64 com 32 bytes ou mais; gere com `openssl rand -base64 32`. Fora do formato, a API não sobe. Fora de `prod`, sem ela, a API gera uma chave na partida e avisa no log (os recibos antigos deixam de valer). |
 | `FLUVENY_WEB_ORIGINS` | Obrigatória no perfil `prod`. Origens web aceitas pela CORS de `/api/v1/**` (história 1.22), separadas por vírgula: o App do Aluno na web, por exemplo `https://app.fluveny.com`. Cada origem é `scheme://host[:porta]` (`http` ou `https`), sem caminho, sem barra no fim e sem `*`; fora do formato, a API não sobe. A CORS liga `allowCredentials` (a sessão web será por cookie), aceita `GET`, `POST`, `PUT`, `PATCH` e `DELETE` e os cabeçalhos `Content-Type`, `Accept`, `X-App-Version` e `X-Fluveny-Client`, e expõe o `Retry-After`. No perfil `local`, o padrão é `http://localhost:8081`. Fora de `prod` e do `local`, sem ela, nenhuma origem web passa. Requisição sem `Origin` (o App Android, o curl) não muda. |
+| `FLUVENY_PROXY_SECRET` | Obrigatória no perfil `prod`. Segredo de proxy do ambiente (AD-18, história 1.6): o Worker da Cloudflare o envia no cabeçalho `X-Fluveny-Proxy`, e sem ele a API responde `403 ACCESS_DENIED` (problem+json) a tudo, exceto `GET /api/v1/meta`, o health check do host. A comparação é em tempo constante, e o segredo nunca vai para o log. Só com o segredo certo a API lê o IP do cliente do `CF-Connecting-IP` (base do limite de taxa do Visitante); o `X-Forwarded-For` nunca é lido, e a `server.forward-headers-strategy` fica desligada de propósito. De 32 a 256 caracteres ASCII visíveis, sem espaço; gere com `openssl rand -hex 32`. Fora do formato, a API não sobe. Fora de `prod`, sem ela, o filtro fica desligado. O mesmo valor fica no Worker, no host da API e no secret `FLUVENY_PROXY_SECRET` do GitHub Environment. |
 | `FLUVENY_CONTENT_DIR` | Só no perfil `local`. Pasta `content` lida pelo carregador local; padrão `content`. |
 
 Os logs saem no console em JSON (ECS), sem corpo de requisição nem cabeçalhos.
@@ -237,12 +238,56 @@ Os outros módulos usam a `platform` pelas named interfaces `web`, `security` e 
 
 ```bash
 docker build -t fluveny-api:local .
-docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... -e FLUVENY_RECEIPT_KEY=... -e FLUVENY_WEB_ORIGINS=... fluveny-api:local
+docker run --rm -p 8080:8080 -e SPRING_DATA_MONGODB_URI=... -e FLUVENY_RECEIPT_KEY=... -e FLUVENY_WEB_ORIGINS=... -e FLUVENY_PROXY_SECRET=... fluveny-api:local
 ```
 
-A API escuta na porta 8080 e roda com um usuário sem root. Em todo PR a CI constrói a imagem sem publicar. A cada merge na `main`, publica `ghcr.io/fluveny/fluveny-api:main` e `ghcr.io/fluveny/fluveny-api:sha-<sha>`.
+A API escuta na porta 8080 e roda com um usuário sem root. Em todo PR a CI constrói a imagem sem publicar, e o smoke confere que ela sobe no perfil `prod`, que `/api/v1/meta` responde 200 e que `/api/v1/units` responde 403 sem o segredo de proxy e 200 com ele. A cada merge na `main`, publica `ghcr.io/fluveny/fluveny-api:main` e `ghcr.io/fluveny/fluveny-api:sha-<sha>`, e o job "Deploy em homologação" pede ao Render a `sha-<sha>` do commit (veja "Homologação").
 
-A documentação da API fica no Swagger UI, em http://localhost:8080/swagger-ui/index.html, e o OpenAPI em `/v3/api-docs`. As duas são públicas em todos os ambientes.
+A JVM roda no padrão da imagem, sem ajuste: medida em 17/11 com `--memory=512m` (o limite do Render free), ela ficou em 255 MB em repouso e com pico de 414 MB sob carga, sem falta de memória.
+
+A documentação da API fica no Swagger UI, em http://localhost:8080/swagger-ui/index.html, e o OpenAPI em `/v3/api-docs`. As duas são públicas em todos os ambientes pela borda (o Worker, com o segredo de proxy); direto no host da API, no perfil `prod`, respondem 403.
+
+## Homologação
+
+A API de homologação roda no [Render](https://render.com) free, a partir da imagem do GHCR, ligada a um cluster Atlas M0 só dela, atrás de um Worker da Cloudflare que serve o App web e faz proxy de `/api/*` (AD-18). Tudo a custo zero (NFR22). O Worker e o deploy do App ficam no `fluveny-app`.
+
+- **Deploy:** a cada merge na `main`, depois do push da imagem, o job "Deploy em homologação" do `ci.yml` chama o deploy hook do Render (secret `RENDER_DEPLOY_HOOK_URL` do Environment `homolog`) com `imgURL=ghcr.io/fluveny/fluveny-api:sha-<sha>`. Sem o secret, o job avisa e não falha.
+- **Borda:** sem o `X-Fluveny-Proxy` certo, a URL direta do Render responde 403, exceto `GET /api/v1/meta` (veja `FLUVENY_PROXY_SECRET` em "Variáveis de ambiente").
+- **Partida a frio:** o Render free dorme depois de ~15 min parado, e a partida medida foi de 140 s. O workflow "Manter homologação acordada" (`keep-warm.yml`) chama `GET /api/v1/meta` a cada 10 min das 8h às 23h de Brasília, sem segredo; fora desse horário a API dorme. Ele usa a variável de repositório `FLUVENY_HOMOLOG_API_URL`, sem Environment (para não criar um deployment a cada ping), e pode ser rodado à mão (Actions → Run workflow). O GitHub só agenda na branch padrão e desliga agendamentos de repositório sem atividade por 60 dias.
+- **Bruno:** o ambiente `homolog` de [`api-collection/`](api-collection/) aponta para o Render; a variável secreta `proxySecret` fica só no seu Bruno, e o `collection.bru` a manda em toda requisição.
+
+### Montar o ambiente (uma vez)
+
+Contas e termos são aceitos por quem administra o projeto, e cada conta tem pelo menos 2 administradores (NFR18). Nenhum segredo vai para arquivo: gere no terminal e cole direto no painel.
+
+1. **Atlas:** no projeto `homolog` da organização do Fluveny, crie o cluster M0 `fluveny-homolog` na AWS N. Virginia (us-east-1), a mesma região do Render, e um usuário do banco só para a API (`fluveny-api-homolog`), só com `readWrite` no banco `fluveny`. Em Network Access, libere as faixas de saída do Render (no serviço, Connect → Outbound; em 17/11, `74.220.49.0/24` e `74.220.57.0/24`, compartilhadas com outros clientes do Render: o usuário e a senha protegem o banco). Copie a URI `mongodb+srv://...` com o nome do banco (`/fluveny`).
+2. **Imagem pública:** em GitHub → Packages → `fluveny-api` → Package settings, deixe o pacote público, para o Render baixar sem credencial.
+3. **Render:** New → Web Service → Existing image, `ghcr.io/fluveny/fluveny-api:main`, plano Free, região Virginia (US East), a mesma do Atlas (o Render não tem região no Brasil). Nome `fluveny-api-homolog`, URL `https://fluveny-api-homolog.onrender.com`. Health check path: `/api/v1/meta`. Auto-deploy desligado (quem faz o deploy é a CI). Variáveis de ambiente:
+   - `PORT=8080` (a porta que o Render encaminha);
+   - `SPRING_DATA_MONGODB_URI` com a URI do Atlas;
+   - `FLUVENY_RECEIPT_KEY` (`openssl rand -base64 32`);
+   - `FLUVENY_PROXY_SECRET` (`openssl rand -hex 32`; o mesmo valor vai para o Worker e para o GitHub);
+   - `FLUVENY_WEB_ORIGINS` com a origem do Worker de homologação (por exemplo `https://fluveny-homolog.<conta>.workers.dev`);
+   - `FLUVENY_DEPLOY_TOKEN_SHA256` (sha256 do token de deploy de homologação, veja o `CONTRIBUTING.md`);
+   - `SENTRY_ENVIRONMENT=homolog` e, se houver, `SENTRY_DSN`.
+
+   Depois, em Settings → Deploy Hook, copie a URL do hook. Ela é um segredo.
+4. **GitHub:** em Settings → Environments, crie (ou abra) o `homolog`, com os secrets `FLUVENY_DEPLOY_TOKEN` e `FLUVENY_PROXY_SECRET` (o `RENDER_DEPLOY_HOOK_URL` pode ficar ali ou como secret do repositório; o job `deploy-homolog` enxerga os dois) e a variável `FLUVENY_API_URL` com a URL do Render (sem barra no fim). Em Settings → Secrets and variables → Actions → Variables, crie também a variável de repositório `FLUVENY_HOMOLOG_API_URL`, com a mesma URL, para o `keep-warm.yml`.
+5. **Conferir:** rode a CI na `main` (ou faça um merge) e veja, no painel do Render, a imagem `sha-<sha>` do commit no ar. Depois:
+
+   ```bash
+   curl -s -o /dev/null -w '%{http_code}\n' https://fluveny-api-homolog.onrender.com/api/v1/meta   # 200
+   curl -s -o /dev/null -w '%{http_code}\n' https://fluveny-api-homolog.onrender.com/api/v1/units  # 403
+   read -rs FLUVENY_PROXY_SECRET && export FLUVENY_PROXY_SECRET
+   curl -s -o /dev/null -w '%{http_code}\n' -H "X-Fluveny-Proxy: $FLUVENY_PROXY_SECRET" \
+     https://fluveny-api-homolog.onrender.com/api/v1/units                                          # 200
+   ```
+
+   Prove a publicação sem publicar nada (Decisão 2 da história 1.6): com `FLUVENY_DEPLOY_TOKEN` e `FLUVENY_PROXY_SECRET` exportados só na sessão, `node scripts/content-bundle.mjs publish unit-1 --api https://fluveny-api-homolog.onrender.com --content src/test/resources/content-fixtures/valid` precisa sair com `422` e `UNSUPPORTED_ACTIVITY_TYPE`: token, segredo de proxy e URL estão certos, e a API recusa a fixture. A primeira publicação real vem com o conteúdo da Unit 1, pelo workflow "Publicar conteúdo".
+
+   Rode o "Manter homologação acordada" à mão e veja o ping passar. Acompanhe a memória no painel do Render (Metrics) enquanto percorre o App: ela não pode reiniciar por falta de memória.
+
+Se a API não couber nos 512 MB do Render, o plano B da spine é uma VM Oracle Always Free (Arm, com imagem multi-arch).
 
 ## Contribuindo
 

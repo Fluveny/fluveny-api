@@ -1,0 +1,42 @@
+# Manter a homologação acordada (história 1.6, Decisão 1): o Render free dorme depois de ~15 min
+# sem requisição, e a partida a frio leva minutos. Das 8h às 23h de Brasília (UTC-3), a cada
+# 10 min, chama o health check GET /api/v1/meta, aberto sem o segredo de proxy. Fora desse
+# horário a API dorme. A URL é a variável de repositório FLUVENY_HOMOLOG_API_URL (a do Render),
+# sem Environment, para não criar um deployment a cada ping nem cair numa regra de proteção.
+#
+# O GitHub só agenda na branch padrão, pode atrasar alguns minutos e desliga agendamentos de
+# repositório sem atividade por 60 dias. workflow_dispatch serve para testar.
+name: Manter homologação acordada
+
+on:
+  schedule:
+    # 8h00 às 22h50 de Brasília: 11h às 23h50 e 0h às 1h50 UTC.
+    - cron: "*/10 0-1,11-23 * * *"
+    # 23h00 de Brasília.
+    - cron: "0 2 * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    name: Ping do health check
+    runs-on: ubuntu-latest
+    # 3 tentativas de até 3 min cada, mais as esperas entre elas.
+    timeout-minutes: 10
+    steps:
+      - name: GET /api/v1/meta
+        env:
+          API_URL: ${{ vars.FLUVENY_HOMOLOG_API_URL }}
+        run: |
+          if [ -z "$API_URL" ]; then
+            echo "::warning::Sem a variável de repositório FLUVENY_HOMOLOG_API_URL; ping pulado."
+            exit 0
+          fi
+          # Até 3 min: cobre uma partida a frio (140 s medidos em 17/11).
+          curl -fsS -o /dev/null --max-time 180 --retry 2 --retry-all-errors \
+            "${API_URL%/}/api/v1/meta"

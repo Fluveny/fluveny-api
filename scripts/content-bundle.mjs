@@ -15,7 +15,8 @@
 //   node scripts/content-bundle.mjs check <unitKey> <versionId> --api <url>
 //     GET .../versions/<versionId>: sai com 0 se a versão existe, 1 se não.
 //
-// O token vem só de FLUVENY_DEPLOY_TOKEN (nunca de argumento, para não ir ao log).
+// O token vem só de FLUVENY_DEPLOY_TOKEN (nunca de argumento, para não ir ao log). Com
+// FLUVENY_PROXY_SECRET, toda chamada leva também o X-Fluveny-Proxy (história 1.6).
 import { appendFileSync, existsSync, readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -92,6 +93,17 @@ function token() {
   return value;
 }
 
+// Cabeçalhos de toda chamada: o token de deploy e, com FLUVENY_PROXY_SECRET, o segredo
+// de proxy (história 1.6), que a API exige fora do perfil local. Também só do ambiente.
+function headers(extra = {}) {
+  const proxySecret = process.env.FLUVENY_PROXY_SECRET?.trim();
+  return {
+    Authorization: `Bearer ${token()}`,
+    ...(proxySecret ? { 'X-Fluveny-Proxy': proxySecret } : {}),
+    ...extra,
+  };
+}
+
 function versionsUrl(api, unitKey) {
   if (!api) fail('falta --api <url da API>');
   return `${api.replace(/\/+$/, '')}/api/v1/admin/content/units/${encodeURIComponent(unitKey)}/versions`;
@@ -115,7 +127,7 @@ async function publish(unitKey, options) {
   }
   const response = await fetch(`${versionsUrl(options.api, unitKey)}?publish=${publishFlag}`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token()}`, 'Content-Type': 'application/json' },
+    headers: headers({ 'Content-Type': 'application/json' }),
     body: JSON.stringify(bundle),
   });
   const text = await response.text();
@@ -142,7 +154,7 @@ async function publish(unitKey, options) {
 async function check(unitKey, versionId, options) {
   if (!/^sha256:[0-9a-f]{64}$/.test(versionId ?? '')) fail(`versionId inválido: ${versionId}`);
   const response = await fetch(`${versionsUrl(options.api, unitKey)}/${versionId}`, {
-    headers: { Authorization: `Bearer ${token()}` },
+    headers: headers(),
   });
   if (response.status === 200) {
     console.log(`${versionId} existe em ${options.api}.`);
