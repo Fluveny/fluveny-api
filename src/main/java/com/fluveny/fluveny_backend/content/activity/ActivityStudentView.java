@@ -19,7 +19,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
             ChoiceActivityStudentView.class,
             DialogueActivityStudentView.class,
             CardsActivityStudentView.class,
-            ExpressionActivityStudentView.class
+            ExpressionActivityStudentView.class,
+            SpeechActivityStudentView.class
         },
         discriminatorProperty = "type",
         discriminatorMapping = {
@@ -34,13 +35,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
                     schema = CardsActivityStudentView.class),
             @DiscriminatorMapping(
                     value = ExpressionActivity.TYPE,
-                    schema = ExpressionActivityStudentView.class)
+                    schema = ExpressionActivityStudentView.class),
+            @DiscriminatorMapping(
+                    value = SpeechActivity.TYPE,
+                    schema = SpeechActivityStudentView.class)
         })
 public sealed interface ActivityStudentView
         permits ChoiceActivityStudentView,
                 DialogueActivityStudentView,
                 CardsActivityStudentView,
-                ExpressionActivityStudentView {
+                ExpressionActivityStudentView,
+                SpeechActivityStudentView {
 
     String type();
 

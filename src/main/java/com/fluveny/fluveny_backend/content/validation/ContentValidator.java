@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.networknt.schema.Error;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import tools.jackson.core.JacksonException;
@@ -63,7 +65,11 @@ public final class ContentValidator {
      * de uma; o construtor falha se faltar.
      */
     private static final Map<String, ActivityRule> ACCEPTED_ANSWER_RULES =
-            Map.of(ChoiceActivity.TYPE, ContentValidator::checkChoiceAnswer);
+            Map.of(
+                    ChoiceActivity.TYPE,
+                    ContentValidator::checkChoiceAnswer,
+                    SpeechActivity.TYPE,
+                    ContentValidator::checkSpeechAnswer);
 
     /**
      * Os Tipos expositivos (história 1.13): sem Answer, sem regra de resposta aceita e sem
@@ -79,7 +85,9 @@ public final class ContentValidator {
                     DialogueActivity.TYPE,
                     ContentValidator::checkDialogueAsks,
                     ExpressionActivity.TYPE,
-                    ContentValidator::checkExpressionTerm);
+                    ContentValidator::checkExpressionTerm,
+                    SpeechActivity.TYPE,
+                    ContentValidator::checkSpeechWords);
 
     /**
      * Um termo {@code [[texto|expressionKey]]}. Marcação malformada (texto ou chave em branco) e
@@ -87,6 +95,12 @@ public final class ContentValidator {
      * INVALID_MARKUP}).
      */
     private static final Pattern TERM = Pattern.compile("\\[\\[([^\\[\\]|]*)\\|([^\\[\\]|]*)]]");
+
+    /** Um placeholder, com o mesmo padrão do {@code ContentRenderer}. */
+    private static final Pattern PLACEHOLDER = Pattern.compile("\\{([^{}\\s]+)}");
+
+    /** Uma letra ou um número: o que faz uma palavra contar no critério da Fala. */
+    private static final Pattern WORD_CHAR = Pattern.compile("[\\p{L}\\p{N}]");
 
     private final ContentSchemas schemas;
 
@@ -765,6 +779,70 @@ public final class ContentValidator {
                                 + " [[texto|expressionKey]].");
             }
         });
+    }
+
+    /** Resposta aceita da Fala (história 1.15): a frase-alvo existe. */
+    private static void checkSpeechAnswer(
+            JsonNode activity, String pointer, String file, Report report) {
+        if (!activity.has("target")) {
+            report.add(
+                    file,
+                    pointer + "/target",
+                    activity.path("activityKey").asString(null),
+                    ContentRule.MISSING_ACCEPTED_ANSWER,
+                    "A Fala não tem target (a frase-alvo, que é a resposta aceita).");
+        }
+    }
+
+    /**
+     * Frase-alvo e alternativas da Fala (história 1.15): cada uma, em cada variante de pronome, tem
+     * ao menos uma palavra fora dos placeholders. Texto fora do formato já é erro de schema.
+     */
+    private static void checkSpeechWords(
+            JsonNode activity, String pointer, String file, Report report) {
+        Map<String, JsonNode> texts = new LinkedHashMap<>();
+        texts.put("/target", activity.path("target"));
+        JsonNode alternatives = activity.path("alternatives");
+        // As regras rodam mesmo com erro de schema: alternatives fora de lista já é erro de lá.
+        if (alternatives.isArray()) {
+            for (int i = 0; i < alternatives.size(); i++) {
+                texts.put("/alternatives/" + i, alternatives.get(i));
+            }
+        }
+        texts.forEach((at, text) -> {
+            Map<String, JsonNode> variants = new LinkedHashMap<>();
+            if (text == null) {
+                return;
+            }
+            if (text.isString()) {
+                variants.put(at, text);
+            } else if (text.isObject()) {
+                for (var variant : text.properties()) {
+                    variants.put(
+                            at + "/" + JsonPointers.escape(variant.getKey()), variant.getValue());
+                }
+            }
+            variants.forEach((where, variant) -> {
+                if (variant.isString() && !hasSpeechWord(variant.asString())) {
+                    report.add(
+                            file,
+                            pointer + where,
+                            activity.path("activityKey").asString(null),
+                            ContentRule.MISSING_SPEECH_WORD,
+                            "A frase da Fala precisa de ao menos uma palavra fora dos"
+                                    + " placeholders.");
+                }
+            });
+        });
+    }
+
+    /** Se o texto tem uma palavra fora dos placeholders; de um termo, conta só o texto. */
+    private static boolean hasSpeechWord(String text) {
+        String plain =
+                TERM.matcher(text)
+                        .replaceAll(match -> Matcher.quoteReplacement(" " + match.group(1) + " "));
+        plain = PLACEHOLDER.matcher(plain).replaceAll(" ");
+        return WORD_CHAR.matcher(plain).find();
     }
 
     private void checkSchema(JsonNode document, String schemaId, String file, Report report) {

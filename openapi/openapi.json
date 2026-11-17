@@ -7,7 +7,8 @@
             "cards" : "#/components/schemas/CardsActivity",
             "choice" : "#/components/schemas/ChoiceActivity",
             "dialogue" : "#/components/schemas/DialogueActivity",
-            "expression" : "#/components/schemas/ExpressionActivity"
+            "expression" : "#/components/schemas/ExpressionActivity",
+            "speech" : "#/components/schemas/SpeechActivity"
           },
           "propertyName" : "type"
         },
@@ -19,6 +20,8 @@
           "$ref" : "#/components/schemas/CardsActivity"
         }, {
           "$ref" : "#/components/schemas/ExpressionActivity"
+        }, {
+          "$ref" : "#/components/schemas/SpeechActivity"
         } ],
         "properties" : {
           "type" : {
@@ -33,7 +36,8 @@
             "cards" : "#/components/schemas/CardsActivityStudentView",
             "choice" : "#/components/schemas/ChoiceActivityStudentView",
             "dialogue" : "#/components/schemas/DialogueActivityStudentView",
-            "expression" : "#/components/schemas/ExpressionActivityStudentView"
+            "expression" : "#/components/schemas/ExpressionActivityStudentView",
+            "speech" : "#/components/schemas/SpeechActivityStudentView"
           },
           "propertyName" : "type"
         },
@@ -45,6 +49,8 @@
           "$ref" : "#/components/schemas/CardsActivityStudentView"
         }, {
           "$ref" : "#/components/schemas/ExpressionActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/SpeechActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -68,12 +74,15 @@
       "Answer" : {
         "discriminator" : {
           "mapping" : {
-            "choice" : "#/components/schemas/ChoiceAnswer"
+            "choice" : "#/components/schemas/ChoiceAnswer",
+            "speech" : "#/components/schemas/SpeechAnswer"
           },
           "propertyName" : "type"
         },
         "oneOf" : [ {
           "$ref" : "#/components/schemas/ChoiceAnswer"
+        }, {
+          "$ref" : "#/components/schemas/SpeechAnswer"
         } ],
         "properties" : {
           "type" : {
@@ -716,6 +725,84 @@
         "required" : [ "he", "she", "they" ],
         "type" : "object"
       },
+      "SpeechActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "alternatives" : {
+            "description" : "Outras formas aceitas da frase-alvo.",
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "target" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A frase-alvo, exibida ao aluno."
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "speech" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "prompt", "target", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "SpeechActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "target" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A frase-alvo, exibida ao aluno."
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "speech" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "prompt", "target", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "SpeechAnswer" : {
+        "properties" : {
+          "transcript" : {
+            "description" : "A transcrição, com as Variáveis do Aluno trocadas pelos tokens ({name}). Em branco é 400 INVALID_ANSWER.",
+            "maxLength" : 500,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "speech" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "transcript", "type" ],
+        "type" : "object"
+      },
       "StageContent" : {
         "properties" : {
           "activities" : {
@@ -1214,7 +1301,7 @@
     },
     "/api/v1/visitor/completions" : {
       "post" : {
-        "description" : "Conclui uma Atividade sem correção, sem XP. receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: hoje os expositivos dialogue, cards e expression, com VIEWED; SKIPPED fica reservado a um Tipo futuro. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
+        "description" : "Conclui uma Atividade sem correção, sem XP: a vista de um Tipo expositivo ou a pulada de um Tipo avaliado que aceita pular (a speech, com SKIPPED). receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: os expositivos dialogue, cards e expression, com VIEWED, e a speech pulada, com SKIPPED. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
         "operationId" : "completeVisitorActivity",
         "requestBody" : {
           "content" : {

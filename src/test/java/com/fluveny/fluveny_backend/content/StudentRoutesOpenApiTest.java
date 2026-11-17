@@ -158,7 +158,15 @@ class StudentRoutesOpenApiTest {
                                 .andReturn()
                                 .getResponse()
                                 .getContentAsString(StandardCharsets.UTF_8));
-        assertThat(api.at("/components/schemas/ChoiceItem/properties").propertyNames())
-                .containsAll(secretNames());
+        // História 1.15: as alternativas da Fala ficam na SpeechActivity.
+        Set<String> full = new TreeSet<>();
+        for (String name : Set.of("ChoiceItem", "SpeechActivity")) {
+            full.addAll(api.at("/components/schemas/" + name + "/properties").propertyNames());
+        }
+        assertThat(full).containsAll(secretNames());
+        assertThat(
+                        api.at("/components/schemas/SpeechActivityStudentView/properties")
+                                .has("alternatives"))
+                .isFalse();
     }
 }

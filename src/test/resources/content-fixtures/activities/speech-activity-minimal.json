@@ -1,0 +1,8 @@
+{
+  "activityKey": "s2-from",
+  "type": "speech",
+  "title": "Where are you from?",
+  "prompt": "Diga de onde você é.",
+  "target": "I am from {country}.",
+  "xp": 5
+}

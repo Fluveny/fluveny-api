@@ -149,7 +149,7 @@ A visão do aluno sai do `StudentViewProjector`, o único projetor: ele percorre
 4. A regra de resposta aceita do Tipo em `ACCEPTED_ANSWER_RULES`, no `ContentValidator`. Sem ela o validador não sobe, e o `ContentValidatorTest` falha.
    - Tipo expositivo (como o Diálogo, 1.13): sem `$defs.answer`, sem record de Answer e sem regra de resposta aceita. Ele entra em `EXPOSITORY_TYPES` do `ContentValidator`, e o `ActivityFidelityTest` dispensa o Answer. No `Grader`, o ramo lança `400 INVALID_ANSWER`.
    - Regra que o JSON Schema não expressa (ex. `ask` único no Diálogo) vai em `TYPE_RULES`, no `ContentValidator`.
-5. No `learning`, o Tipo no `LearningActivityTypes`, com `sinceAppVersion` nulo até a tag do App, e as conclusões que ele aceita em `completions` (`COMPLETIONS`; fora delas, `409 COMPLETION_NOT_ALLOWED`).
+5. No `learning`, o Tipo no `LearningActivityTypes`, com `sinceAppVersion` nulo até a tag do App, e as conclusões que ele aceita em `completions` (`COMPLETIONS`; fora delas, `409 COMPLETION_NOT_ALLOWED`). A rota de conclusão fecha a Atividade sem correção: o expositivo com `VIEWED` e o Tipo avaliado que aceita pular com `SKIPPED` (a Fala, 1.15).
 6. `./mvnw -B -ntp test`: o `ActivityFidelityTest` falha se schema, `permits`, `@JsonTypeName` e mapping divergirem, ou se propriedades, `required`, tipos e `enum` dos records divergirem do schema.
 
 ## Build e testes

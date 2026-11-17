@@ -52,10 +52,12 @@ class VisitorAttemptController {
     @Operation(
             operationId = "completeVisitorActivity",
             description =
-                    "Conclui uma Atividade sem correção, sem XP. receipt só volta na primeira"
+                    "Conclui uma Atividade sem correção, sem XP: a vista de um Tipo expositivo"
+                            + " ou a pulada de um Tipo avaliado que aceita pular (a speech, com"
+                            + " SKIPPED). receipt só volta na primeira"
                             + " conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a"
-                            + " sua conclusão: hoje os expositivos dialogue, cards e expression,"
-                            + " com VIEWED; SKIPPED fica reservado a um Tipo futuro. Fora dela, 409"
+                            + " sua conclusão: os expositivos dialogue, cards e expression, com"
+                            + " VIEWED, e a speech pulada, com SKIPPED. Fora dela, 409"
                             + " COMPLETION_NOT_ALLOWED.")
     @PostMapping("/completions")
     ApiResponse<CompletionResult> complete(@Valid @RequestBody Completion completion) {

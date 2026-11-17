@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/activities/speech.schema.json",
+  "title": "Fala",
+  "description": "Tipo Fala, \"It's your turn\" (FR-16): o aluno diz a frase-alvo e o App manda a transcrição. Acerto com ao menos 80% das palavras do alvo (ou de uma alternativa), em qualquer ordem; os placeholders não contam. O alvo e cada alternativa têm ao menos uma palavra fora de placeholder (ContentValidator). A frase-alvo é exibida; as alternativas são x-fluveny-secret (AD-6). Pular conclui com SKIPPED.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activityKey", "type", "title", "prompt", "target", "xp"],
+  "properties": {
+    "activityKey": { "$ref": "../key.schema.json" },
+    "type": { "const": "speech" },
+    "title": { "$ref": "../text.schema.json" },
+    "prompt": { "$ref": "../text.schema.json" },
+    "target": { "$ref": "../text.schema.json" },
+    "alternatives": {
+      "description": "Outras formas aceitas da frase-alvo.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "../text.schema.json" },
+      "x-fluveny-secret": true
+    },
+    "xp": {
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "answer": {
+      "description": "Answer da Fala (AD-6): a transcrição do que o aluno disse, com as Variáveis do Aluno já trocadas pelos tokens ({name}) pelo App (AD-10). Em branco é 400 INVALID_ANSWER. No expected, é o alvo cru.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "transcript"],
+      "properties": {
+        "type": { "const": "speech" },
+        "transcript": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    }
+  }
+}
