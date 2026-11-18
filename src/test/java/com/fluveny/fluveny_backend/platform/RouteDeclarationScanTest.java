@@ -127,15 +127,15 @@ class RouteDeclarationScanTest {
         assertThat(meta.body())
                 .isEqualTo(
                         "{\"data\":{\"minAppVersion\":\"0.0.0\",\"activityTypes\":"
-                                + "[{\"type\":\"choice\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"dialogue\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"cards\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"expression\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"speech\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"match\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"gaps\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"free\",\"sinceAppVersion\":null},"
-                                + "{\"type\":\"grammar\",\"sinceAppVersion\":null}]}}");
+                                + "[{\"type\":\"choice\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"dialogue\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"cards\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"expression\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"speech\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"match\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"gaps\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"free\",\"sinceAppVersion\":\"0.1.0\"},"
+                                + "{\"type\":\"grammar\",\"sinceAppVersion\":\"0.1.0\"}]}}");
 
         HttpResponse<String> missing = get("/api/v1/qualquer");
         assertThat(missing.statusCode()).isEqualTo(404);
