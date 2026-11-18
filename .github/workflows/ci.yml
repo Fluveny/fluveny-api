@@ -204,12 +204,12 @@ jobs:
             echo "::error::A publicação aceitou um Tipo acima da versão mínima do App."; exit 1
           fi
           grep -q UNSUPPORTED_ACTIVITY_TYPE "$RUNNER_TEMP/unsupported.txt"
-          # Token errado: 403.
+          # Token errado: 401 (desde a 2.1, Bearer que ninguém reconhece deixa a requisição anônima).
           if FLUVENY_DEPLOY_TOKEN=errado node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" 2> "$RUNNER_TEMP/forbidden.txt"; then
             echo "::error::A publicação aceitou um token errado."; exit 1
           fi
-          grep -q "A API respondeu 403:" "$RUNNER_TEMP/forbidden.txt"
-          grep -q "^ACCESS_DENIED:" "$RUNNER_TEMP/forbidden.txt"
+          grep -q "A API respondeu 401:" "$RUNNER_TEMP/forbidden.txt"
+          grep -q "^UNAUTHENTICATED:" "$RUNNER_TEMP/forbidden.txt"
           # Sem o segredo de proxy (chamada direta ao host, pulando o Worker): 403.
           if FLUVENY_PROXY_SECRET='' node scripts/content-bundle.mjs publish unit-coming-soon --api "$API_URL" --content "$FIXTURE" 2> "$RUNNER_TEMP/no-proxy.txt"; then
             echo "::error::A publicação passou sem o segredo de proxy."; exit 1
