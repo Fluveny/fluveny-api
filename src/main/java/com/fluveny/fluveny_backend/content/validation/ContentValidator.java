@@ -6,6 +6,7 @@ import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
 import com.fluveny.fluveny_backend.content.activity.FreeActivity;
 import com.fluveny.fluveny_backend.content.activity.GapsActivity;
+import com.fluveny.fluveny_backend.content.activity.GrammarActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.networknt.schema.Error;
@@ -58,11 +59,21 @@ public final class ContentValidator {
 
     /**
      * Chaves únicas dentro da própria lista (a da opção, a das Expressões Úteis, a da fala, a do
-     * bloco de cartões, a da resposta do Associar e a da palavra do banco das Lacunas). O {@code
-     * itemKey}, inclusive o do cartão, já é único na Unidade inteira.
+     * bloco de cartões, a da resposta do Associar, a da palavra do banco das Lacunas e as das três
+     * abas do Grammar Time). O {@code itemKey}, inclusive o do cartão, já é único na Unidade
+     * inteira.
      */
     private static final Set<String> LIST_SCOPED_KEYS =
-            Set.of("optionKey", "expressionKey", "lineKey", "blockKey", "responseKey", "wordKey");
+            Set.of(
+                    "optionKey",
+                    "expressionKey",
+                    "lineKey",
+                    "blockKey",
+                    "responseKey",
+                    "wordKey",
+                    "sentenceKey",
+                    "ruleKey",
+                    "exampleKey");
 
     /** Chaves únicas na Unidade inteira (AD-5), cada uma no próprio espaço. */
     private static final Set<String> UNIT_SCOPED_KEYS = Set.of("activityKey", "itemKey");
@@ -85,12 +96,16 @@ public final class ContentValidator {
                     ContentValidator::checkFreeAnswer);
 
     /**
-     * Os Tipos expositivos (história 1.13): sem Answer, sem regra de resposta aceita e sem
-     * Tentativa; a conclusão é por {@code completions}. Ficam fora da exigência de {@link
+     * Os Tipos expositivos (histórias 1.13, 1.14 e 1.19): sem Answer, sem regra de resposta aceita
+     * e sem Tentativa; a conclusão é por {@code completions}. Ficam fora da exigência de {@link
      * #ACCEPTED_ANSWER_RULES}, e o {@code ActivityFidelityTest} dispensa o Answer deles.
      */
     public static final Set<String> EXPOSITORY_TYPES =
-            Set.of(DialogueActivity.TYPE, CardsActivity.TYPE, ExpressionActivity.TYPE);
+            Set.of(
+                    DialogueActivity.TYPE,
+                    CardsActivity.TYPE,
+                    ExpressionActivity.TYPE,
+                    GrammarActivity.TYPE);
 
     /** Regras de um Tipo que o JSON Schema não expressa, além da resposta aceita. */
     private static final Map<String, ActivityRule> TYPE_RULES =
@@ -104,7 +119,9 @@ public final class ContentValidator {
                     GapsActivity.TYPE,
                     ContentValidator::checkGapsShape,
                     FreeActivity.TYPE,
-                    ContentValidator::checkFreeShape);
+                    ContentValidator::checkFreeShape,
+                    GrammarActivity.TYPE,
+                    ContentValidator::checkGrammarHighlight);
 
     /**
      * Um termo {@code [[texto|expressionKey]]}. Marcação malformada (texto ou chave em branco) e
@@ -802,6 +819,43 @@ public final class ContentValidator {
                                 + " [[texto|expressionKey]].");
             }
         });
+    }
+
+    /**
+     * Frases da aba "Você já usou" do Grammar Time (história 1.19): cada uma tem ao menos um trecho
+     * {@code **...**}, a forma destacada, em cada variante de pronome. O destaque vem do conteúdo;
+     * o código não o calcula. Lista ou frase fora do formato já é erro de schema.
+     */
+    private static void checkGrammarHighlight(
+            JsonNode activity, String pointer, String file, Report report) {
+        JsonNode used = activity.path("used");
+        if (!used.isArray()) {
+            return;
+        }
+        for (int i = 0; i < used.size(); i++) {
+            JsonNode sentence = used.get(i).path("sentence");
+            String at = pointer + "/used/" + i + "/sentence";
+            String key = used.get(i).path("sentenceKey").asString(null);
+            Map<String, JsonNode> texts = new LinkedHashMap<>();
+            if (sentence.isString()) {
+                texts.put("", sentence);
+            } else if (sentence.isObject()) {
+                for (var variant : sentence.properties()) {
+                    texts.put(variant.getKey(), variant.getValue());
+                }
+            }
+            texts.forEach((variant, text) -> {
+                if (text.isString() && MarkupChecker.lacksBold(text.asString())) {
+                    report.add(
+                            file,
+                            variant.isEmpty() ? at : at + "/" + JsonPointers.escape(variant),
+                            key,
+                            ContentRule.MISSING_GRAMMAR_HIGHLIGHT,
+                            "A frase do Grammar Time precisa destacar a forma em **negrito**"
+                                    + (variant.isEmpty() ? "." : ", na variante " + variant + "."));
+                }
+            });
+        }
     }
 
     /** Resposta aceita da Fala (história 1.15): a frase-alvo existe. */

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/activities/grammar.schema.json",
+  "title": "Grammar Time",
+  "description": "Tipo Grammar Time (FR-15, UX-DR54, UX-DR79), expositivo, em três passos: used (as formas que o aluno já usou, nas frases reais do Estágio), rules (a regra, em forma, uso e exemplo) e examples (exemplos de revisão). O destaque da forma vem do conteúdo, em **negrito**: cada frase de used tem ao menos um trecho em negrito, em cada variante de pronome (ContentValidator). Os rótulos das abas e o texto introdutório são do App. Sem campo secreto, sem xp e sem Answer: a visão do aluno é a Atividade inteira, e a conclusão é VIEWED.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activityKey", "type", "title", "used", "rules", "examples"],
+  "properties": {
+    "activityKey": { "$ref": "../key.schema.json" },
+    "type": { "const": "grammar" },
+    "title": { "$ref": "../text.schema.json" },
+    "used": {
+      "description": "Aba 1 (\"Você já usou\"): as frases reais do Estágio, copiadas no conteúdo, com a forma em **negrito**.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/used" }
+    },
+    "rules": {
+      "description": "Aba 2 (\"A regra\"): a tabela forma, uso e exemplo.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/rule" }
+    },
+    "examples": {
+      "description": "Aba 3 (\"Na prática\"): os exemplos de revisão.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/example" }
+    }
+  },
+  "$defs": {
+    "used": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sentenceKey", "form", "sentence"],
+      "properties": {
+        "sentenceKey": { "$ref": "../key.schema.json" },
+        "form": {
+          "description": "O rótulo da forma usada na frase (ex. is).",
+          "$ref": "../text.schema.json"
+        },
+        "sentence": {
+          "description": "A frase real do Estágio, com a forma em **negrito** (ao menos um trecho em cada variante de pronome; sem ele, o ContentValidator recusa com MISSING_GRAMMAR_HIGHLIGHT).",
+          "$ref": "../text.schema.json"
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ruleKey", "form", "use", "example"],
+      "properties": {
+        "ruleKey": { "$ref": "../key.schema.json" },
+        "form": { "$ref": "../text.schema.json" },
+        "use": { "$ref": "../text.schema.json" },
+        "example": { "$ref": "../text.schema.json" }
+      }
+    },
+    "example": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exampleKey", "text"],
+      "properties": {
+        "exampleKey": { "$ref": "../key.schema.json" },
+        "text": { "$ref": "../text.schema.json" }
+      }
+    }
+  }
+}

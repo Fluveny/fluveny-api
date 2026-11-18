@@ -1,0 +1,59 @@
+{
+  "activityKey": "s1-grammar-time",
+  "type": "grammar",
+  "title": "Verb to be",
+  "used": [
+    {
+      "sentenceKey": "my-name",
+      "form": "is",
+      "sentence": "My name **is** {name}."
+    },
+    {
+      "sentenceKey": "from-canada",
+      "form": {
+        "he": "is",
+        "she": "is",
+        "they": "are"
+      },
+      "sentence": {
+        "he": "He **is** from Canada.",
+        "she": "She **is** from Canada.",
+        "they": "They **are** from Canada."
+      }
+    }
+  ],
+  "rules": [
+    {
+      "ruleKey": "am",
+      "form": "am",
+      "use": "only with I",
+      "example": "I **am** a student."
+    },
+    {
+      "ruleKey": "is",
+      "form": "is",
+      "use": "with he, she and it",
+      "example": "{name} **is** from {country}."
+    },
+    {
+      "ruleKey": "are",
+      "form": "are",
+      "use": "with you, we and they",
+      "example": "You **are** [[from|be-from]] Canada."
+    }
+  ],
+  "examples": [
+    {
+      "exampleKey": "alex",
+      "text": "I'm Alex. My name **is** Alex."
+    },
+    {
+      "exampleKey": "pronoun",
+      "text": {
+        "he": "He **is** my friend.",
+        "she": "She **is** my friend.",
+        "they": "They **are** my friends."
+      }
+    }
+  ]
+}

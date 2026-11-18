@@ -56,7 +56,7 @@ class VisitorAttemptController {
                             + " ou a pulada de um Tipo avaliado que aceita pular (a speech, com"
                             + " SKIPPED). receipt só volta na primeira"
                             + " conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a"
-                            + " sua conclusão: os expositivos dialogue, cards e expression, com"
+                            + " sua conclusão: os expositivos dialogue, cards, expression e grammar, com"
                             + " VIEWED, e a speech pulada, com SKIPPED. Fora dela, 409"
                             + " COMPLETION_NOT_ALLOWED.")
     @PostMapping("/completions")

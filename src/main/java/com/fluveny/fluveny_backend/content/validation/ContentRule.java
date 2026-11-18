@@ -63,6 +63,12 @@ public enum ContentRule {
     MISSING_EXPRESSION_TERM,
 
     /**
+     * Frase da aba "Você já usou" do Grammar Time sem nenhum trecho {@code **...**}, a forma
+     * destacada (história 1.19). Com variantes de pronome, vale para cada uma.
+     */
+    MISSING_GRAMMAR_HIGHLIGHT,
+
+    /**
      * Frase-alvo ou alternativa da Fala sem nenhuma palavra fora dos placeholders (história 1.15):
      * os placeholders não contam no critério, então a frase não teria o que conferir. Com variantes
      * de pronome, vale para cada uma.

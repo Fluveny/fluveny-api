@@ -1,0 +1,26 @@
+{
+  "activityKey": "s1-grammar",
+  "type": "grammar",
+  "title": "Verb to be",
+  "used": [
+    {
+      "sentenceKey": "my-name",
+      "form": "is",
+      "sentence": "My name **is** Alex."
+    }
+  ],
+  "rules": [
+    {
+      "ruleKey": "am",
+      "form": "am",
+      "use": "only with I",
+      "example": "I **am** a student."
+    }
+  ],
+  "examples": [
+    {
+      "exampleKey": "alex",
+      "text": "I'm Alex."
+    }
+  ]
+}

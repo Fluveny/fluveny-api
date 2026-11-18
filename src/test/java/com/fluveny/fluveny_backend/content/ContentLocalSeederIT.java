@@ -75,7 +75,12 @@ class ContentLocalSeederIT {
                 .andExpect(jsonPath("$.data.activities[7].type").value("gaps"))
                 // História 1.18: a Resposta Livre, sem a resposta-modelo.
                 .andExpect(jsonPath("$.data.activities[8].type").value("free"))
-                .andExpect(jsonPath("$.data.activities[8].modelAnswer").doesNotExist());
+                .andExpect(jsonPath("$.data.activities[8].modelAnswer").doesNotExist())
+                // História 1.19: o Grammar Time, igual ao conteúdo.
+                .andExpect(jsonPath("$.data.activities[9].type").value("grammar"))
+                .andExpect(
+                        jsonPath("$.data.activities[9].used[0].sentence")
+                                .value("My name **is** {name}."));
 
         this.mvc.perform(post("/local/reset")).andExpect(status().isOk());
         this.mvc
