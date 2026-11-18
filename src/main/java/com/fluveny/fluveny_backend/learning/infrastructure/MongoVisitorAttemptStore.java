@@ -46,7 +46,8 @@ class MongoVisitorAttemptStore implements VisitorAttemptStore {
                         .setOnInsert("nonce", attempt.nonce().toString())
                         .setOnInsert("issuedAt", Date.from(attempt.issuedAt()))
                         .setOnInsert("receipt", attempt.receipt())
-                        .setOnInsert("createdAt", Date.from(attempt.createdAt()));
+                        .setOnInsert("createdAt", Date.from(attempt.createdAt()))
+                        .setOnInsert("extraHelp", attempt.extraHelp());
         try {
             UpdateResult result =
                     this.mongo.upsert(
@@ -86,7 +87,9 @@ class MongoVisitorAttemptStore implements VisitorAttemptStore {
                 UUID.fromString(document.getString("nonce")),
                 toInstant(document.getDate("issuedAt")),
                 document.getString("receipt"),
-                toInstant(document.getDate("createdAt")));
+                toInstant(document.getDate("createdAt")),
+                // Documentos de antes da 1.18 não têm o campo.
+                Boolean.TRUE.equals(document.getBoolean("extraHelp")));
     }
 
     private static Instant toInstant(Date date) {

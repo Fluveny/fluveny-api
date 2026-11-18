@@ -1,0 +1,21 @@
+{
+  "activityKey": "s2-free",
+  "type": "free",
+  "title": "Free",
+  "prompt": "Where are you from?",
+  "modelAnswer": "I'm from {country}.",
+  "extraHelp": {
+    "lines": ["I'm ___ {country}."],
+    "items": [
+      {
+        "itemKey": "a-free-gap",
+        "accepted": ["from"]
+      }
+    ],
+    "bank": [
+      { "wordKey": "from", "text": "from" },
+      { "wordKey": "to", "text": "to" }
+    ]
+  },
+  "xp": 4
+}

@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.learning.visitor;
 
 import com.fluveny.fluveny_backend.content.ContentActivities;
+import com.fluveny.fluveny_backend.content.activity.FreeActivity;
 import com.fluveny.fluveny_backend.learning.LearningActivityTypes;
 import com.fluveny.fluveny_backend.learning.grading.GradeResult;
 import com.fluveny.fluveny_backend.learning.grading.Grader;
@@ -63,8 +64,9 @@ class VisitorAttempts {
     AttemptResult attempt(Attempt attempt) {
         if (attempt.deviceId() == null) {
             // Decisão 3 da 1.12: sem aparelho, corrige como na 1.11, sem gravar nem recibo.
-            GradeResult result = grade(open(attempt.versionId(), attempt.activityKey()), attempt);
-            return toResult(result, result.isCorrect(), result.xpAwarded(), null);
+            ContentActivities.Found found = open(attempt.versionId(), attempt.activityKey());
+            GradeResult result = grade(found, attempt);
+            return toResult(found, result, result.isCorrect(), result.xpAwarded(), null);
         }
         this.deviceLimiter.acquire(attempt.deviceId().toString());
         ContentActivities.Found found = open(attempt.versionId(), attempt.activityKey());
@@ -78,14 +80,16 @@ class VisitorAttempts {
                         result.resultPct(),
                         result.xpAwarded(),
                         attempt.studyTimeMs());
-        return toResult(result, result.isCorrect(), result.xpAwarded(), receipt);
+        return toResult(found, result, result.isCorrect(), result.xpAwarded(), receipt);
     }
 
     /**
      * "Ver resposta" (Decisão 1 da 1.11): corrige a mesma Tentativa e devolve o Resultado com
      * {@code expected} e as justificativas, sem XP. Exige uma Tentativa gravada do aparelho na
      * Atividade (Decisão 2 da 1.12), senão {@code 409 ATTEMPT_REQUIRED}, inclusive sem {@code
-     * deviceId} (Decisão 3). Não grava nada nem gera recibo.
+     * deviceId} (Decisão 3). Na Resposta Livre (1.18), o registro precisa ser uma Tentativa do
+     * Extra Help ({@code GRADED}): a conclusão {@code VIEWED} não basta. Não grava nada nem gera
+     * recibo.
      */
     AttemptResult reveal(Attempt attempt) {
         if (attempt.deviceId() != null) {
@@ -93,21 +97,26 @@ class VisitorAttempts {
         }
         ContentActivities.Found found = open(attempt.versionId(), attempt.activityKey());
         GradeResult result = grade(found, attempt);
-        // Sem aparelho não há Tentativa gravada a conferir (Decisão 3 da 1.12).
-        if (attempt.deviceId() == null
-                || this.store.find(attempt.deviceId(), attempt.activityKey()).isEmpty()) {
+        // Sem aparelho não há Tentativa gravada a conferir (Decisão 3 da 1.12). Na Resposta
+        // Livre, a conclusão VIEWED não destrava o gabarito do Extra Help: só uma Tentativa dele.
+        Optional<FirstAttempt> first =
+                (attempt.deviceId() == null)
+                        ? Optional.empty()
+                        : this.store.find(attempt.deviceId(), attempt.activityKey());
+        if (first.isEmpty() || (isExtraHelp(found) && first.get().outcome() != Outcome.GRADED)) {
             throw new ApiException(
                     HttpStatus.CONFLICT,
                     ATTEMPT_REQUIRED,
                     "Responda a Atividade antes de ver a resposta.");
         }
-        return toResult(result, true, 0, null);
+        return toResult(found, result, true, 0, null);
     }
 
     /**
      * Atividade vista ou pulada: sem correção e sem XP. O Tipo decide a conclusão aceita ({@link
      * LearningActivityTypes#allowsCompletion}); fora dela, {@code 409 COMPLETION_NOT_ALLOWED}, sem
-     * gravar.
+     * gravar. A conclusão {@code VIEWED} da Resposta Livre (história 1.18) devolve a
+     * resposta-modelo, também na repetição; o texto do aluno nunca vem.
      */
     CompletionResult complete(Completion completion) {
         this.deviceLimiter.acquire(completion.deviceId().toString());
@@ -128,6 +137,9 @@ class VisitorAttempts {
                         0,
                         0,
                         completion.studyTimeMs());
+        if (found.activity() instanceof FreeActivity free) {
+            return new CompletionResult(outcome, 0, receipt, free.modelAnswer());
+        }
         return new CompletionResult(outcome, 0, receipt);
     }
 
@@ -198,7 +210,9 @@ class VisitorAttempts {
                         nonce,
                         now,
                         receipt,
-                        now);
+                        now,
+                        // A conclusão VIEWED da Resposta Livre não é Extra Help; a Tentativa é.
+                        outcome == Outcome.GRADED && isExtraHelp(found));
         if (this.store.insertIfAbsent(first)) {
             return receipt;
         }
@@ -223,8 +237,17 @@ class VisitorAttempts {
         return same ? first.receipt() : null;
     }
 
+    /** Tentativa da Resposta Livre: sempre do Extra Help (história 1.18). */
+    private static boolean isExtraHelp(ContentActivities.Found found) {
+        return found.activity() instanceof FreeActivity;
+    }
+
     private static AttemptResult toResult(
-            GradeResult result, boolean disclose, int xp, String receipt) {
+            ContentActivities.Found found,
+            GradeResult result,
+            boolean disclose,
+            int xp,
+            String receipt) {
         return new AttemptResult(
                 result.outcome(),
                 result.resultPct(),
@@ -237,6 +260,7 @@ class VisitorAttempts {
                         .toList(),
                 xp,
                 disclose ? result.expected() : null,
-                receipt);
+                receipt,
+                isExtraHelp(found) ? Boolean.TRUE : null);
     }
 }

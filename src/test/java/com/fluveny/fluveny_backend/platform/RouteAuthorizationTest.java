@@ -27,8 +27,8 @@ class RouteAuthorizationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.minAppVersion").value("0.0.0"))
                 // Os Tipos do learning, com sinceAppVersion nulo até a tag do App (1.11, 1.13,
-                // 1.14, 1.15, 1.16, 1.17).
-                .andExpect(jsonPath("$.data.activityTypes.length()").value(7))
+                // 1.14, 1.15, 1.16, 1.17, 1.18).
+                .andExpect(jsonPath("$.data.activityTypes.length()").value(8))
                 .andExpect(jsonPath("$.data.activityTypes[0].type").value("choice"))
                 .andExpect(jsonPath("$.data.activityTypes[0].sinceAppVersion").value(nullValue()))
                 .andExpect(jsonPath("$.data.activityTypes[1].type").value("dialogue"))
@@ -43,6 +43,8 @@ class RouteAuthorizationTest {
                 .andExpect(jsonPath("$.data.activityTypes[5].sinceAppVersion").value(nullValue()))
                 .andExpect(jsonPath("$.data.activityTypes[6].type").value("gaps"))
                 .andExpect(jsonPath("$.data.activityTypes[6].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[7].type").value("free"))
+                .andExpect(jsonPath("$.data.activityTypes[7].sinceAppVersion").value(nullValue()))
                 .andExpect(jsonPath("$.message").doesNotExist());
     }
 

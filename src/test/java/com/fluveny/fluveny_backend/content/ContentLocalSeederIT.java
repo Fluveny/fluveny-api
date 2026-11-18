@@ -72,7 +72,10 @@ class ContentLocalSeederIT {
                 // História 1.17: as Lacunas, sem as respostas aceitas.
                 .andExpect(jsonPath("$.data.activities[6].type").value("gaps"))
                 .andExpect(jsonPath("$.data.activities[6].items[0].accepted").doesNotExist())
-                .andExpect(jsonPath("$.data.activities[7].type").value("gaps"));
+                .andExpect(jsonPath("$.data.activities[7].type").value("gaps"))
+                // História 1.18: a Resposta Livre, sem a resposta-modelo.
+                .andExpect(jsonPath("$.data.activities[8].type").value("free"))
+                .andExpect(jsonPath("$.data.activities[8].modelAnswer").doesNotExist());
 
         this.mvc.perform(post("/local/reset")).andExpect(status().isOk());
         this.mvc

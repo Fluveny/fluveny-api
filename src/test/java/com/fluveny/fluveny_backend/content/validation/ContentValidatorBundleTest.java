@@ -897,4 +897,138 @@ class ContentValidatorBundleTest {
                     assertThat(error.pointer()).startsWith("/activities/6");
                 });
     }
+
+    // História 1.18: a Resposta Livre com Extra Help.
+
+    /** A Resposta Livre de {@code s1-meet-alex} na fixture válida ({@code /activities/8}). */
+    private static ObjectNode free(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/8");
+    }
+
+    private static ObjectNode extraHelp(ObjectNode bundle) {
+        return (ObjectNode) free(bundle).get("extraHelp");
+    }
+
+    @Test
+    void aFreeWithoutModelAnswerIsOnlyMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        free(bundle).remove("modelAnswer");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/8/modelAnswer",
+                                "s1-about-you",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void moreGapsThanItemsInTheExtraHelpIsAGapCountMismatch() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) extraHelp(bundle).get("lines")).set(1, "Nice to ___ ___ you!");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/8/extraHelp/lines",
+                                "s1-about-you",
+                                ContentRule.GAP_COUNT_MISMATCH));
+    }
+
+    @Test
+    void anExtraHelpItemWithoutAnAcceptedAnswerInTheBankIsMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) extraHelp(bundle).at("/bank/1")).put("text", "met");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/8/extraHelp/items/1/accepted",
+                                "s1-about-you-meet",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void anExtraHelpBankWithoutWordsForAllItemsAtOnceIsMissingAcceptedAnswer() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ArrayNode) extraHelp(bundle).at("/items/1/accepted")).set(0, "I'm");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/8/extraHelp/bank",
+                                "s1-about-you",
+                                ContentRule.MISSING_ACCEPTED_ANSWER));
+    }
+
+    @Test
+    void aRepeatedWordKeyInTheExtraHelpIsADuplicateKey() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) extraHelp(bundle).at("/bank/2")).put("wordKey", "im");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/8/extraHelp/bank/0/wordKey",
+                                "im",
+                                ContentRule.DUPLICATE_KEY),
+                        tuple(
+                                "/activities/8/extraHelp/bank/2/wordKey",
+                                "im",
+                                ContentRule.DUPLICATE_KEY));
+    }
+
+    @Test
+    void freeTextsFollowTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        free(bundle).put("modelAnswer", "I'm {age}.");
+        ((ArrayNode) extraHelp(bundle).get("lines")).set(1, "[[Nice|nao-existe]] to ___ you!");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/8/modelAnswer", ContentRule.UNKNOWN_PLACEHOLDER),
+                        tuple("/activities/8/extraHelp/lines/1", ContentRule.INVALID_MARKUP));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "prompt=",
+                "extra-help=",
+                "lines=0",
+                "items=0",
+                "bank=",
+                "bank=1",
+                "mode=bank",
+                "xp=",
+                "extra-property=x"
+            })
+    void anInvalidFreeIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode free = free(bundle);
+        ObjectNode extraHelp = extraHelp(bundle);
+        switch (change) {
+            case "prompt=" -> free.remove("prompt");
+            case "extra-help=" -> free.remove("extraHelp");
+            case "lines=0" -> ((ArrayNode) extraHelp.get("lines")).removeAll();
+            case "items=0" -> ((ArrayNode) extraHelp.get("items")).removeAll();
+            case "bank=" -> extraHelp.remove("bank");
+            case "bank=1" -> {
+                ((ArrayNode) extraHelp.get("bank")).remove(2);
+                ((ArrayNode) extraHelp.get("bank")).remove(1);
+            }
+            case "mode=bank" -> extraHelp.put("mode", "bank");
+            case "xp=" -> free.remove("xp");
+            case "extra-property=x" -> free.put("answer", "I'm Ana.");
+            default -> throw new IllegalArgumentException(change);
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .anySatisfy(
+                        error -> assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION))
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/8");
+                });
+    }
 }

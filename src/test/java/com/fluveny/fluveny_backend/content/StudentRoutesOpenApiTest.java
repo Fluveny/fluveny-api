@@ -125,10 +125,16 @@ class StudentRoutesOpenApiTest {
      * do item, e {@code AttemptResult.expected} é um {@code Answer} com a opção certa de cada item
      * (o nome da propriedade não é secreto, por isso não precisa de exceção aqui, mas o conteúdo é
      * o {@code correctOptionKey}). O {@code VisitorAttemptsTest} prova que nenhum dos dois sai no
-     * Erro.
+     * Erro. História 1.18: o {@code CompletionResult.modelAnswer} é a resposta-modelo da Resposta
+     * Livre, que sai depois do ENVIAR (conclusão {@code VIEWED}); o {@code VisitorAttemptsTest}
+     * prova que ela só sai na conclusão de um {@code free}.
      */
     private static final Map<String, Set<String>> DISCLOSED =
-            Map.of("ItemResult", Set.of("justification"));
+            Map.of(
+                    "ItemResult",
+                    Set.of("justification"),
+                    "CompletionResult",
+                    Set.of("modelAnswer"));
 
     @Test
     void theAttemptResultDisclosesOnlyTheExpectedAnswerAndTheJustification() throws Exception {
@@ -160,8 +166,10 @@ class StudentRoutesOpenApiTest {
                                 .getContentAsString(StandardCharsets.UTF_8));
         // História 1.15: as alternativas da Fala ficam na SpeechActivity. História 1.16: o
         // gabarito do Associar fica no MatchItem. História 1.17: o das Lacunas, no GapsItem.
+        // História 1.18: a resposta-modelo, na FreeActivity.
         Set<String> full = new TreeSet<>();
-        for (String name : Set.of("ChoiceItem", "SpeechActivity", "MatchItem", "GapsItem")) {
+        for (String name :
+                Set.of("ChoiceItem", "SpeechActivity", "MatchItem", "GapsItem", "FreeActivity")) {
             full.addAll(api.at("/components/schemas/" + name + "/properties").propertyNames());
         }
         assertThat(full).containsAll(secretNames());
@@ -177,5 +185,14 @@ class StudentRoutesOpenApiTest {
                 .contains("accepted", "justification");
         assertThat(api.at("/components/schemas/GapsItemStudentView/properties").propertyNames())
                 .containsExactly("itemKey");
+        assertThat(
+                        api.at("/components/schemas/FreeActivityStudentView/properties")
+                                .has("modelAnswer"))
+                .isFalse();
+        assertThat(
+                        api.at(
+                                        "/components/schemas/FreeExtraHelpStudentView/properties/items/items/$ref")
+                                .asString())
+                .isEqualTo(COMPONENTS + "GapsItemStudentView");
     }
 }

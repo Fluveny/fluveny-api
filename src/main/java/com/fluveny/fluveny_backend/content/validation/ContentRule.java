@@ -31,14 +31,16 @@ public enum ContentRule {
     /**
      * Atividade avaliada sem resposta aceita (na Escolha, {@code correctOptionKey} fora das opções;
      * no Associar, {@code correctResponseKey} fora de {@code responses} ou repetido entre itens;
-     * nas Lacunas do {@code bank}, item sem resposta aceita no banco ou banco sem palavras para
-     * todos os itens ao mesmo tempo).
+     * nas Lacunas do {@code bank} e no Extra Help da Resposta Livre, item sem resposta aceita no
+     * banco ou banco sem palavras para todos os itens ao mesmo tempo; na Resposta Livre, sem {@code
+     * modelAnswer}).
      */
     MISSING_ACCEPTED_ANSWER,
 
     /**
-     * Lacunas cujo número de {@code ___} nas {@code lines} difere do número de {@code items}, em
-     * alguma variante de pronome (história 1.17).
+     * Lacunas (ou Extra Help da Resposta Livre, história 1.18) cujo número de {@code ___} nas
+     * {@code lines} difere do número de {@code items}, em alguma variante de pronome (história
+     * 1.17).
      */
     GAP_COUNT_MISMATCH,
 

@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://fluveny.github.io/content-schema/v1/activities/free.schema.json",
+  "title": "Resposta Livre",
+  "description": "Tipo Resposta Livre com Extra Help (FR-17, UX-DR77, UX-DR78): o aluno responde à pergunta de Alex com as próprias palavras e compara com a resposta-modelo, sem correção; o texto dele nunca vai ao servidor. Se travar, pede o Extra Help, que troca a pergunta pelas lacunas do banco (o mode bank das Lacunas, com as mesmas regras: lacunas x itens em cada variante de pronome, banco que cobre os itens ao mesmo tempo, wordKey única no banco). A conclusão é VIEWED, que devolve a resposta-modelo; a Tentativa é só do Extra Help, e o xp vale só para ele. Os campos x-fluveny-secret saem da visão do aluno (AD-6).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["activityKey", "type", "title", "prompt", "modelAnswer", "extraHelp", "xp"],
+  "properties": {
+    "activityKey": { "$ref": "../key.schema.json" },
+    "type": { "const": "free" },
+    "title": { "$ref": "../text.schema.json" },
+    "prompt": {
+      "description": "A pergunta de Alex.",
+      "$ref": "../text.schema.json"
+    },
+    "modelAnswer": {
+      "description": "Uma resposta possível, mostrada depois do ENVIAR; pode ter {name} e {country}. Sai na conclusão VIEWED.",
+      "$ref": "../text.schema.json",
+      "x-fluveny-secret": true
+    },
+    "extraHelp": { "$ref": "#/$defs/extraHelp" },
+    "xp": {
+      "description": "O XP do Extra Help; a Resposta Livre enviada não dá XP.",
+      "type": "integer",
+      "minimum": 0
+    }
+  },
+  "$defs": {
+    "extraHelp": {
+      "description": "O Extra Help: as lacunas do banco (o mode bank das Lacunas).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lines", "items", "bank"],
+      "properties": {
+        "prompt": {
+          "description": "A instrução do Extra Help, acima das lacunas.",
+          "$ref": "../text.schema.json"
+        },
+        "lines": {
+          "description": "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": { "$ref": "../text.schema.json" }
+        },
+        "items": {
+          "description": "Um item por lacuna, na ordem das lacunas nas linhas.",
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": { "$ref": "gaps.schema.json#/$defs/item" }
+        },
+        "bank": {
+          "description": "O banco de palavras, na ordem do conteúdo, com os distratores; o App embaralha.",
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 12,
+          "items": { "$ref": "gaps.schema.json#/$defs/word" }
+        }
+      }
+    },
+    "answer": {
+      "description": "Answer do Extra Help (AD-6): o valor de cada lacuna, o texto da palavra do banco, com as Variáveis do Aluno trocadas pelos tokens ({name}) pelo App (AD-10). No expected, a primeira resposta aceita de cada item, crua. A Resposta Livre não tem Answer: o texto do aluno nunca vai ao servidor.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "free" },
+        "items": {
+          "description": "Um valor por item. Item faltando, repetido ou desconhecido e valor em branco são 400 INVALID_ANSWER.",
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "gaps.schema.json#/$defs/answerItem" }
+        }
+      }
+    }
+  }
+}

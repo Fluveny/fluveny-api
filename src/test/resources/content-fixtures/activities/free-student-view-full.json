@@ -1,0 +1,17 @@
+{
+  "activityKey": "s1-about-you",
+  "type": "free",
+  "title": "Your Answer",
+  "prompt": "Hi! I'm Alex. Tell me about your roommate!",
+  "extraHelp": {
+    "prompt": "Complete com as palavras do banco, {name}.",
+    "lines": ["Hi Alex! ___ {name}.", "I'm ___ {country}."],
+    "items": [{ "itemKey": "s1-about-you-im" }, { "itemKey": "s1-about-you-from" }],
+    "bank": [
+      { "wordKey": "im", "text": "I'm" },
+      { "wordKey": "from", "text": "from" },
+      { "wordKey": "is", "text": "is" }
+    ]
+  },
+  "xp": 8
+}

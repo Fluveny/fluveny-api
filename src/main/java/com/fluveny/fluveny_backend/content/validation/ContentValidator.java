@@ -4,6 +4,7 @@ import com.fluveny.fluveny_backend.content.activity.CardsActivity;
 import com.fluveny.fluveny_backend.content.activity.ChoiceActivity;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.FreeActivity;
 import com.fluveny.fluveny_backend.content.activity.GapsActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
@@ -79,7 +80,9 @@ public final class ContentValidator {
                     MatchActivity.TYPE,
                     ContentValidator::checkMatchAnswer,
                     GapsActivity.TYPE,
-                    ContentValidator::checkGapsAnswer);
+                    ContentValidator::checkGapsAnswer,
+                    FreeActivity.TYPE,
+                    ContentValidator::checkFreeAnswer);
 
     /**
      * Os Tipos expositivos (história 1.13): sem Answer, sem regra de resposta aceita e sem
@@ -99,7 +102,9 @@ public final class ContentValidator {
                     SpeechActivity.TYPE,
                     ContentValidator::checkSpeechWords,
                     GapsActivity.TYPE,
-                    ContentValidator::checkGapsShape);
+                    ContentValidator::checkGapsShape,
+                    FreeActivity.TYPE,
+                    ContentValidator::checkFreeShape);
 
     /**
      * Um termo {@code [[texto|expressionKey]]}. Marcação malformada (texto ou chave em branco) e
@@ -885,6 +890,48 @@ public final class ContentValidator {
      */
     private static void checkGapsAnswer(
             JsonNode activity, String pointer, String file, Report report) {
+        checkGapItemsAnswer(
+                activity,
+                pointer,
+                activity.path("activityKey").asString(null),
+                GapsActivity.MODE_BANK.equals(activity.path("mode").asString(null)),
+                file,
+                report);
+    }
+
+    /**
+     * Resposta aceita da Resposta Livre (história 1.18): a resposta-modelo existe, e o Extra Help
+     * segue a regra das Lacunas do {@code bank} ({@link #checkGapsAnswer}). Extra Help fora do
+     * formato já é erro de schema.
+     */
+    private static void checkFreeAnswer(
+            JsonNode activity, String pointer, String file, Report report) {
+        String activityKey = activity.path("activityKey").asString(null);
+        if (!activity.has("modelAnswer")) {
+            report.add(
+                    file,
+                    pointer + "/modelAnswer",
+                    activityKey,
+                    ContentRule.MISSING_ACCEPTED_ANSWER,
+                    "A Resposta Livre não tem modelAnswer (a resposta-modelo).");
+        }
+        JsonNode extraHelp = activity.path("extraHelp");
+        if (extraHelp.isObject()) {
+            checkGapItemsAnswer(extraHelp, pointer + "/extraHelp", activityKey, true, file, report);
+        }
+    }
+
+    /**
+     * A regra de resposta aceita das lacunas sobre um nó com {@code items} e {@code bank} (a
+     * Atividade das Lacunas ou o Extra Help da Resposta Livre), em {@code pointer}.
+     */
+    private static void checkGapItemsAnswer(
+            JsonNode activity,
+            String pointer,
+            String activityKey,
+            boolean bankMode,
+            String file,
+            Report report) {
         JsonNode items = activity.path("items");
         if (!items.isArray()) {
             return;
@@ -903,9 +950,7 @@ public final class ContentValidator {
             }
         }
         JsonNode bank = activity.path("bank");
-        if (!complete
-                || !GapsActivity.MODE_BANK.equals(activity.path("mode").asString(null))
-                || !bank.isArray()) {
+        if (!complete || !bankMode || !bank.isArray()) {
             // Sem banco no bank é BANK_MODE_MISMATCH; banco fora de lista é erro de schema.
             return;
         }
@@ -958,7 +1003,7 @@ public final class ContentValidator {
             report.add(
                     file,
                     pointer + "/bank",
-                    activity.path("activityKey").asString(null),
+                    activityKey,
                     ContentRule.MISSING_ACCEPTED_ANSWER,
                     "O banco (bank) não tem palavras para todos os itens ao mesmo tempo"
                             + inVariants(variants, notEnough)
@@ -983,6 +1028,49 @@ public final class ContentValidator {
     private static void checkGapsShape(
             JsonNode activity, String pointer, String file, Report report) {
         String activityKey = activity.path("activityKey").asString(null);
+        checkGapCount(activity, pointer, activityKey, file, report);
+        String mode = activity.path("mode").asString(null);
+        boolean hasBank = activity.has("bank");
+        if (GapsActivity.MODE_TYPED.equals(mode) && hasBank) {
+            report.add(
+                    file,
+                    pointer + "/bank",
+                    activityKey,
+                    ContentRule.BANK_MODE_MISMATCH,
+                    "O banco (bank) existe só no mode bank.");
+        } else if (GapsActivity.MODE_BANK.equals(mode) && !hasBank) {
+            report.add(
+                    file,
+                    pointer + "/bank",
+                    activityKey,
+                    ContentRule.BANK_MODE_MISMATCH,
+                    "O mode bank precisa do banco (bank).");
+        }
+    }
+
+    /**
+     * Forma do Extra Help da Resposta Livre (história 1.18): o número de lacunas nas linhas é igual
+     * ao de itens, como nas Lacunas. O banco é obrigatório no schema.
+     */
+    private static void checkFreeShape(
+            JsonNode activity, String pointer, String file, Report report) {
+        JsonNode extraHelp = activity.path("extraHelp");
+        if (extraHelp.isObject()) {
+            checkGapCount(
+                    extraHelp,
+                    pointer + "/extraHelp",
+                    activity.path("activityKey").asString(null),
+                    file,
+                    report);
+        }
+    }
+
+    /**
+     * O número de lacunas ({@code ___}) nas {@code lines} do nó é igual ao de {@code items} em cada
+     * variante de pronome. Lista fora do formato já é erro de schema.
+     */
+    private static void checkGapCount(
+            JsonNode activity, String pointer, String activityKey, String file, Report report) {
         JsonNode lines = activity.path("lines");
         JsonNode items = activity.path("items");
         if (lines.isArray() && items.isArray()) {
@@ -1015,23 +1103,6 @@ public final class ContentValidator {
                                 + items.size()
                                 + " itens; cada ___ precisa de um item, na ordem.");
             }
-        }
-        String mode = activity.path("mode").asString(null);
-        boolean hasBank = activity.has("bank");
-        if (GapsActivity.MODE_TYPED.equals(mode) && hasBank) {
-            report.add(
-                    file,
-                    pointer + "/bank",
-                    activityKey,
-                    ContentRule.BANK_MODE_MISMATCH,
-                    "O banco (bank) existe só no mode bank.");
-        } else if (GapsActivity.MODE_BANK.equals(mode) && !hasBank) {
-            report.add(
-                    file,
-                    pointer + "/bank",
-                    activityKey,
-                    ContentRule.BANK_MODE_MISMATCH,
-                    "O mode bank precisa do banco (bank).");
         }
     }
 
