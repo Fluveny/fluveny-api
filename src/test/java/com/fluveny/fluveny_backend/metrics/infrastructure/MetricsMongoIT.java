@@ -22,9 +22,9 @@ import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.test.context.ActiveProfiles;
 
 /**
- * {@code events} contra o Mongo 8 (história 1.20, AD-14): os campos de cada tipo, o índice único
- * parcial do {@code STAGE_COMPLETED}, a idempotência dos índices e a corrida de duas conclusões do
- * mesmo Estágio.
+ * {@code events} contra o Mongo 8 (histórias 1.20 e 2.1, AD-14): os campos de cada tipo, o índice
+ * único parcial do {@code STAGE_COMPLETED}, a idempotência dos índices e a corrida de duas
+ * conclusões do mesmo Estágio.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -105,6 +105,20 @@ class MetricsMongoIT {
                         "stageKey",
                         "stageCompletionKey");
         assertThat(events.get(2).getString("stageKey")).isEqualTo("s1-meet-alex");
+    }
+
+    @Test
+    void aStudentRegistrationStoresOnlyTheMetricsIdAndFromVisitor() {
+        UUID metricsId = UUID.randomUUID();
+        this.publisher.studentRegistered(metricsId, false);
+
+        List<Document> events = events();
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().keySet())
+                .containsExactlyInAnyOrder("_id", "type", "occurredAt", "metricsId", "fromVisitor");
+        assertThat(events.getFirst().getString("type")).isEqualTo("STUDENT_REGISTERED");
+        assertThat(events.getFirst().getString("metricsId")).isEqualTo(metricsId.toString());
+        assertThat(events.getFirst().getBoolean("fromVisitor")).isFalse();
     }
 
     @Test

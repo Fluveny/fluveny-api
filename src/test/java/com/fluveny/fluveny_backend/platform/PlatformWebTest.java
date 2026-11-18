@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.platform;
 
+import com.fluveny.fluveny_backend.auth.InMemoryAccounts;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
@@ -12,13 +13,14 @@ import org.springframework.test.context.TestPropertySource;
 /**
  * Contexto inteiro no perfil {@code prod} padrão, com os controllers de {@link PlatformTestRoutes}
  * e MockMvc. A URI aponta para um Mongo que não existe: nenhum teste daqui fala com o banco, e o
- * cliente não conecta na partida.
+ * cliente não conecta na partida. Contas, sessões e eventos ficam em memória ({@link
+ * InMemoryAccounts}), para os testes com a sessão de verdade (história 2.1).
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @SpringBootTest
 @AutoConfigureMockMvc
-@Import(PlatformTestRoutes.class)
+@Import({PlatformTestRoutes.class, InMemoryAccounts.class})
 @TestPropertySource(
         properties = {
             "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",

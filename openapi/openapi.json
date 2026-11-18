@@ -175,10 +175,34 @@
         "required" : [ "data" ],
         "type" : "object"
       },
+      "ApiResponseSignupResponse" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/SignupResponse"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "ApiResponseStageStudentView" : {
         "properties" : {
           "data" : {
             "$ref" : "#/components/schemas/StageStudentView"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
+      "ApiResponseStudentProfile" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StudentProfile"
           },
           "message" : {
             "type" : "string"
@@ -1329,6 +1353,57 @@
         "required" : [ "he", "she", "they" ],
         "type" : "object"
       },
+      "SignupRequest" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "acceptedPrivacyVersion" : {
+            "maxLength" : 16,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "acceptedTermsVersion" : {
+            "maxLength" : 16,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "birthDate" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "name" : {
+            "maxLength" : 60,
+            "minLength" : 0,
+            "type" : "string"
+          },
+          "password" : {
+            "description" : "De 8 a 64 caracteres, com pelo menos uma letra e um número. Senhas com muitos acentos ou emoji podem precisar ser mais curtas (o limite é de 72 bytes em UTF-8).",
+            "maxLength" : 64,
+            "minLength" : 8,
+            "type" : "string"
+          }
+        },
+        "required" : [ "acceptedPrivacyVersion", "acceptedTermsVersion", "birthDate", "email", "password" ],
+        "type" : "object"
+      },
+      "SignupResponse" : {
+        "properties" : {
+          "sessionToken" : {
+            "description" : "Só no Android (X-Fluveny-Client: android). No web, o token vai só no cookie fluveny_session.",
+            "type" : "string"
+          },
+          "student" : {
+            "$ref" : "#/components/schemas/StudentProfile"
+          }
+        },
+        "required" : [ "student" ],
+        "type" : "object"
+      },
       "SpeechActivity" : {
         "properties" : {
           "activityKey" : {
@@ -1468,6 +1543,23 @@
           }
         },
         "required" : [ "activityCount", "stageKey", "title" ],
+        "type" : "object"
+      },
+      "StudentProfile" : {
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "name" : {
+            "type" : [ "string", "null" ]
+          },
+          "pronounSet" : {
+            "description" : "Nulo vale como THEY (they/them).",
+            "enum" : [ "HE", "SHE", "THEY" ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "email" ],
         "type" : "object"
       },
       "UnitBundleContent" : {
@@ -1619,6 +1711,17 @@
           }
         },
         "required" : [ "created", "published", "versionId" ],
+        "type" : "object"
+      },
+      "UpdatePronouns" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "pronounSet" : {
+            "enum" : [ "HE", "SHE", "THEY" ],
+            "type" : [ "string", "null" ]
+          }
+        },
+        "required" : [ "pronounSet" ],
         "type" : "object"
       },
       "UsefulExpressionContent" : {
@@ -1784,6 +1887,44 @@
         "tags" : [ "content-admin" ]
       }
     },
+    "/api/v1/auth/signup" : {
+      "post" : {
+        "description" : "Cria a conta do Aluno adulto, já ativa, e entra. Exige X-Fluveny-Client: web ou android (senão 400 CLIENT_HEADER_REQUIRED). No web, a sessão vai só no cookie fluveny_session (HttpOnly; Secure; SameSite=Lax; Path=/api; 30 dias); no Android, só no sessionToken do corpo. Senha fora da regra, aceite vazio ou data de nascimento inválida dão 400 VALIDATION_FAILED; menor de 12, 422 AGE_BELOW_MINIMUM; de 12 a 17, 422 GUARDIAN_CONSENT_REQUIRED; e-mail já cadastrado, 409 EMAIL_ALREADY_REGISTERED.",
+        "operationId" : "signup",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Fluveny-Client",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "web", "android" ],
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSignupResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          }
+        },
+        "tags" : [ "auth" ]
+      }
+    },
     "/api/v1/meta" : {
       "get" : {
         "operationId" : "getMeta",
@@ -1800,6 +1941,52 @@
           }
         },
         "tags" : [ "meta" ]
+      }
+    },
+    "/api/v1/students/me" : {
+      "get" : {
+        "description" : "O perfil do Aluno da sessão: nome, e-mail e pronomes (nulo vale como THEY). Sem sessão, 401.",
+        "operationId" : "getMyStudentProfile",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStudentProfile"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
+      },
+      "patch" : {
+        "description" : "Grava os pronomes do Aluno da sessão; nulo volta ao padrão they/them. Campo desconhecido dá 400. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED.",
+        "operationId" : "updateMyPronouns",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdatePronouns"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStudentProfile"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
       }
     },
     "/api/v1/units" : {
