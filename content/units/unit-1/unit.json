@@ -1,0 +1,38 @@
+{
+  "unitKey": "unit-1",
+  "order": 1,
+  "schemaVersion": 1,
+  "title": "First day of University!",
+  "stages": [
+    "stage-1"
+  ],
+  "usefulExpressions": [
+    {
+      "expressionKey": "im-new-here",
+      "term": "I'm new here",
+      "meaning": "\"I'm new here\" is used to say that you have recently arrived in or joined a place, group, or situation and are not yet familiar with it or the people there.",
+      "examples": [
+        "Sorry, I'm new here.",
+        "I'm new here, so I don't know anyone yet."
+      ]
+    },
+    {
+      "expressionKey": "looks-like",
+      "term": "Looks like",
+      "meaning": "Used to say that something seems to be true, based on what you see or think.",
+      "examples": [
+        "It looks like it's going to rain.",
+        "You look like your sister!"
+      ]
+    },
+    {
+      "expressionKey": "roommates",
+      "term": "Roommates",
+      "meaning": "People who share the same room or apartment, especially at school or college.",
+      "examples": [
+        "My roommate is from Canada.",
+        "We get along really well with our roommates."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,392 @@
+{
+  "stageKey": "stage-1",
+  "title": "Meet & Greet",
+  "completion": "Você já sabe se apresentar, cumprimentar e dizer de onde é, {name}.",
+  "activities": [
+    {
+      "activityKey": "s1-whats-your-name",
+      "type": "dialogue",
+      "title": "Meet Alex",
+      "lines": [
+        {
+          "lineKey": "new-here",
+          "speaker": "Alex",
+          "text": "Hi, I'm Alex. [[I'm new here|im-new-here]]! What's your name?",
+          "ask": "name"
+        }
+      ]
+    },
+    {
+      "activityKey": "s1-greetings-cards",
+      "type": "cards",
+      "title": "Greetings & Introductions",
+      "blocks": [
+        {
+          "blockKey": "saying-hello",
+          "title": "Saying hello",
+          "emoji": "👋",
+          "items": [
+            {
+              "itemKey": "s1-greetings-cards-hi",
+              "text": "Hi! / Hello!"
+            },
+            {
+              "itemKey": "s1-greetings-cards-hey-there",
+              "text": "Hey there!"
+            },
+            {
+              "itemKey": "s1-greetings-cards-good-morning",
+              "text": "Good morning! / Morning!"
+            },
+            {
+              "itemKey": "s1-greetings-cards-good-evening",
+              "text": "Good evening! / Evening!"
+            }
+          ]
+        },
+        {
+          "blockKey": "introducing-yourself",
+          "title": "Introducing yourself",
+          "emoji": "🙋",
+          "items": [
+            {
+              "itemKey": "s1-greetings-cards-im",
+              "text": "Hi, I'm {name}."
+            },
+            {
+              "itemKey": "s1-greetings-cards-my-names",
+              "text": "Hey, my name's {name}."
+            }
+          ]
+        },
+        {
+          "blockKey": "being-polite",
+          "title": "Being polite",
+          "emoji": "🤝",
+          "items": [
+            {
+              "itemKey": "s1-greetings-cards-nice",
+              "text": "Nice to meet you."
+            },
+            {
+              "itemKey": "s1-greetings-cards-pleasure",
+              "text": "It's a pleasure to meet you."
+            },
+            {
+              "itemKey": "s1-greetings-cards-how-doing",
+              "text": "How are you doing?"
+            },
+            {
+              "itemKey": "s1-greetings-cards-how-going",
+              "text": "How's it going?"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "activityKey": "s1-im-new-here",
+      "type": "expression",
+      "title": "I'm new here",
+      "speaker": "Alex",
+      "sentence": "Hi, I'm Alex. [[I'm new here|im-new-here]]! What's your name?"
+    },
+    {
+      "activityKey": "s1-introduce-yourself",
+      "type": "speech",
+      "title": "It's your turn",
+      "prompt": "Hold the mic and introduce yourself.",
+      "target": "Hi Alex, I'm {name}.",
+      "xp": 10
+    },
+    {
+      "activityKey": "s1-speech-bubbles",
+      "type": "match",
+      "title": "Match the Speech Bubbles",
+      "items": [
+        {
+          "itemKey": "s1-speech-bubbles-new-here",
+          "line": "Hi, I'm Alex. I'm new here!",
+          "correctResponseKey": "my-name-is"
+        },
+        {
+          "itemKey": "s1-speech-bubbles-good-morning",
+          "line": "Good morning!",
+          "correctResponseKey": "good-morning-alex"
+        },
+        {
+          "itemKey": "s1-speech-bubbles-nice",
+          "line": "Nice to meet you!",
+          "correctResponseKey": "nice-too"
+        }
+      ],
+      "responses": [
+        {
+          "responseKey": "my-name-is",
+          "text": "Hello Alex, my name is {name}."
+        },
+        {
+          "responseKey": "good-morning-alex",
+          "text": "Good morning, Alex. Nice to meet you!"
+        },
+        {
+          "responseKey": "nice-too",
+          "text": "Nice to meet you too!"
+        },
+        {
+          "responseKey": "see-you-later",
+          "text": "See you later."
+        }
+      ],
+      "xp": 10
+    },
+    {
+      "activityKey": "s1-roommates",
+      "type": "dialogue",
+      "title": "Roommates",
+      "lines": [
+        {
+          "lineKey": "pleasure",
+          "speaker": "Alex",
+          "text": "It's a pleasure to meet you! It [[looks like|looks-like]] we're [[roommates|roommates]]."
+        },
+        {
+          "lineKey": "where-from",
+          "speaker": "Alex",
+          "text": "I'm from Brazil. Where are you from?",
+          "ask": "country"
+        }
+      ]
+    },
+    {
+      "activityKey": "s1-where-are-you-from",
+      "type": "free",
+      "title": "Your answer",
+      "prompt": "Where are you from?",
+      "modelAnswer": "I'm from {country}. Nice to meet you!",
+      "extraHelp": {
+        "lines": [
+          "I'm ___ {country}. Nice to ___ you!"
+        ],
+        "items": [
+          {
+            "itemKey": "s1-where-are-you-from-from",
+            "accepted": ["from"]
+          },
+          {
+            "itemKey": "s1-where-are-you-from-meet",
+            "accepted": ["meet"]
+          }
+        ],
+        "bank": [
+          { "wordKey": "from", "text": "from" },
+          { "wordKey": "meet", "text": "meet" },
+          { "wordKey": "in", "text": "in" },
+          { "wordKey": "see", "text": "see" }
+        ]
+      },
+      "xp": 8
+    },
+    {
+      "activityKey": "s1-looks-like-roommates",
+      "type": "expression",
+      "title": "Looks like & Roommates",
+      "speaker": "Alex",
+      "sentence": "It [[looks like|looks-like]] we're [[roommates|roommates]]."
+    },
+    {
+      "activityKey": "s1-say-your-country",
+      "type": "speech",
+      "title": "It's your turn",
+      "prompt": "Answer Alex out loud.",
+      "target": "I am from {country}.",
+      "xp": 10
+    },
+    {
+      "activityKey": "s1-grammar-time",
+      "type": "grammar",
+      "title": "Verb to be & Possessive Adjectives",
+      "used": [
+        {
+          "sentenceKey": "am",
+          "form": "am",
+          "sentence": "I'**m** from Brazil. → I **am** from Brazil."
+        },
+        {
+          "sentenceKey": "is",
+          "form": "is",
+          "sentence": "My name **is** {name}."
+        },
+        {
+          "sentenceKey": "are",
+          "form": "are",
+          "sentence": "Where **are** you from?"
+        },
+        {
+          "sentenceKey": "my",
+          "form": "my",
+          "sentence": "**My** name is {name}."
+        },
+        {
+          "sentenceKey": "your",
+          "form": "your",
+          "sentence": "What's **your** name?"
+        }
+      ],
+      "rules": [
+        {
+          "ruleKey": "am",
+          "form": "am",
+          "use": "used only with **I**",
+          "example": "I am a student."
+        },
+        {
+          "ruleKey": "is",
+          "form": "is",
+          "use": "used with **He**, **She**, **It**",
+          "example": "She is from Mexico."
+        },
+        {
+          "ruleKey": "are",
+          "form": "are",
+          "use": "used with **You**, **We**, **They**",
+          "example": "We are new here."
+        },
+        {
+          "ruleKey": "my",
+          "form": "my",
+          "use": "used to talk about something that belongs to you",
+          "example": "This is my bag."
+        },
+        {
+          "ruleKey": "your",
+          "form": "your",
+          "use": "used to talk about something that belongs to the person you are speaking to",
+          "example": "What's your name?"
+        },
+        {
+          "ruleKey": "his",
+          "form": "his",
+          "use": "used for something that belongs to a male person",
+          "example": "This is his book."
+        },
+        {
+          "ruleKey": "her",
+          "form": "her",
+          "use": "used for something that belongs to a female person",
+          "example": "This is her friend."
+        },
+        {
+          "ruleKey": "its",
+          "form": "its",
+          "use": "used for something that belongs to an animal, object, or thing",
+          "example": "The cat has its bed."
+        },
+        {
+          "ruleKey": "our",
+          "form": "our",
+          "use": "used for something that belongs to us",
+          "example": "This is our class."
+        },
+        {
+          "ruleKey": "their",
+          "form": "their",
+          "use": "used for something that belongs to them",
+          "example": "Their room is big."
+        }
+      ],
+      "examples": [
+        {
+          "exampleKey": "hey-im-alex",
+          "text": "Hey, **I'm** Alex, **I'm** from Brazil. This is **my** friend."
+        },
+        {
+          "exampleKey": "her-name",
+          "text": "Hi Alex, what's **her** name?"
+        },
+        {
+          "exampleKey": "my-name-is-sam",
+          "text": "Hello, **my** name is Sam."
+        },
+        {
+          "exampleKey": "where-are-you-from",
+          "text": "Nice to meet you Sam! Where **are** you from?"
+        },
+        {
+          "exampleKey": "from-australia",
+          "text": "**I'm** from Australia."
+        }
+      ]
+    },
+    {
+      "activityKey": "s1-vocab-mode",
+      "type": "choice",
+      "title": "What does it mean?",
+      "items": [
+        {
+          "itemKey": "s1-vocab-mode-roommates",
+          "question": "Roommates",
+          "options": [
+            {
+              "optionKey": "same-class",
+              "text": "People who are in the same class."
+            },
+            {
+              "optionKey": "same-space",
+              "text": "People who live in the same space, such as an apartment or a house."
+            },
+            {
+              "optionKey": "same-country",
+              "text": "People who work in the same country."
+            },
+            {
+              "optionKey": "related",
+              "text": "People who are related to each other."
+            }
+          ],
+          "correctOptionKey": "same-space",
+          "justification": "**Roommates** share the same room or apartment, like you and Alex."
+        }
+      ],
+      "xp": 10
+    },
+    {
+      "activityKey": "s1-complete-gaps",
+      "type": "gaps",
+      "title": "Complete the sentences",
+      "mode": "bank",
+      "lines": [
+        "Hello! My name is Alex. Nice to ___ you.",
+        "Hi! I'm new here. What's ___ name?",
+        "Nice to meet ___ too!",
+        "I am from Brazil. Where ___ you from?"
+      ],
+      "items": [
+        {
+          "itemKey": "s1-complete-gaps-meet",
+          "accepted": ["meet"]
+        },
+        {
+          "itemKey": "s1-complete-gaps-your",
+          "accepted": ["your"]
+        },
+        {
+          "itemKey": "s1-complete-gaps-you",
+          "accepted": ["you"]
+        },
+        {
+          "itemKey": "s1-complete-gaps-are",
+          "accepted": ["are"]
+        }
+      ],
+      "bank": [
+        { "wordKey": "meet", "text": "meet" },
+        { "wordKey": "your", "text": "your" },
+        { "wordKey": "you", "text": "you" },
+        { "wordKey": "are", "text": "are" },
+        { "wordKey": "is", "text": "is" }
+      ],
+      "xp": 10
+    }
+  ]
+}
