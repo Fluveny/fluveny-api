@@ -95,7 +95,7 @@
       "activityKey": "s1-introduce-yourself",
       "type": "speech",
       "title": "It's your turn",
-      "prompt": "Hold the mic and introduce yourself.",
+      "prompt": "Segure o microfone e se apresente para o Alex.",
       "target": "Hi Alex, I'm {name}.",
       "xp": 10
     },
@@ -103,21 +103,25 @@
       "activityKey": "s1-speech-bubbles",
       "type": "match",
       "title": "Match the Speech Bubbles",
+      "prompt": "Ligue cada fala do Alex à melhor resposta.",
       "items": [
         {
           "itemKey": "s1-speech-bubbles-new-here",
-          "line": "Hi, I'm Alex. I'm new here!",
-          "correctResponseKey": "my-name-is"
+          "line": "Hi, I'm Alex. I'm new here! What's your name?",
+          "correctResponseKey": "my-name-is",
+          "justification": "Alex asks your name, so you answer with **my name is**."
         },
         {
           "itemKey": "s1-speech-bubbles-good-morning",
           "line": "Good morning!",
-          "correctResponseKey": "good-morning-alex"
+          "correctResponseKey": "good-morning-alex",
+          "justification": "We answer **Good morning** with the same greeting."
         },
         {
           "itemKey": "s1-speech-bubbles-nice",
           "line": "Nice to meet you!",
-          "correctResponseKey": "nice-too"
+          "correctResponseKey": "nice-too",
+          "justification": "We say **too** to return the greeting."
         }
       ],
       "responses": [
@@ -165,6 +169,7 @@
       "prompt": "Where are you from?",
       "modelAnswer": "I'm from {country}. Nice to meet you!",
       "extraHelp": {
+        "prompt": "Complete a resposta com as palavras do banco.",
         "lines": [
           "I'm ___ {country}. Nice to ___ you!"
         ],
@@ -181,11 +186,11 @@
         "bank": [
           { "wordKey": "from", "text": "from" },
           { "wordKey": "meet", "text": "meet" },
-          { "wordKey": "in", "text": "in" },
-          { "wordKey": "see", "text": "see" }
+          { "wordKey": "to", "text": "to" },
+          { "wordKey": "the", "text": "the" }
         ]
       },
-      "xp": 8
+      "xp": 10
     },
     {
       "activityKey": "s1-looks-like-roommates",
@@ -198,7 +203,7 @@
       "activityKey": "s1-say-your-country",
       "type": "speech",
       "title": "It's your turn",
-      "prompt": "Answer Alex out loud.",
+      "prompt": "Responda ao Alex em voz alta.",
       "target": "I am from {country}.",
       "xp": 10
     },
@@ -238,61 +243,61 @@
           "ruleKey": "am",
           "form": "am",
           "use": "used only with **I**",
-          "example": "I am a student."
+          "example": "I **am** a student."
         },
         {
           "ruleKey": "is",
           "form": "is",
           "use": "used with **He**, **She**, **It**",
-          "example": "She is from Mexico."
+          "example": "She **is** from Mexico."
         },
         {
           "ruleKey": "are",
           "form": "are",
           "use": "used with **You**, **We**, **They**",
-          "example": "We are new here."
+          "example": "We **are** new here."
         },
         {
           "ruleKey": "my",
           "form": "my",
           "use": "used to talk about something that belongs to you",
-          "example": "This is my bag."
+          "example": "This is **my** bag."
         },
         {
           "ruleKey": "your",
           "form": "your",
           "use": "used to talk about something that belongs to the person you are speaking to",
-          "example": "What's your name?"
+          "example": "What's **your** name?"
         },
         {
           "ruleKey": "his",
           "form": "his",
           "use": "used for something that belongs to a male person",
-          "example": "This is his book."
+          "example": "This is **his** book."
         },
         {
           "ruleKey": "her",
           "form": "her",
           "use": "used for something that belongs to a female person",
-          "example": "This is her friend."
+          "example": "This is **her** friend."
         },
         {
           "ruleKey": "its",
           "form": "its",
           "use": "used for something that belongs to an animal, object, or thing",
-          "example": "The cat has its bed."
+          "example": "The cat has **its** bed."
         },
         {
           "ruleKey": "our",
           "form": "our",
           "use": "used for something that belongs to us",
-          "example": "This is our class."
+          "example": "This is **our** class."
         },
         {
           "ruleKey": "their",
           "form": "their",
           "use": "used for something that belongs to them",
-          "example": "Their room is big."
+          "example": "**Their** room is big."
         }
       ],
       "examples": [
@@ -322,6 +327,7 @@
       "activityKey": "s1-vocab-mode",
       "type": "choice",
       "title": "What does it mean?",
+      "prompt": "Escolha o significado certo.",
       "items": [
         {
           "itemKey": "s1-vocab-mode-roommates",
@@ -354,6 +360,7 @@
       "activityKey": "s1-complete-gaps",
       "type": "gaps",
       "title": "Complete the sentences",
+      "prompt": "Complete as frases com as palavras do banco.",
       "mode": "bank",
       "lines": [
         "Hello! My name is Alex. Nice to ___ you.",
