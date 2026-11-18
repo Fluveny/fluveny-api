@@ -122,7 +122,13 @@ public class PublishedUnits {
         for (JsonNode activity : stage.get("activities")) {
             activities.add(this.projector.activity(activity));
         }
-        return new StudentViews.Stage(unit.versionId(), stageKey, title(stage), activities);
+        JsonNode completion = stage.get("completion");
+        return new StudentViews.Stage(
+                unit.versionId(),
+                stageKey,
+                title(stage),
+                activities,
+                completion == null ? null : this.projector.read(completion, ContentText.class));
     }
 
     /**

@@ -1,6 +1,7 @@
 {
   "stageKey": "s1-meet-alex",
   "title": "Meet Alex",
+  "completion": "Você já sabe se apresentar e cumprimentar, {name}.",
   "activities": [
     {
       "activityKey": "s1-greetings",

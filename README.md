@@ -66,9 +66,10 @@ content/
   schema/                         # JSON Schema canônico, render-vectors.json e countries.json
   units/<unitKey>/
     unit.json                     # unitKey, order, schemaVersion (1), title, stages, usefulExpressions
-    stages/<stageKey>.json        # stageKey, title, activities
+    stages/<stageKey>.json        # stageKey, title, completion?, activities
 ```
 
+- `completion`, opcional, é a frase do que o aluno aprendeu no resumo do fim do Estágio ("Você já sabe se apresentar e dizer de onde é."). É escrita em português, a língua da interface, e não em inglês como o curso. É texto do conteúdo, com as mesmas regras de formatação e Variáveis do Aluno.
 - O nome da pasta é o `unitKey`, e o de cada arquivo de Estágio é o `stageKey`. Todo Estágio listado em `unit.json.stages` tem arquivo, e todo arquivo está na lista. Em `stages/` só ficam arquivos `<stageKey>.json`, e em `units/` só pastas de Unidade; entradas que começam com `.` são ignoradas.
 - O `order` de cada Unidade é único no curso.
 - Chaves (`unitKey`, `stageKey`, `activityKey`, `itemKey`, `optionKey`, `expressionKey`, `mediaKey`) em kebab-case (`s1-meet-alex`). Nunca reaproveite uma chave (AD-5). `activityKey` e `itemKey` são únicos na Unidade, `optionKey` no Item e `expressionKey` na Unidade. A posição na lista é só ordem.
@@ -134,7 +135,7 @@ Públicas (`@PublicRoute`) e só com `*StudentView`, sobre a versão `published`
 
 - `GET /api/v1/units`: `[{unitKey, order, title, comingSoon, versionId}]`, por `order`. `comingSoon` é a Unidade publicada sem Estágios. Unidade sem versão publicada fica de fora.
 - `GET /api/v1/units/{unitKey}`: o resumo, com os Estágios (`stageKey`, `title`, `activityCount`) e as `usefulExpressions`.
-- `GET /api/v1/units/{unitKey}/stages/{stageKey}`: `{versionId, stageKey, title, activities}`, com as Atividades na visão do aluno.
+- `GET /api/v1/units/{unitKey}/stages/{stageKey}`: `{versionId, stageKey, title, activities, completion?}`, com as Atividades na visão do aluno. `completion` só vem quando o Estágio tem a frase.
 
 Só o primeiro Estágio da Unidade de menor `order` é liberado; os demais respondem `401 UNAUTHENTICATED` até existir sessão (2.3). Chave fora do kebab-case é `400 INVALID_ID`; Unidade ou Estágio inexistente, `404` (`UNIT_NOT_FOUND`, `STAGE_NOT_FOUND`).
 

@@ -42,7 +42,12 @@ final class BundleDocs {
     record StageContent(
             @Schema(requiredMode = RequiredMode.REQUIRED) String stageKey,
             @Schema(requiredMode = RequiredMode.REQUIRED) ContentText title,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<Activity> activities) {}
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<Activity> activities,
+            @Schema(
+                            description =
+                                    "Opcional: a frase do resumo do fim do Estágio, em"
+                                            + " português.")
+                    ContentText completion) {}
 
     @Schema(name = "MediaContent")
     record MediaContent(

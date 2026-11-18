@@ -1193,4 +1193,46 @@ class ContentValidatorBundleTest {
         ((ObjectNode) grammar.at("/examples/0")).put("text", "I'm Alex.");
         assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
     }
+
+    // História 1.20: a frase do fim do Estágio.
+
+    @Test
+    void aStageWithoutCompletionIsValid() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        assertThat(bundle.at("/stages/0/completion").isMissingNode()).isFalse();
+        ((ObjectNode) bundle.at("/stages/0")).remove("completion");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void theCompletionFollowsTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) bundle.at("/stages/0")).put("completion", "Você já sabe, {age}.");
+        ((ObjectNode) bundle.at("/stages/1"))
+                .putObject("completion")
+                .put("he", "He knows __it__.")
+                .put("she", "She knows.")
+                .put("they", "They know.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::file, ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple(S1, "/completion", ContentRule.UNKNOWN_PLACEHOLDER),
+                        tuple(
+                                "units/unit-1/stages/s2-where-from.json",
+                                "/completion/he",
+                                ContentRule.INVALID_MARKUP));
+    }
+
+    @Test
+    void aCompletionThatIsNotATextIsASchemaViolation() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) bundle.at("/stages/0")).put("completion", 1);
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/completion");
+                    assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION);
+                });
+    }
 }

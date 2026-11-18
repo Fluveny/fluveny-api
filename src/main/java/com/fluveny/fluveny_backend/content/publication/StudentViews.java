@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.content.publication;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fluveny.fluveny_backend.content.activity.ActivityStudentView;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -52,11 +53,23 @@ public final class StudentViews {
             @Schema(requiredMode = RequiredMode.REQUIRED) ContentText meaning,
             @Schema(requiredMode = RequiredMode.REQUIRED) List<ContentText> examples) {}
 
-    /** Um Estágio com as Atividades na visão do aluno. */
+    /**
+     * Um Estágio com as Atividades na visão do aluno.
+     *
+     * @param completion a frase do que o aluno aprendeu, no resumo do fim do Estágio (história
+     *     1.20); fora da resposta quando o conteúdo não tem
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @Schema(name = "StageStudentView")
     public record Stage(
             @Schema(requiredMode = RequiredMode.REQUIRED) String versionId,
             @Schema(requiredMode = RequiredMode.REQUIRED) String stageKey,
             @Schema(requiredMode = RequiredMode.REQUIRED) ContentText title,
-            @Schema(requiredMode = RequiredMode.REQUIRED) List<ActivityStudentView> activities) {}
+            @Schema(requiredMode = RequiredMode.REQUIRED) List<ActivityStudentView> activities,
+            @Schema(
+                            description =
+                                    "A frase do resumo do fim do Estágio, crua (pode ter"
+                                            + " placeholders e variantes he/she/they). Só quando"
+                                            + " o conteúdo tem.")
+                    ContentText completion) {}
 }
