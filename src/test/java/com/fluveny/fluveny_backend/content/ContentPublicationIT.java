@@ -233,11 +233,11 @@ class ContentPublicationIT {
     }
 
     /**
-     * História 1.13: o Diálogo com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicado fora do perfil local.
+     * História 1.13: o Diálogo com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicado fora do perfil local.
      */
     @Test
-    void aDialogueWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void aDialogueAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.DIALOGUE_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -250,11 +250,11 @@ class ContentPublicationIT {
 
     /**
      * História 1.14: os Cartões de expressões e a Expressão Útil destacada com o {@code
-     * sinceAppVersion} nulo do source real do {@code learning} não são publicados fora do perfil
-     * local.
+     * sinceAppVersion} 0.1.0 do source real do {@code learning}, acima do mínimo 0.0.0 do teste,
+     * não são publicados fora do perfil local.
      */
     @Test
-    void cardsAndExpressionWithoutSinceAppVersionAre422AndNothingIsStored() throws Exception {
+    void cardsAndExpressionAboveTheMinAppVersionAre422AndNothingIsStored() throws Exception {
         Types.EXPRESSIONS_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -268,11 +268,11 @@ class ContentPublicationIT {
     }
 
     /**
-     * História 1.15: a Fala com o {@code sinceAppVersion} nulo do source real do {@code learning}
-     * não é publicada fora do perfil local.
+     * História 1.15: a Fala com o {@code sinceAppVersion} 0.1.0 do source real do {@code learning},
+     * acima do mínimo 0.0.0 do teste, não é publicada fora do perfil local.
      */
     @Test
-    void speechWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void speechAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.SPEECH_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -284,11 +284,11 @@ class ContentPublicationIT {
     }
 
     /**
-     * História 1.16: o Associar com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicado fora do perfil local.
+     * História 1.16: o Associar com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicado fora do perfil local.
      */
     @Test
-    void matchWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void matchAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.MATCH_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -300,11 +300,11 @@ class ContentPublicationIT {
     }
 
     /**
-     * História 1.17: as Lacunas com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não são publicadas fora do perfil local.
+     * História 1.17: as Lacunas com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não são publicadas fora do perfil local.
      */
     @Test
-    void gapsWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void gapsAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.GAPS_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -318,11 +318,11 @@ class ContentPublicationIT {
     }
 
     /**
-     * História 1.18: a Resposta Livre com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicada fora do perfil local.
+     * História 1.18: a Resposta Livre com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicada fora do perfil local.
      */
     @Test
-    void freeWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void freeAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.FREE_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -334,11 +334,11 @@ class ContentPublicationIT {
     }
 
     /**
-     * História 1.19: o Grammar Time com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicado fora do perfil local.
+     * História 1.19: o Grammar Time com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicado fora do perfil local.
      */
     @Test
-    void grammarWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void grammarAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.GRAMMAR_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -639,10 +639,10 @@ class ContentPublicationIT {
     /**
      * Os Tipos {@code choice}, {@code dialogue}, {@code cards}, {@code expression}, {@code speech},
      * {@code match}, {@code gaps}, {@code free} e {@code grammar} com o {@code sinceAppVersion} que
-     * cada teste quiser. Vêm antes do source real do {@code learning} (nulo): na publicação, o
-     * primeiro source vence. Com {@code DIALOGUE_SINCE}, {@code EXPRESSIONS_SINCE}, {@code
-     * SPEECH_SINCE}, {@code MATCH_SINCE}, {@code GAPS_SINCE}, {@code FREE_SINCE} ou {@code
-     * GRAMMAR_SINCE} nulo, o Tipo fica de fora e vale o source real.
+     * cada teste quiser. Vêm antes do source real do {@code learning} (0.1.0, acima do mínimo 0.0.0
+     * do teste): na publicação, o primeiro source vence. Com {@code DIALOGUE_SINCE}, {@code
+     * EXPRESSIONS_SINCE}, {@code SPEECH_SINCE}, {@code MATCH_SINCE}, {@code GAPS_SINCE}, {@code
+     * FREE_SINCE} ou {@code GRAMMAR_SINCE} nulo, o Tipo fica de fora e vale o source real.
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {

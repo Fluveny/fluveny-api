@@ -195,9 +195,10 @@ jobs:
           if node scripts/content-bundle.mjs check unit-coming-soon "sha256:$(printf '0%.0s' $(seq 1 64))" --api "$API_URL"; then
             echo "::error::O check aceitou um hash inexistente."; exit 1
           fi
-          # A Escolha ainda não tem sinceAppVersion: 422 UNSUPPORTED_ACTIVITY_TYPE.
+          # Os Tipos têm sinceAppVersion 0.1.0, acima do FLUVENY_MIN_APP_VERSION desta API (o padrão
+          # 0.0.0): 422 UNSUPPORTED_ACTIVITY_TYPE.
           if node scripts/content-bundle.mjs publish unit-1 --api "$API_URL" --content src/test/resources/content-fixtures/valid 2> "$RUNNER_TEMP/unsupported.txt"; then
-            echo "::error::A publicação aceitou um Tipo sem sinceAppVersion."; exit 1
+            echo "::error::A publicação aceitou um Tipo acima da versão mínima do App."; exit 1
           fi
           grep -q UNSUPPORTED_ACTIVITY_TYPE "$RUNNER_TEMP/unsupported.txt"
           # Token errado: 403.
