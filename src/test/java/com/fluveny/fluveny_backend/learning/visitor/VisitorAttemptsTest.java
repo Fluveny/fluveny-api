@@ -18,6 +18,8 @@ import com.fluveny.fluveny_backend.content.publication.UnitVersionStore;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
 import com.fluveny.fluveny_backend.learning.receipt.ReceiptPayload;
 import com.fluveny.fluveny_backend.learning.receipt.ReceiptVerifier;
+import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
+import com.fluveny.fluveny_backend.metrics.infrastructure.EventStore;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
@@ -1668,6 +1670,14 @@ class VisitorAttemptsTest {
 
         final Map<String, FirstAttempt> attempts = new ConcurrentHashMap<>();
 
+        /** {@code events} em memória, na ordem de gravação. */
+        final List<Event> events = java.util.Collections.synchronizedList(new ArrayList<>());
+
+        private final java.util.Set<String> stageCompletionKeys = ConcurrentHashMap.newKeySet();
+
+        /** Quando ligado, o {@code EventStore} lança, como um Mongo fora do ar. */
+        volatile boolean failEvents;
+
         /**
          * Relógio parado para os limites de taxa: a janela nunca vira no meio de uma rajada. Cada
          * teste usa IP e aparelho próprios, então a contagem não vaza entre testes.
@@ -1682,6 +1692,26 @@ class VisitorAttemptsTest {
             this.versions.clear();
             this.pointers.clear();
             this.attempts.clear();
+            this.events.clear();
+            this.stageCompletionKeys.clear();
+            this.failEvents = false;
+        }
+
+        /** Como o Mongo com o índice único parcial: um {@code STAGE_COMPLETED} por chave. */
+        @Bean
+        @Primary
+        EventStore inMemoryEvents() {
+            return event -> {
+                if (InMemoryContent.this.failEvents) {
+                    throw new IllegalStateException("events fora do ar");
+                }
+                String key = event.stageCompletionKey();
+                if (key != null && !InMemoryContent.this.stageCompletionKeys.add(key)) {
+                    return false;
+                }
+                InMemoryContent.this.events.add(event);
+                return true;
+            };
         }
 
         static String key(UUID deviceId, String activityKey) {
@@ -1704,6 +1734,18 @@ class VisitorAttemptsTest {
                 public Optional<FirstAttempt> find(UUID deviceId, String activityKey) {
                     return Optional.ofNullable(
                             InMemoryContent.this.attempts.get(key(deviceId, activityKey)));
+                }
+
+                @Override
+                public java.util.Set<String> recordedActivityKeys(
+                        UUID deviceId, Collection<String> activityKeys) {
+                    java.util.Set<String> recorded = new java.util.HashSet<>();
+                    for (String activityKey : activityKeys) {
+                        if (InMemoryContent.this.attempts.containsKey(key(deviceId, activityKey))) {
+                            recorded.add(activityKey);
+                        }
+                    }
+                    return recorded;
                 }
             };
         }

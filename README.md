@@ -161,7 +161,7 @@ mise run check   # ./mvnw -B -ntp spotless:check verify
 - Formatação: google-java-format no estilo AOSP, pelo Spotless. O `spotless:check` falha a CI; `mise run format` corrige, e o hook do lefthook formata os arquivos Java staged a cada commit.
 - Unitários (`*Test`, surefire), incluindo o `ModularityTest`, que também gera a documentação dos módulos em `target/spring-modulith-docs`.
 - Integração (`*IT`, failsafe), contra o `mongo:8` em replica set do `LocalMongoContainer` (Testcontainers), sem precisar de nenhuma variável de ambiente:
-  - o `ApplicationIT` sobe o contexto via `@ServiceConnection`, no perfil `test`, e confere os índices de `visitor_attempts` criados na partida; o `VisitorAttemptsMongoIT` cobre o índice único, o TTL e a corrida;
+  - o `ApplicationIT` sobe o contexto via `@ServiceConnection`, no perfil `test`, e confere os índices de `visitor_attempts` e de `events` criados na partida; o `VisitorAttemptsMongoIT` cobre o índice único, o TTL e a corrida; o `MetricsMongoIT` cobre os campos de cada evento, o índice único parcial do `STAGE_COMPLETED` e que 16 `stageCompleted` simultâneos do mesmo Estágio gravam um só documento;
   - o `MongoTransactionIT` confirma que as transações funcionam (AD-10): commit e rollback;
   - o `LocalDataLoaderIT` confirma que os carregadores rodam na partida, que rodar de novo não duplica e que o reset apaga o banco;
   - o `ContentPublicationIT` cobre a publicação (nova, repetida, candidata, inválida, Tipo não suportado, `unitKey` divergente, token) e as rotas do aluno, com a varredura de segredos; o `ContentLocalSeederIT` confirma que o perfil `local` publica `content/units/` sozinho, inclusive depois do reset;
@@ -199,6 +199,20 @@ Os logs saem no console em JSON (ECS), sem corpo de requisição nem cabeçalhos
   - Erro de domínio: `throw new ApiException(HttpStatus.CONFLICT, "STAGE_LOCKED", "O estágio está bloqueado.")`. O `code` precisa ser SCREAMING_SNAKE (`[A-Z][A-Z0-9_]*`), e há um construtor com `cause` para o log.
 - `GET /api/v1/meta` é público e devolve `minAppVersion` e `activityTypes`. Cada história de Tipo de Atividade registra um bean `ActivityTypeSource`.
 - Termo de busca digitado pelo usuário passa por `SearchTerms.literal(term)` e entra só como valor do critério.
+
+### Eventos do Visitante (história 1.20)
+
+A coleção `events` (dona `metrics`, AD-14) é append-only, e só o `MetricsPublisher` (pacote base de `metrics`) escreve nela, com um método por evento. Cada documento leva `type`, `occurredAt` (hora do servidor) e o `deviceId` do Visitante, mais os campos do tipo, e nada além: nenhum nome, país, texto livre, IP ou cabeçalho.
+
+| Evento | Campos | Quem envia |
+| --- | --- | --- |
+| `VISITOR_SESSION_STARTED` | só o identificador | o App, a cada abertura do player pelo EXPERIMENTAR AGORA |
+| `ACTIVITY_STARTED` | `unitKey`, `versionId`, `activityKey` | o App, a cada abertura de Atividade, inclusive ao reabrir |
+| `STAGE_COMPLETED` | `unitKey`, `versionId`, `stageKey` | `learning`, uma vez por `(deviceId, unitKey, stageKey)` |
+
+- **Ingestão:** `POST /api/v1/visitor/events` (dona `learning`, pública), com `{type, deviceId, versionId?, activityKey?}`. O `VISITOR_SESSION_STARTED` leva só `type` e `deviceId`; o `ACTIVITY_STARTED` exige `versionId` e `activityKey`, conferidos contra o conteúdo como na Tentativa (`404` se não existem, `401 UNAUTHENTICATED` fora do Estágio liberado), e o `unitKey` vem do conteúdo. Campo desconhecido, `type` fora da lista ou `deviceId` inválido dão `400 VALIDATION_FAILED`. Responde `202` sem corpo e conta nos limites do Visitante, por IP e por `deviceId` (o mesmo contador das Tentativas e conclusões).
+- **`STAGE_COMPLETED`:** quando uma Tentativa ou conclusão grava a primeira do aparelho numa Atividade, `learning` confere se as primeiras do `deviceId` (de qualquer versão, porque a `activityKey` é estável) cobrem todas as `activityKey`s do Estágio na versão da gravação. Se cobrem, publica. O `stageCompletionKey` (`deviceId|unitKey|stageKey`), só desse tipo, tem índice único parcial (`MetricsIndexes`), e a duplicata, inclusive concorrente, é ignorada. Uma falha ao publicar vai para o log e o Sentry e não muda a resposta.
+- O índice é criado na partida e pelo carregador local de `metrics`, como os de `learning`.
 
 ### Contrato OpenAPI
 

@@ -1654,6 +1654,32 @@
         },
         "required" : [ "examples", "expressionKey", "meaning", "term" ],
         "type" : "object"
+      },
+      "VisitorEvent" : {
+        "additionalProperties" : false,
+        "description" : "VISITOR_SESSION_STARTED leva só type e deviceId. ACTIVITY_STARTED exige versionId e activityKey.",
+        "properties" : {
+          "activityKey" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type" : "string"
+          },
+          "deviceId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "VISITOR_SESSION_STARTED", "ACTIVITY_STARTED" ],
+            "type" : "string"
+          },
+          "versionId" : {
+            "pattern" : "^sha256:[0-9a-f]{64}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "deviceId", "type" ],
+        "type" : "object"
       }
     }
   },
@@ -1927,6 +1953,28 @@
               }
             },
             "description" : "OK"
+          }
+        },
+        "tags" : [ "visitor" ]
+      }
+    },
+    "/api/v1/visitor/events" : {
+      "post" : {
+        "description" : "Grava um evento do Visitante, sem PII, com a hora do servidor. VISITOR_SESSION_STARTED a cada abertura do player pelo EXPERIMENTAR AGORA, só com type e deviceId. ACTIVITY_STARTED a cada abertura de Atividade, com versionId e activityKey: Atividade inexistente dá 404 e Estágio fechado ao Visitante, 401 UNAUTHENTICATED. Campo desconhecido dá 400. Responde 202 sem corpo; o App envia sem esperar.",
+        "operationId" : "recordVisitorEvent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/VisitorEvent"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
           }
         },
         "tags" : [ "visitor" ]

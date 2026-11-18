@@ -47,11 +47,11 @@ class LocalDataLoaderIT {
     void seedsOnStartupAndAgainWithoutDuplicates() throws Exception {
         assertThat(count()).as("carregado na partida").isEqualTo(2);
 
-        // Os carregadores de content (@Order(100)) e learning (@Order(200)) rodam depois dos dois
-        // de teste.
+        // Os carregadores de content (@Order(100)), learning (@Order(200)) e metrics (@Order(300))
+        // rodam depois dos dois de teste.
         assertThat(this.loader.load())
                 .containsSubsequence("first", "second", "content")
-                .endsWith("learning");
+                .endsWith("learning", "metrics");
         this.mvc
                 .perform(post("/local/seed"))
                 .andExpect(status().isOk())
@@ -80,6 +80,14 @@ class LocalDataLoaderIT {
                 .map(index -> index.getString("name"))
                 .into(indexes);
         assertThat(indexes).contains("deviceId_activityKey", "createdAt_ttl");
+        // O de metrics recria o de events (história 1.20).
+        List<String> eventIndexes = new ArrayList<>();
+        this.mongoTemplate
+                .getCollection("events")
+                .listIndexes()
+                .map(index -> index.getString("name"))
+                .into(eventIndexes);
+        assertThat(eventIndexes).contains("stageCompletionKey_unique");
     }
 
     private long count() {

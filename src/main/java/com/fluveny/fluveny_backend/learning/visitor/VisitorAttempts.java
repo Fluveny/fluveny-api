@@ -9,16 +9,17 @@ import com.fluveny.fluveny_backend.learning.grading.Outcome;
 import com.fluveny.fluveny_backend.learning.grading.StudentVars;
 import com.fluveny.fluveny_backend.learning.receipt.ReceiptPayload;
 import com.fluveny.fluveny_backend.learning.receipt.ReceiptSigner;
+import com.fluveny.fluveny_backend.metrics.MetricsPublisher;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import com.fluveny.fluveny_backend.platform.web.ErrorCode;
-import com.fluveny.fluveny_backend.platform.web.RateLimiter;
-import java.time.Clock;
-import java.time.Duration;
+import io.sentry.Sentry;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import org.springframework.beans.factory.annotation.Value;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -32,9 +33,16 @@ import org.springframework.stereotype.Service;
  *
  * <p>Cada chamada conta no limite por {@code deviceId} (Decisão 1 da 1.12); o limite por IP fica no
  * filtro da {@code platform}.
+ *
+ * <p>Quando a primeira gravação do aparelho numa Atividade completa o Estágio (as primeiras do
+ * aparelho cobrem todas as {@code activityKey}s dele na versão), sai o {@code STAGE_COMPLETED} pelo
+ * {@link MetricsPublisher} (AD-14, história 1.20). Uma falha ao publicar vai para o log e o Sentry
+ * e não muda a resposta.
  */
 @Service
 class VisitorAttempts {
+
+    private static final Logger log = LoggerFactory.getLogger(VisitorAttempts.class);
 
     static final String ATTEMPT_REQUIRED = "ATTEMPT_REQUIRED";
 
@@ -46,18 +54,21 @@ class VisitorAttempts {
 
     private final ReceiptSigner signer;
 
-    private final RateLimiter deviceLimiter;
+    private final VisitorDeviceLimit deviceLimit;
+
+    private final MetricsPublisher metrics;
 
     VisitorAttempts(
             ContentActivities activities,
             VisitorAttemptStore store,
             ReceiptSigner signer,
-            Clock clock,
-            @Value("${fluveny.visitor.rate-limit.device-per-minute:30}") int devicePerMinute) {
+            VisitorDeviceLimit deviceLimit,
+            MetricsPublisher metrics) {
         this.activities = activities;
         this.store = store;
         this.signer = signer;
-        this.deviceLimiter = new RateLimiter(devicePerMinute, Duration.ofMinutes(1), clock);
+        this.deviceLimit = deviceLimit;
+        this.metrics = metrics;
     }
 
     /** Corrige; {@code expected} e as justificativas só no Acerto. */
@@ -68,7 +79,7 @@ class VisitorAttempts {
             GradeResult result = grade(found, attempt);
             return toResult(found, result, result.isCorrect(), result.xpAwarded(), null);
         }
-        this.deviceLimiter.acquire(attempt.deviceId().toString());
+        this.deviceLimit.acquire(attempt.deviceId());
         ContentActivities.Found found = open(attempt.versionId(), attempt.activityKey());
         GradeResult result = grade(found, attempt);
         String receipt =
@@ -93,7 +104,7 @@ class VisitorAttempts {
      */
     AttemptResult reveal(Attempt attempt) {
         if (attempt.deviceId() != null) {
-            this.deviceLimiter.acquire(attempt.deviceId().toString());
+            this.deviceLimit.acquire(attempt.deviceId());
         }
         ContentActivities.Found found = open(attempt.versionId(), attempt.activityKey());
         GradeResult result = grade(found, attempt);
@@ -119,7 +130,7 @@ class VisitorAttempts {
      * resposta-modelo, também na repetição; o texto do aluno nunca vem.
      */
     CompletionResult complete(Completion completion) {
-        this.deviceLimiter.acquire(completion.deviceId().toString());
+        this.deviceLimit.acquire(completion.deviceId());
         ContentActivities.Found found = open(completion.versionId(), completion.activityKey());
         Outcome outcome = completion.outcome().outcome();
         if (!LearningActivityTypes.allowsCompletion(found.activity().type(), outcome)) {
@@ -143,11 +154,19 @@ class VisitorAttempts {
         return new CompletionResult(outcome, 0, receipt);
     }
 
-    /**
-     * @throws ApiException {@code 401 UNAUTHENTICATED} fora do Estágio liberado
-     */
     private ContentActivities.Found open(String versionId, String activityKey) {
-        ContentActivities.Found found = this.activities.find(versionId, activityKey);
+        return openToVisitor(this.activities, versionId, activityKey);
+    }
+
+    /**
+     * A Atividade, se está no Estágio liberado ao Visitante.
+     *
+     * @throws ApiException {@code 404 NOT_FOUND} se a versão ou a Atividade não existem; {@code 401
+     *     UNAUTHENTICATED} fora do Estágio liberado
+     */
+    static ContentActivities.Found openToVisitor(
+            ContentActivities activities, String versionId, String activityKey) {
+        ContentActivities.Found found = activities.find(versionId, activityKey);
         if (!found.openToVisitor()) {
             throw new ApiException(
                     ErrorCode.UNAUTHENTICATED,
@@ -214,6 +233,7 @@ class VisitorAttempts {
                         // A conclusão VIEWED da Resposta Livre não é Extra Help; a Tentativa é.
                         outcome == Outcome.GRADED && isExtraHelp(found));
         if (this.store.insertIfAbsent(first)) {
+            publishIfStageCovered(found, deviceId);
             return receipt;
         }
         // Perdeu a corrida: vale o que a outra gravou.
@@ -221,6 +241,28 @@ class VisitorAttempts {
                 .find(deviceId, found.activity().activityKey())
                 .map(winner -> sameAttempt(winner, attemptId, outcome, resultPct))
                 .orElse(null);
+    }
+
+    /**
+     * Publica o {@code STAGE_COMPLETED} se as primeiras do aparelho cobrem todas as {@code
+     * activityKey}s do Estágio na versão desta gravação. As primeiras valem de qualquer versão: a
+     * {@code activityKey} é estável entre versões (AD-5). Duas coberturas ao mesmo tempo publicam
+     * duas vezes, e o índice único de {@code events} fica com uma. Uma falha não muda a resposta.
+     */
+    private void publishIfStageCovered(ContentActivities.Found found, UUID deviceId) {
+        try {
+            Set<String> stage =
+                    this.activities.stageActivityKeys(found.versionId(), found.stageKey());
+            if (stage.isEmpty()
+                    || !this.store.recordedActivityKeys(deviceId, stage).containsAll(stage)) {
+                return;
+            }
+            this.metrics.stageCompleted(
+                    deviceId, found.unitKey(), found.versionId(), found.stageKey());
+        } catch (RuntimeException ex) {
+            log.error("Falha ao publicar STAGE_COMPLETED do Visitante", ex);
+            Sentry.captureException(ex);
+        }
     }
 
     /**
