@@ -1415,6 +1415,10 @@
             },
             "type" : "array"
           },
+          "completion" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "Opcional: a frase do resumo do fim do Estágio, em português."
+          },
           "stageKey" : {
             "type" : "string"
           },
@@ -1432,6 +1436,10 @@
               "$ref" : "#/components/schemas/ActivityStudentView"
             },
             "type" : "array"
+          },
+          "completion" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A frase do resumo do fim do Estágio, crua (pode ter placeholders e variantes he/she/they). Só quando o conteúdo tem."
           },
           "stageKey" : {
             "type" : "string"

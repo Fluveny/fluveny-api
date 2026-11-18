@@ -457,6 +457,10 @@ class ContentPublicationIT {
                 .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.versionId").value(id))
+                // História 1.20: a frase do fim do Estágio, crua como no conteúdo.
+                .andExpect(
+                        jsonPath("$.data.completion")
+                                .value("Você já sabe se apresentar e cumprimentar, {name}."))
                 .andExpect(jsonPath("$.data.activities[0].type").value("choice"))
                 .andExpect(
                         jsonPath("$.data.activities[0].items[0].correctOptionKey").doesNotExist())
@@ -526,6 +530,18 @@ class ContentPublicationIT {
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"))
                 .andExpect(header().string("WWW-Authenticate", "Bearer realm=\"fluveny\""));
+    }
+
+    @Test
+    void aStageWithoutCompletionHasNoCompletionField() throws Exception {
+        ObjectNode bundle = validBundle();
+        ((ObjectNode) bundle.at("/stages/0")).remove("completion");
+        publish(UNIT, bundle).andExpect(status().isCreated());
+        this.mvc
+                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("Meet Alex"))
+                .andExpect(jsonPath("$.data.completion").doesNotExist());
     }
 
     @Test

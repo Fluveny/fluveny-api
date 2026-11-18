@@ -195,4 +195,22 @@ class StudentRoutesOpenApiTest {
                                 .asString())
                 .isEqualTo(COMPONENTS + "GapsItemStudentView");
     }
+
+    /** História 1.20: a frase do fim do Estágio é um texto opcional na visão do aluno. */
+    @Test
+    void theStageCompletionIsAnOptionalText() throws Exception {
+        JsonNode api =
+                MAPPER.readTree(
+                        this.mvc
+                                .perform(get("/v3/api-docs"))
+                                .andReturn()
+                                .getResponse()
+                                .getContentAsString(StandardCharsets.UTF_8));
+        JsonNode stage = api.at("/components/schemas/StageStudentView");
+        assertThat(stage.at("/properties/completion/$ref").asString())
+                .isEqualTo(COMPONENTS + "ContentText");
+        assertThat(stage.path("required").toString())
+                .contains("title")
+                .doesNotContain("completion");
+    }
 }

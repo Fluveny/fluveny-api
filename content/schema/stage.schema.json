@@ -9,6 +9,10 @@
   "properties": {
     "stageKey": { "$ref": "key.schema.json" },
     "title": { "$ref": "text.schema.json" },
+    "completion": {
+      "description": "Opcional: a frase do que o aluno aprendeu, no resumo do fim do Estágio (UX-DR104). Em português, a língua da interface.",
+      "$ref": "text.schema.json"
+    },
     "activities": {
       "type": "array",
       "minItems": 1,
