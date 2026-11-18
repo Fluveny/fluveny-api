@@ -225,14 +225,26 @@ class ContentPublicationIT {
 
     @Test
     void unsupportedTypesAre422AndNothingIsStored() throws Exception {
-        for (String since : new String[] {null, "9.9.9"}) {
-            Types.SINCE.set(since);
+        // O source do teste vence o real: com nulo, a Escolha não tem sinceAppVersion.
+        String[][] cases = {
+            {
+                null,
+                "O Tipo choice ainda não tem sinceAppVersion: nenhuma versão do App o renderiza."
+            },
+            {
+                "9.9.9",
+                "O Tipo choice só é renderizado a partir do App 9.9.9, acima do mínimo 0.0.0."
+            }
+        };
+        for (String[] c : cases) {
+            Types.SINCE.set(c[0]);
             publish(UNIT, validBundle())
                     .andExpect(status().isUnprocessableContent())
                     .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                     .andExpect(jsonPath("$.errors[0].rule").value("UNSUPPORTED_ACTIVITY_TYPE"))
                     .andExpect(jsonPath("$.errors[0].pointer").value("/activities/0/type"))
-                    .andExpect(jsonPath("$.errors[0].key").value("s1-greetings"));
+                    .andExpect(jsonPath("$.errors[0].key").value("s1-greetings"))
+                    .andExpect(jsonPath("$.errors[0].message").value(c[1]));
         }
         assertThat(versions()).isZero();
     }
