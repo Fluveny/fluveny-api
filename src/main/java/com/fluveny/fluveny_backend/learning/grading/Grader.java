@@ -17,6 +17,7 @@ import com.fluveny.fluveny_backend.content.activity.GapsActivity;
 import com.fluveny.fluveny_backend.content.activity.GapsAnswer;
 import com.fluveny.fluveny_backend.content.activity.GapsAnswerItem;
 import com.fluveny.fluveny_backend.content.activity.GapsItem;
+import com.fluveny.fluveny_backend.content.activity.GrammarActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchAnswer;
 import com.fluveny.fluveny_backend.content.activity.MatchAnswerItem;
@@ -57,7 +58,7 @@ public final class Grader {
      *     mesma resposta, se a transcrição da Fala está em branco ou passa de 500 caracteres, se o
      *     valor de uma lacuna (das Lacunas ou do Extra Help da Resposta Livre) está em branco ou
      *     passa de 100 caracteres, ou se a Atividade é de Tipo expositivo (Diálogo, Cartões de
-     *     expressões, Expressão Útil destacada)
+     *     expressões, Expressão Útil destacada, Grammar Time)
      */
     public static GradeResult grade(Activity activity, Answer answer, StudentVars studentVars) {
         Objects.requireNonNull(activity, "activity");
@@ -79,6 +80,10 @@ public final class Grader {
                     throw invalid(
                             "A Expressão Útil destacada não tem resposta: conclua pela rota de"
                                     + " conclusão.");
+            // Expositivo (história 1.19).
+            case GrammarActivity grammar ->
+                    throw invalid(
+                            "O Grammar Time não tem resposta: conclua pela rota de conclusão.");
             case SpeechActivity speech -> speech(speech, (SpeechAnswer) answer, studentVars);
             case MatchActivity match -> match(match, (MatchAnswer) answer);
             case GapsActivity gaps -> gaps(gaps, (GapsAnswer) answer, studentVars);

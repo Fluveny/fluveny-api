@@ -657,6 +657,69 @@ class VisitorAttemptsTest {
         assertThat(this.content.attempts).isEmpty();
     }
 
+    // História 1.19: o Grammar Time.
+
+    private static final String GRAMMAR = "s1-grammar-time";
+
+    @Test
+    void theStageServesTheGrammarAsTheContent() throws Exception {
+        this.mvc
+                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.activities[9].activityKey").value(GRAMMAR))
+                .andExpect(jsonPath("$.data.activities[9].type").value("grammar"))
+                .andExpect(jsonPath("$.data.activities[9].title").value("Verb to be"))
+                .andExpect(jsonPath("$.data.activities[9].used.length()").value(2))
+                .andExpect(jsonPath("$.data.activities[9].used[0].sentenceKey").value("my-name"))
+                .andExpect(jsonPath("$.data.activities[9].used[0].form").value("is"))
+                .andExpect(
+                        jsonPath("$.data.activities[9].used[0].sentence")
+                                .value("My name **is** {name}."))
+                .andExpect(jsonPath("$.data.activities[9].used[1].form.they").value("are"))
+                .andExpect(jsonPath("$.data.activities[9].rules.length()").value(3))
+                .andExpect(jsonPath("$.data.activities[9].rules[0].ruleKey").value("am"))
+                .andExpect(jsonPath("$.data.activities[9].rules[0].use").value("only with I"))
+                .andExpect(
+                        jsonPath("$.data.activities[9].rules[0].example")
+                                .value("I **am** a student."))
+                .andExpect(jsonPath("$.data.activities[9].examples.length()").value(2))
+                .andExpect(jsonPath("$.data.activities[9].examples[0].exampleKey").value("alex"))
+                .andExpect(jsonPath("$.data.activities[9].examples[1].text.he").exists())
+                .andExpect(jsonPath("$.data.activities[9].xp").doesNotExist());
+    }
+
+    @Test
+    void viewingTheGrammarCarriesAReceiptWithoutXp() throws Exception {
+        JsonNode body =
+                json(
+                        send(COMPLETIONS, completion(GRAMMAR, "VIEWED"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("VIEWED"))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0)));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(GRAMMAR);
+        assertThat(payload.outcome()).isEqualTo(Outcome.VIEWED);
+        assertThat(payload.xpAwarded()).isZero();
+    }
+
+    @Test
+    void skippingTheGrammarIsNotAllowedAndNotStored() throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion(GRAMMAR, "SKIPPED")), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    @Test
+    void anAttemptOrRevealAtTheGrammarIsInvalidAndNotStored() throws Exception {
+        ObjectNode attempt = allRight().put("activityKey", GRAMMAR).put("type", "grammar");
+        expectProblem(send(ATTEMPTS, attempt), 400, "INVALID_ANSWER");
+        expectProblem(send(REVEAL, attempt), 400, "INVALID_ANSWER");
+        expectProblem(
+                send(ATTEMPTS, allRight().put("activityKey", GRAMMAR)), 400, "INVALID_ANSWER");
+        expectProblem(send(REVEAL, allRight().put("activityKey", GRAMMAR)), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
     @Test
     void aViewedCompletionIsIdempotentByAttemptId() throws Exception {
         ObjectNode completion = completion(DIALOGUE, "VIEWED");

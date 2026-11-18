@@ -13,6 +13,7 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.GrammarActivity;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -274,10 +275,13 @@ class GraderTest {
         }
     }
 
-    /** História 1.14: os Cartões e a Expressão são expositivos; nenhuma resposta é aceita. */
+    /**
+     * Histórias 1.14 e 1.19: os Cartões, a Expressão e o Grammar Time são expositivos; nenhuma
+     * resposta é aceita.
+     */
     @ParameterizedTest
-    @ValueSource(strings = {CardsActivity.TYPE, ExpressionActivity.TYPE})
-    void cardsAndExpressionAreNeverGraded(String type) throws Exception {
+    @ValueSource(strings = {CardsActivity.TYPE, ExpressionActivity.TYPE, GrammarActivity.TYPE})
+    void expositoryTypesAreNeverGraded(String type) throws Exception {
         Activity activity;
         try (InputStream in =
                 GraderTest.class.getResourceAsStream(

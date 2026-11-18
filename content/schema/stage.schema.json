@@ -21,7 +21,7 @@
       "type": "object",
       "required": ["type"],
       "properties": {
-        "type": { "enum": ["choice", "dialogue", "cards", "expression", "speech", "match", "gaps", "free"] }
+        "type": { "enum": ["choice", "dialogue", "cards", "expression", "speech", "match", "gaps", "free", "grammar"] }
       },
       "allOf": [
         {
@@ -55,6 +55,10 @@
         {
           "if": { "properties": { "type": { "const": "free" } }, "required": ["type"] },
           "then": { "$ref": "activities/free.schema.json" }
+        },
+        {
+          "if": { "properties": { "type": { "const": "grammar" } }, "required": ["type"] },
+          "then": { "$ref": "activities/grammar.schema.json" }
         }
       ]
     }

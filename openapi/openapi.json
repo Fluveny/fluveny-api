@@ -10,6 +10,7 @@
             "expression" : "#/components/schemas/ExpressionActivity",
             "free" : "#/components/schemas/FreeActivity",
             "gaps" : "#/components/schemas/GapsActivity",
+            "grammar" : "#/components/schemas/GrammarActivity",
             "match" : "#/components/schemas/MatchActivity",
             "speech" : "#/components/schemas/SpeechActivity"
           },
@@ -31,6 +32,8 @@
           "$ref" : "#/components/schemas/GapsActivity"
         }, {
           "$ref" : "#/components/schemas/FreeActivity"
+        }, {
+          "$ref" : "#/components/schemas/GrammarActivity"
         } ],
         "properties" : {
           "type" : {
@@ -48,6 +51,7 @@
             "expression" : "#/components/schemas/ExpressionActivityStudentView",
             "free" : "#/components/schemas/FreeActivityStudentView",
             "gaps" : "#/components/schemas/GapsActivityStudentView",
+            "grammar" : "#/components/schemas/GrammarActivityStudentView",
             "match" : "#/components/schemas/MatchActivityStudentView",
             "speech" : "#/components/schemas/SpeechActivityStudentView"
           },
@@ -69,6 +73,8 @@
           "$ref" : "#/components/schemas/GapsActivityStudentView"
         }, {
           "$ref" : "#/components/schemas/FreeActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/GrammarActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -1002,6 +1008,125 @@
         "required" : [ "text", "wordKey" ],
         "type" : "object"
       },
+      "GrammarActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "examples" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTimeExample"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "rules" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTimeRule"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "grammar" ],
+            "type" : "string"
+          },
+          "used" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTimeSentence"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "activityKey", "examples", "rules", "title", "type", "used" ],
+        "type" : "object"
+      },
+      "GrammarActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "examples" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTimeExample"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "rules" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTimeRule"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "grammar" ],
+            "type" : "string"
+          },
+          "used" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTimeSentence"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "activityKey", "examples", "rules", "title", "type", "used" ],
+        "type" : "object"
+      },
+      "GrammarTimeExample" : {
+        "properties" : {
+          "exampleKey" : {
+            "type" : "string"
+          },
+          "text" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "exampleKey", "text" ],
+        "type" : "object"
+      },
+      "GrammarTimeRule" : {
+        "properties" : {
+          "example" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "form" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "ruleKey" : {
+            "type" : "string"
+          },
+          "use" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "example", "form", "ruleKey", "use" ],
+        "type" : "object"
+      },
+      "GrammarTimeSentence" : {
+        "properties" : {
+          "form" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "sentence" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "sentenceKey" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "form", "sentence", "sentenceKey" ],
+        "type" : "object"
+      },
       "ItemResult" : {
         "properties" : {
           "correct" : {
@@ -1780,7 +1905,7 @@
     },
     "/api/v1/visitor/completions" : {
       "post" : {
-        "description" : "Conclui uma Atividade sem correção, sem XP: a vista de um Tipo expositivo ou a pulada de um Tipo avaliado que aceita pular (a speech, com SKIPPED). receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: os expositivos dialogue, cards e expression, com VIEWED, e a speech pulada, com SKIPPED. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
+        "description" : "Conclui uma Atividade sem correção, sem XP: a vista de um Tipo expositivo ou a pulada de um Tipo avaliado que aceita pular (a speech, com SKIPPED). receipt só volta na primeira conclusão ou Tentativa do aparelho na Atividade. Cada Tipo aceita a sua conclusão: os expositivos dialogue, cards, expression e grammar, com VIEWED, e a speech pulada, com SKIPPED. Fora dela, 409 COMPLETION_NOT_ALLOWED.",
         "operationId" : "completeVisitorActivity",
         "requestBody" : {
           "content" : {

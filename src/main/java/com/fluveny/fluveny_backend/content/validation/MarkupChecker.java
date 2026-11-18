@@ -26,6 +26,9 @@ final class MarkupChecker {
     private static final Pattern FOREIGN_MARKUP =
             Pattern.compile("__|~~|`|<[a-zA-Z/!][^>]*>|\\[[^\\[\\]]*]\\([^)]*\\)");
 
+    /** Um trecho em negrito: o conteúdo entre um par de {@code **}. */
+    private static final Pattern BOLD = Pattern.compile("\\*\\*(.*?)\\*\\*");
+
     private final Pattern placeholderGrammar;
 
     MarkupChecker(Pattern placeholderGrammar) {
@@ -115,6 +118,25 @@ final class MarkupChecker {
                             "Formatação fora da lista. Só valem **negrito** e [[texto|expressionKey]]."));
         }
         return problems;
+    }
+
+    /**
+     * Se o texto não tem nenhum trecho {@code **...**} com conteúdo (o destaque do Grammar Time).
+     * Negrito malformado ({@code **} sem par, {@code ****}) não conta como falta: ele já é {@code
+     * INVALID_MARKUP} do {@link #check}, e o erro não se repete.
+     */
+    static boolean lacksBold(String text) {
+        int marks = count(text, "**");
+        if (marks % 2 != 0 || text.contains("****")) {
+            return false;
+        }
+        Matcher bold = BOLD.matcher(text);
+        while (bold.find()) {
+            if (!bold.group(1).isBlank()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static int count(String text, String token) {

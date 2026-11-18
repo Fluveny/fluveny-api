@@ -6,6 +6,7 @@ import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
 import com.fluveny.fluveny_backend.content.activity.FreeActivity;
 import com.fluveny.fluveny_backend.content.activity.GapsActivity;
+import com.fluveny.fluveny_backend.content.activity.GrammarActivity;
 import com.fluveny.fluveny_backend.content.activity.MatchActivity;
 import com.fluveny.fluveny_backend.content.activity.SpeechActivity;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
@@ -26,11 +27,11 @@ import org.springframework.stereotype.Component;
 public class LearningActivityTypes implements ActivityTypeSource {
 
     /**
-     * As conclusões ({@code completions}) que cada Tipo aceita (histórias 1.13 a 1.18). Os
-     * expositivos (Diálogo, Cartões de expressões, Expressão Útil destacada) só são vistos; a
-     * Escolha, o Associar e as Lacunas não se concluem sem Tentativa; a Fala pode ser pulada ("Não
-     * posso falar agora"); a Resposta Livre só é vista (ENVIAR, sem mandar o texto), e o Extra Help
-     * dela é Tentativa. Tipo fora do mapa não aceita nenhuma.
+     * As conclusões ({@code completions}) que cada Tipo aceita (histórias 1.13 a 1.19). Os
+     * expositivos (Diálogo, Cartões de expressões, Expressão Útil destacada, Grammar Time) só são
+     * vistos; a Escolha, o Associar e as Lacunas não se concluem sem Tentativa; a Fala pode ser
+     * pulada ("Não posso falar agora"); a Resposta Livre só é vista (ENVIAR, sem mandar o texto), e
+     * o Extra Help dela é Tentativa. Tipo fora do mapa não aceita nenhuma.
      */
     private static final Map<String, Set<Outcome>> COMPLETIONS =
             Map.of(
@@ -49,6 +50,8 @@ public class LearningActivityTypes implements ActivityTypeSource {
                     GapsActivity.TYPE,
                     Set.of(),
                     FreeActivity.TYPE,
+                    Set.of(Outcome.VIEWED),
+                    GrammarActivity.TYPE,
                     Set.of(Outcome.VIEWED));
 
     @Override
@@ -61,7 +64,8 @@ public class LearningActivityTypes implements ActivityTypeSource {
                 new ActivityTypeSupport(SpeechActivity.TYPE, null),
                 new ActivityTypeSupport(MatchActivity.TYPE, null),
                 new ActivityTypeSupport(GapsActivity.TYPE, null),
-                new ActivityTypeSupport(FreeActivity.TYPE, null));
+                new ActivityTypeSupport(FreeActivity.TYPE, null),
+                new ActivityTypeSupport(GrammarActivity.TYPE, null));
     }
 
     /** Os Tipos com regra de conclusão; o teste confere que batem com {@link #activityTypes()}. */

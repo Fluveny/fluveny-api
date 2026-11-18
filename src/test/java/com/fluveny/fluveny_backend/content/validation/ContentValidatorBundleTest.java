@@ -1031,4 +1031,166 @@ class ContentValidatorBundleTest {
                     assertThat(error.pointer()).startsWith("/activities/8");
                 });
     }
+
+    // História 1.19: o Grammar Time.
+
+    /** O Grammar Time de {@code s1-meet-alex} na fixture válida ({@code /activities/9}). */
+    private static ObjectNode grammar(ObjectNode bundle) {
+        return (ObjectNode) bundle.at("/stages/0/activities/9");
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "used=empty",
+                "rules=empty",
+                "examples=empty",
+                "used=",
+                "rules=",
+                "examples=",
+                "xp=10",
+                "intro=x",
+                "used.form=",
+                "rules.use=",
+                "examples.text=",
+                "used.extra-property=x"
+            })
+    void anInvalidGrammarIsASchemaViolation(String change) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode grammar = grammar(bundle);
+        switch (change) {
+            case "used=empty" -> grammar.putArray("used");
+            case "rules=empty" -> grammar.putArray("rules");
+            case "examples=empty" -> grammar.putArray("examples");
+            case "used=" -> grammar.remove("used");
+            case "rules=" -> grammar.remove("rules");
+            case "examples=" -> grammar.remove("examples");
+            case "xp=10" -> grammar.put("xp", 10);
+            case "intro=x" -> grammar.put("intro", "x");
+            case "used.form=" -> ((ObjectNode) grammar.at("/used/0")).remove("form");
+            case "rules.use=" -> ((ObjectNode) grammar.at("/rules/0")).remove("use");
+            case "examples.text=" -> ((ObjectNode) grammar.at("/examples/0")).remove("text");
+            case "used.extra-property=x" -> ((ObjectNode) grammar.at("/used/0")).put("tab", "x");
+            default -> throw new IllegalArgumentException(change);
+        }
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .isNotEmpty()
+                .anySatisfy(
+                        error -> assertThat(error.rule()).isEqualTo(ContentRule.SCHEMA_VIOLATION))
+                .allSatisfy(error -> {
+                    assertThat(error.file()).isEqualTo(S1);
+                    assertThat(error.pointer()).startsWith("/activities/9");
+                });
+    }
+
+    @Test
+    void grammarListKeysAreUniqueInTheirOwnList() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode grammar = grammar(bundle);
+        ((ObjectNode) grammar.at("/used/1")).put("sentenceKey", "my-name");
+        ((ObjectNode) grammar.at("/rules/2")).put("ruleKey", "am");
+        ((ObjectNode) grammar.at("/examples/1")).put("exampleKey", "alex");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/9/used/0/sentenceKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/9/used/1/sentenceKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/9/rules/0/ruleKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/9/rules/2/ruleKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/9/examples/0/exampleKey", ContentRule.DUPLICATE_KEY),
+                        tuple("/activities/9/examples/1/exampleKey", ContentRule.DUPLICATE_KEY));
+    }
+
+    /** As chaves das três abas são de listas diferentes: a mesma chave em duas delas vale. */
+    @Test
+    void theSameKeyInTwoGrammarListsIsValid() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode grammar = grammar(bundle);
+        ((ObjectNode) grammar.at("/used/0")).put("sentenceKey", "is");
+        ((ObjectNode) grammar.at("/examples/0")).put("exampleKey", "is");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
+
+    @Test
+    void grammarTextsFollowTheTextRules() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode grammar = grammar(bundle);
+        ((ObjectNode) grammar.at("/used/0")).put("sentence", "My name **is** {age}.");
+        ((ObjectNode) grammar.at("/rules/0")).put("use", "only with __I__");
+        ((ObjectNode) grammar.at("/rules/1")).putObject("example").put("he", "He **is**.");
+        ((ObjectNode) grammar.at("/examples/0")).put("text", "[[Hi|nao-existe]]!");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .containsExactlyInAnyOrder(
+                        tuple("/activities/9/used/0/sentence", ContentRule.UNKNOWN_PLACEHOLDER),
+                        tuple("/activities/9/rules/0/use", ContentRule.INVALID_MARKUP),
+                        tuple(
+                                "/activities/9/rules/1/example",
+                                ContentRule.PRONOUN_VARIANTS_MISSING),
+                        tuple("/activities/9/examples/0/text", ContentRule.INVALID_MARKUP));
+    }
+
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "My name is {name}.",
+                "[[My name is|nice-to-meet-you]] {name}.",
+                "My name ** ** {name}."
+            })
+    void aUsedSentenceWithoutBoldIsMissingTheHighlight(String sentence) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) grammar(bundle).at("/used/0")).put("sentence", sentence);
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(
+                        ContentError::file,
+                        ContentError::pointer,
+                        ContentError::key,
+                        ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                S1,
+                                "/activities/9/used/0/sentence",
+                                "my-name",
+                                ContentRule.MISSING_GRAMMAR_HIGHLIGHT));
+    }
+
+    @Test
+    void eachPronounVariantOfAUsedSentenceNeedsBold() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) grammar(bundle).at("/used/1/sentence")).put("she", "She is from Canada.");
+        List<ContentError> errors = VALIDATOR.validateBundle("unit-1", bundle);
+        assertThat(errors)
+                .extracting(ContentError::pointer, ContentError::key, ContentError::rule)
+                .containsExactly(
+                        tuple(
+                                "/activities/9/used/1/sentence/she",
+                                "from-canada",
+                                ContentRule.MISSING_GRAMMAR_HIGHLIGHT));
+        assertThat(errors.getFirst().message()).contains("variante she");
+    }
+
+    /** Negrito malformado é só do MarkupChecker; a regra de destaque não repete o erro. */
+    @ParameterizedTest
+    @ValueSource(strings = {"My name **is {name}.", "My name ****is {name}."})
+    void malformedBoldIsOnlyInvalidMarkup(String sentence) throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ((ObjectNode) grammar(bundle).at("/used/0")).put("sentence", sentence);
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle))
+                .extracting(ContentError::pointer, ContentError::rule)
+                .contains(tuple("/activities/9/used/0/sentence", ContentRule.INVALID_MARKUP))
+                .doesNotContain(
+                        tuple(
+                                "/activities/9/used/0/sentence",
+                                ContentRule.MISSING_GRAMMAR_HIGHLIGHT));
+    }
+
+    /** O destaque é exigido só nas frases de used: regra e exemplos sem negrito valem. */
+    @Test
+    void rulesAndExamplesNeedNoBold() throws Exception {
+        ObjectNode bundle = bundle("valid");
+        ObjectNode grammar = grammar(bundle);
+        ((ObjectNode) grammar.at("/rules/0")).put("example", "I am a student.");
+        ((ObjectNode) grammar.at("/examples/0")).put("text", "I'm Alex.");
+        assertThat(VALIDATOR.validateBundle("unit-1", bundle)).isEmpty();
+    }
 }
