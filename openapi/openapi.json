@@ -8,6 +8,7 @@
             "choice" : "#/components/schemas/ChoiceActivity",
             "dialogue" : "#/components/schemas/DialogueActivity",
             "expression" : "#/components/schemas/ExpressionActivity",
+            "free" : "#/components/schemas/FreeActivity",
             "gaps" : "#/components/schemas/GapsActivity",
             "match" : "#/components/schemas/MatchActivity",
             "speech" : "#/components/schemas/SpeechActivity"
@@ -28,6 +29,8 @@
           "$ref" : "#/components/schemas/MatchActivity"
         }, {
           "$ref" : "#/components/schemas/GapsActivity"
+        }, {
+          "$ref" : "#/components/schemas/FreeActivity"
         } ],
         "properties" : {
           "type" : {
@@ -43,6 +46,7 @@
             "choice" : "#/components/schemas/ChoiceActivityStudentView",
             "dialogue" : "#/components/schemas/DialogueActivityStudentView",
             "expression" : "#/components/schemas/ExpressionActivityStudentView",
+            "free" : "#/components/schemas/FreeActivityStudentView",
             "gaps" : "#/components/schemas/GapsActivityStudentView",
             "match" : "#/components/schemas/MatchActivityStudentView",
             "speech" : "#/components/schemas/SpeechActivityStudentView"
@@ -63,6 +67,8 @@
           "$ref" : "#/components/schemas/MatchActivityStudentView"
         }, {
           "$ref" : "#/components/schemas/GapsActivityStudentView"
+        }, {
+          "$ref" : "#/components/schemas/FreeActivityStudentView"
         } ],
         "properties" : {
           "type" : {
@@ -87,6 +93,7 @@
         "discriminator" : {
           "mapping" : {
             "choice" : "#/components/schemas/ChoiceAnswer",
+            "free" : "#/components/schemas/FreeAnswer",
             "gaps" : "#/components/schemas/GapsAnswer",
             "match" : "#/components/schemas/MatchAnswer",
             "speech" : "#/components/schemas/SpeechAnswer"
@@ -101,6 +108,8 @@
           "$ref" : "#/components/schemas/MatchAnswer"
         }, {
           "$ref" : "#/components/schemas/GapsAnswer"
+        }, {
+          "$ref" : "#/components/schemas/FreeAnswer"
         } ],
         "properties" : {
           "type" : {
@@ -249,6 +258,10 @@
         "properties" : {
           "expected" : {
             "$ref" : "#/components/schemas/Answer"
+          },
+          "extraHelp" : {
+            "description" : "true nas Tentativas da Resposta Livre (free), que são sempre do Extra Help; ausente nos outros Tipos.",
+            "type" : "boolean"
           },
           "items" : {
             "items" : {
@@ -539,6 +552,10 @@
       },
       "CompletionResult" : {
         "properties" : {
+          "modelAnswer" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A resposta-modelo da Resposta Livre, crua (pode ter {name}). Só na conclusão VIEWED de um free, também na repetição."
+          },
           "outcome" : {
             "enum" : [ "GRADED", "SKIPPED", "VIEWED" ],
             "type" : "string"
@@ -679,6 +696,144 @@
           }
         },
         "required" : [ "activityKey", "sentence", "speaker", "title", "type" ],
+        "type" : "object"
+      },
+      "FreeActivity" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "extraHelp" : {
+            "$ref" : "#/components/schemas/FreeExtraHelp"
+          },
+          "modelAnswer" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "Uma resposta possível; pode ter {name} e {country}. Sai na conclusão VIEWED."
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A pergunta de Alex."
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "free" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "description" : "O XP do Extra Help; a Resposta Livre enviada não dá XP.",
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "extraHelp", "modelAnswer", "prompt", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "FreeActivityStudentView" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "extraHelp" : {
+            "$ref" : "#/components/schemas/FreeExtraHelpStudentView"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A pergunta de Alex."
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "type" : {
+            "enum" : [ "free" ],
+            "type" : "string"
+          },
+          "xp" : {
+            "description" : "O XP do Extra Help; a Resposta Livre enviada não dá XP.",
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "extraHelp", "prompt", "title", "type", "xp" ],
+        "type" : "object"
+      },
+      "FreeAnswer" : {
+        "properties" : {
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/GapsAnswerItem"
+            },
+            "type" : "array"
+          },
+          "type" : {
+            "enum" : [ "free" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "items", "type" ],
+        "type" : "object"
+      },
+      "FreeExtraHelp" : {
+        "properties" : {
+          "bank" : {
+            "description" : "O banco de palavras, na ordem do conteúdo, com os distratores; o App embaralha.",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsWord"
+            },
+            "type" : "array"
+          },
+          "items" : {
+            "description" : "Um item por lacuna, na ordem dos ___ nas linhas (linha a linha).",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsItem"
+            },
+            "type" : "array"
+          },
+          "lines" : {
+            "description" : "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A instrução do Extra Help, acima das lacunas."
+          }
+        },
+        "required" : [ "bank", "items", "lines" ],
+        "type" : "object"
+      },
+      "FreeExtraHelpStudentView" : {
+        "properties" : {
+          "bank" : {
+            "description" : "O banco de palavras, na ordem do conteúdo, com os distratores; o App embaralha.",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsWord"
+            },
+            "type" : "array"
+          },
+          "items" : {
+            "description" : "Um item por lacuna, na ordem dos ___ nas linhas (linha a linha).",
+            "items" : {
+              "$ref" : "#/components/schemas/GapsItemStudentView"
+            },
+            "type" : "array"
+          },
+          "lines" : {
+            "description" : "As linhas, na ordem de exibição. Cada ___ (três ou mais _) é uma lacuna.",
+            "items" : {
+              "$ref" : "#/components/schemas/ContentText"
+            },
+            "type" : "array"
+          },
+          "prompt" : {
+            "$ref" : "#/components/schemas/ContentText",
+            "description" : "A instrução do Extra Help, acima das lacunas."
+          }
+        },
+        "required" : [ "bank", "items", "lines" ],
         "type" : "object"
       },
       "GapsActivity" : {

@@ -11,6 +11,8 @@ import com.fluveny.fluveny_backend.content.activity.ChoiceOption;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import com.fluveny.fluveny_backend.content.activity.DialogueActivity;
 import com.fluveny.fluveny_backend.content.activity.ExpressionActivity;
+import com.fluveny.fluveny_backend.content.activity.FreeActivity;
+import com.fluveny.fluveny_backend.content.activity.FreeAnswer;
 import com.fluveny.fluveny_backend.content.activity.GapsActivity;
 import com.fluveny.fluveny_backend.content.activity.GapsAnswer;
 import com.fluveny.fluveny_backend.content.activity.GapsAnswerItem;
@@ -48,13 +50,14 @@ public final class Grader {
     /**
      * Corrige a resposta contra a Atividade completa.
      *
-     * @param studentVars as Variáveis do Aluno; a Escolha e o Associar não usam, e a Fala e as
-     *     Lacunas só usam o pronome para escolher a variante do {@code expected}
+     * @param studentVars as Variáveis do Aluno; a Escolha e o Associar não usam, e a Fala, as
+     *     Lacunas e o Extra Help só usam o pronome para escolher a variante do {@code expected}
      * @throws ApiException {@code 400 INVALID_ANSWER} se a resposta é de outro Tipo, não cobre
      *     todos os itens, repete item ou usa chave que não existe, se o Associar liga duas falas à
      *     mesma resposta, se a transcrição da Fala está em branco ou passa de 500 caracteres, se o
-     *     valor de uma lacuna está em branco ou passa de 100 caracteres, ou se a Atividade é de
-     *     Tipo expositivo (Diálogo, Cartões de expressões, Expressão Útil destacada)
+     *     valor de uma lacuna (das Lacunas ou do Extra Help da Resposta Livre) está em branco ou
+     *     passa de 100 caracteres, ou se a Atividade é de Tipo expositivo (Diálogo, Cartões de
+     *     expressões, Expressão Útil destacada)
      */
     public static GradeResult grade(Activity activity, Answer answer, StudentVars studentVars) {
         Objects.requireNonNull(activity, "activity");
@@ -79,6 +82,8 @@ public final class Grader {
             case SpeechActivity speech -> speech(speech, (SpeechAnswer) answer, studentVars);
             case MatchActivity match -> match(match, (MatchAnswer) answer);
             case GapsActivity gaps -> gaps(gaps, (GapsAnswer) answer, studentVars);
+            // História 1.18: só o Extra Help é corrigido; a Resposta Livre nunca vem ao servidor.
+            case FreeActivity free -> free(free, (FreeAnswer) answer, studentVars);
         };
     }
 
@@ -232,10 +237,45 @@ public final class Grader {
      */
     private static GradeResult gaps(
             GapsActivity activity, GapsAnswer answer, StudentVars studentVars) {
+        GradeResult result = gapItems(activity.items(), answer.items(), activity.xp(), studentVars);
+        return withExpected(result, new GapsAnswer(GapsActivity.TYPE, expectedItems(result)));
+    }
+
+    /**
+     * Extra Help da Resposta Livre (história 1.18, FR-17): as lacunas do banco, corrigidas como as
+     * Lacunas ({@link #gapItems}), com o {@code xp} da Atividade e o {@code expected} como {@link
+     * FreeAnswer}.
+     */
+    private static GradeResult free(
+            FreeActivity activity, FreeAnswer answer, StudentVars studentVars) {
+        GradeResult result =
+                gapItems(activity.extraHelp().items(), answer.items(), activity.xp(), studentVars);
+        return withExpected(result, new FreeAnswer(FreeActivity.TYPE, expectedItems(result)));
+    }
+
+    /** Os itens do {@code expected} provisório de {@link #gapItems}. */
+    private static List<GapsAnswerItem> expectedItems(GradeResult result) {
+        return ((GapsAnswer) result.expected()).items();
+    }
+
+    private static GradeResult withExpected(GradeResult result, Answer expected) {
+        return new GradeResult(
+                result.outcome(), result.resultPct(), result.items(), result.xpAwarded(), expected);
+    }
+
+    /**
+     * A regra das lacunas, comum às Lacunas e ao Extra Help. O {@code expected} sai como {@link
+     * GapsAnswer}; quem chama troca pelo Answer do próprio Tipo.
+     */
+    private static GradeResult gapItems(
+            List<GapsItem> activityItems,
+            List<GapsAnswerItem> answerItems,
+            int xp,
+            StudentVars studentVars) {
         Map<String, GapsItem> items = new HashMap<>();
-        activity.items().forEach(item -> items.put(item.itemKey(), item));
+        activityItems.forEach(item -> items.put(item.itemKey(), item));
         Map<String, String> given = new HashMap<>();
-        for (GapsAnswerItem value : answer.items()) {
+        for (GapsAnswerItem value : answerItems) {
             if (value == null) {
                 throw invalid("A resposta tem uma lacuna vazia.");
             }
@@ -258,7 +298,7 @@ public final class Grader {
         List<GradeResult.Item> results = new ArrayList<>();
         List<GapsAnswerItem> expected = new ArrayList<>();
         int correct = 0;
-        for (GapsItem item : activity.items()) {
+        for (GapsItem item : activityItems) {
             List<String> value = SpeechMatcher.wordsKeepingPlaceholders(given.get(item.itemKey()));
             List<String> forms = new ArrayList<>();
             item.accepted().forEach(accepted -> addForms(forms, accepted));
@@ -278,12 +318,12 @@ public final class Grader {
                             ContentRenderer.render(
                                     item.accepted().get(0), Map.of(), studentVars.pronounSet())));
         }
-        int pct = percent(correct, activity.items().size());
+        int pct = percent(correct, activityItems.size());
         return new GradeResult(
                 Outcome.GRADED,
                 pct,
                 results,
-                (int) Math.round((long) activity.xp() * pct / 100.0),
+                (int) Math.round((long) xp * pct / 100.0),
                 new GapsAnswer(GapsActivity.TYPE, expected));
     }
 

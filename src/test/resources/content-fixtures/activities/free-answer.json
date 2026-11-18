@@ -1,0 +1,13 @@
+{
+  "type": "free",
+  "items": [
+    {
+      "itemKey": "s1-about-you-im",
+      "value": "I'm"
+    },
+    {
+      "itemKey": "s1-about-you-from",
+      "value": "from"
+    }
+  ]
+}

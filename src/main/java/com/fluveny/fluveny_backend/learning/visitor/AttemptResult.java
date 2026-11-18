@@ -14,6 +14,8 @@ import java.util.List;
  * @param expected a resposta certa, só depois de um Acerto ou de "Ver resposta"
  * @param receipt o recibo da primeira Tentativa do aparelho na Atividade (história 1.12); ausente
  *     nas seguintes e no "Ver resposta"
+ * @param extraHelp {@code true} nas Tentativas da Resposta Livre (história 1.18), que são do Extra
+ *     Help; ausente nos outros Tipos
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Schema(name = "AttemptResult")
@@ -23,4 +25,9 @@ public record AttemptResult(
         @Schema(requiredMode = RequiredMode.REQUIRED) List<ItemResult> items,
         @Schema(requiredMode = RequiredMode.REQUIRED, minimum = "0") int xpAwarded,
         Answer expected,
-        String receipt) {}
+        String receipt,
+        @Schema(
+                        description =
+                                "true nas Tentativas da Resposta Livre (free), que são sempre do"
+                                        + " Extra Help; ausente nos outros Tipos.")
+                Boolean extraHelp) {}

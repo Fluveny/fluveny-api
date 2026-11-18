@@ -249,6 +249,37 @@
         }
       ],
       "xp": 6
+    },
+    {
+      "activityKey": "s1-about-you",
+      "type": "free",
+      "title": "Your Answer",
+      "prompt": "Hi! I'm Alex. What's your name?",
+      "modelAnswer": "Hi Alex! I'm {name}. Nice to meet you!",
+      "extraHelp": {
+        "prompt": "Toque nas palavras para completar.",
+        "lines": [
+          "Hi Alex! ___ {name}.",
+          "Nice to ___ you!"
+        ],
+        "items": [
+          {
+            "itemKey": "s1-about-you-im",
+            "accepted": ["I'm", "I am"],
+            "justification": "Para dizer o nome, use **I'm**."
+          },
+          {
+            "itemKey": "s1-about-you-meet",
+            "accepted": ["meet"]
+          }
+        ],
+        "bank": [
+          { "wordKey": "im", "text": "I'm" },
+          { "wordKey": "meet", "text": "meet" },
+          { "wordKey": "is", "text": "is" }
+        ]
+      },
+      "xp": 6
     }
   ]
 }

@@ -83,6 +83,7 @@ class ContentPublicationIT {
         Types.SPEECH_SINCE.set("0.0.0");
         Types.MATCH_SINCE.set("0.0.0");
         Types.GAPS_SINCE.set("0.0.0");
+        Types.FREE_SINCE.set("0.0.0");
     }
 
     static ObjectNode validBundle() throws Exception {
@@ -315,6 +316,22 @@ class ContentPublicationIT {
         assertThat(versions()).isZero();
     }
 
+    /**
+     * História 1.18: a Resposta Livre com o {@code sinceAppVersion} nulo do source real do {@code
+     * learning} não é publicada fora do perfil local.
+     */
+    @Test
+    void freeWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+        Types.FREE_SINCE.set(null);
+        publish(UNIT, validBundle())
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
+                .andExpect(jsonPath("$.errors.length()").value(1))
+                .andExpect(jsonPath("$.errors[0].pointer").value("/activities/8/type"))
+                .andExpect(jsonPath("$.errors[0].key").value("s1-about-you"));
+        assertThat(versions()).isZero();
+    }
+
     @Test
     void theUnitKeyOfThePathMustMatchTheBundle() throws Exception {
         publish("/api/v1/admin/content/units/unit-9/versions", validBundle())
@@ -408,7 +425,7 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.data.title").value("Unit 1: Hello!"))
                 .andExpect(jsonPath("$.data.stages[0].stageKey").value("s1-meet-alex"))
                 .andExpect(jsonPath("$.data.stages[0].title").value("Meet Alex"))
-                .andExpect(jsonPath("$.data.stages[0].activityCount").value(8))
+                .andExpect(jsonPath("$.data.stages[0].activityCount").value(9))
                 .andExpect(jsonPath("$.data.stages[1].stageKey").value("s2-where-from"))
                 .andExpect(
                         jsonPath("$.data.usefulExpressions[0].expressionKey")
@@ -468,7 +485,17 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.data.activities[6].items[0].justification").doesNotExist())
                 .andExpect(jsonPath("$.data.activities[7].mode").value("typed"))
                 .andExpect(jsonPath("$.data.activities[7].bank").doesNotExist())
-                .andExpect(jsonPath("$.data.activities[7].lines[0]").value("Hi Alex! ___ {name}."));
+                .andExpect(jsonPath("$.data.activities[7].lines[0]").value("Hi Alex! ___ {name}."))
+                // História 1.18: a Resposta Livre, sem a resposta-modelo nem o gabarito do Extra
+                // Help.
+                .andExpect(jsonPath("$.data.activities[8].type").value("free"))
+                .andExpect(jsonPath("$.data.activities[8].modelAnswer").doesNotExist())
+                .andExpect(jsonPath("$.data.activities[8].extraHelp.bank.length()").value(3))
+                .andExpect(
+                        jsonPath("$.data.activities[8].extraHelp.items[0].accepted").doesNotExist())
+                .andExpect(
+                        jsonPath("$.data.activities[8].extraHelp.items[0].justification")
+                                .doesNotExist());
         this.mvc
                 .perform(get("/api/v1/units/unit-1/stages/s2-where-from"))
                 .andExpect(status().isUnauthorized())
@@ -553,7 +580,7 @@ class ContentPublicationIT {
         }
         assertThat(scanned).contains("activities", "items", "options", "mediaKey");
         JsonNode stage = json(this.mvc.perform(get("/api/v1/units/unit-1/stages/s1-meet-alex")));
-        assertThat(stage.at("/data/activities").size()).isEqualTo(9);
+        assertThat(stage.at("/data/activities").size()).isEqualTo(10);
     }
 
     static Set<String> keys(JsonNode node, Set<String> keys) {
@@ -570,10 +597,11 @@ class ContentPublicationIT {
 
     /**
      * Os Tipos {@code choice}, {@code dialogue}, {@code cards}, {@code expression}, {@code speech},
-     * {@code match} e {@code gaps} com o {@code sinceAppVersion} que cada teste quiser. Vêm antes
-     * do source real do {@code learning} (nulo): na publicação, o primeiro source vence. Com {@code
-     * DIALOGUE_SINCE}, {@code EXPRESSIONS_SINCE}, {@code SPEECH_SINCE}, {@code MATCH_SINCE} ou
-     * {@code GAPS_SINCE} nulo, o Tipo fica de fora e vale o source real.
+     * {@code match}, {@code gaps} e {@code free} com o {@code sinceAppVersion} que cada teste
+     * quiser. Vêm antes do source real do {@code learning} (nulo): na publicação, o primeiro source
+     * vence. Com {@code DIALOGUE_SINCE}, {@code EXPRESSIONS_SINCE}, {@code SPEECH_SINCE}, {@code
+     * MATCH_SINCE}, {@code GAPS_SINCE} ou {@code FREE_SINCE} nulo, o Tipo fica de fora e vale o
+     * source real.
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {
@@ -593,6 +621,9 @@ class ContentPublicationIT {
 
         /** O das Lacunas (história 1.17). */
         static final AtomicReference<String> GAPS_SINCE = new AtomicReference<>("0.0.0");
+
+        /** O da Resposta Livre (história 1.18). */
+        static final AtomicReference<String> FREE_SINCE = new AtomicReference<>("0.0.0");
 
         @Bean
         @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -615,6 +646,9 @@ class ContentPublicationIT {
                 }
                 if (GAPS_SINCE.get() != null) {
                     types.add(new ActivityTypeSupport("gaps", GAPS_SINCE.get()));
+                }
+                if (FREE_SINCE.get() != null) {
+                    types.add(new ActivityTypeSupport("free", FREE_SINCE.get()));
                 }
                 return types;
             };

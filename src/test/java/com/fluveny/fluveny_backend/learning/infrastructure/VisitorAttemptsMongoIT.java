@@ -51,6 +51,10 @@ class VisitorAttemptsMongoIT {
     }
 
     private static FirstAttempt attempt(UUID deviceId, String activityKey) {
+        return attempt(deviceId, activityKey, false);
+    }
+
+    private static FirstAttempt attempt(UUID deviceId, String activityKey, boolean extraHelp) {
         Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
         return new FirstAttempt(
                 deviceId,
@@ -64,7 +68,8 @@ class VisitorAttemptsMongoIT {
                 UUID.randomUUID(),
                 now,
                 "v1.payload.hmac",
-                now);
+                now,
+                extraHelp);
     }
 
     @Test
@@ -97,6 +102,43 @@ class VisitorAttemptsMongoIT {
         assertThat(this.store.find(UUID.randomUUID(), "s1-greetings")).isEmpty();
         assertThat(this.mongo.getCollection(MongoVisitorAttemptStore.COLLECTION).countDocuments())
                 .isEqualTo(3);
+    }
+
+    /** História 1.18: o uso do Extra Help fica gravado na primeira Tentativa. */
+    @Test
+    void theExtraHelpFlagIsStored() {
+        UUID device = UUID.randomUUID();
+        FirstAttempt first = attempt(device, "s1-free", true);
+        assertThat(this.store.insertIfAbsent(first)).isTrue();
+        assertThat(this.store.find(device, "s1-free")).contains(first);
+    }
+
+    /** Um documento de antes da 1.18, sem {@code extraHelp}, é lido como {@code false}. */
+    @Test
+    void aDocumentFromBefore118ReadsWithoutExtraHelp() {
+        UUID device = UUID.randomUUID();
+        UUID attemptId = UUID.randomUUID();
+        UUID nonce = UUID.randomUUID();
+        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        this.mongo.insert(
+                new Document("deviceId", device.toString())
+                        .append("activityKey", "s1-greetings")
+                        .append("attemptId", attemptId.toString())
+                        .append("versionId", "sha256:" + "a".repeat(64))
+                        .append("outcome", "GRADED")
+                        .append("resultPct", 50)
+                        .append("xpAwarded", 5)
+                        .append("studyTimeMs", 1200L)
+                        .append("nonce", nonce.toString())
+                        .append("issuedAt", java.util.Date.from(now))
+                        .append("receipt", "v1.payload.hmac")
+                        .append("createdAt", java.util.Date.from(now)),
+                MongoVisitorAttemptStore.COLLECTION);
+        FirstAttempt read = this.store.find(device, "s1-greetings").orElseThrow();
+        assertThat(read.extraHelp()).isFalse();
+        assertThat(read.attemptId()).isEqualTo(attemptId);
+        assertThat(read.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(read.createdAt()).isEqualTo(now);
     }
 
     @Test

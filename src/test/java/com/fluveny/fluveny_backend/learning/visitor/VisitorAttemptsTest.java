@@ -1348,6 +1348,236 @@ class VisitorAttemptsTest {
         assertThat(this.content.attempts).isEmpty();
     }
 
+    // História 1.18: a Resposta Livre com Extra Help.
+
+    private static final String FREE = "s1-about-you";
+
+    private static final String FREE_IM = "s1-about-you-im";
+
+    private static final String FREE_MEET = "s1-about-you-meet";
+
+    private ObjectNode extraHelp(String... values) {
+        ObjectNode body = MAPPER.createObjectNode();
+        body.put("attemptId", UUID.randomUUID().toString());
+        body.put("deviceId", this.deviceId);
+        body.put("versionId", this.versionId);
+        body.put("activityKey", FREE);
+        body.put("type", "free");
+        ObjectNode answer = body.putObject("answer");
+        answer.put("type", "free");
+        ArrayNode items = answer.putArray("items");
+        for (int i = 0; i < values.length; i += 2) {
+            items.addObject().put("itemKey", values[i]).put("value", values[i + 1]);
+        }
+        body.put("studyTimeMs", 3000);
+        return body;
+    }
+
+    @Test
+    void theStageServesTheFreeWithoutTheModelAnswerNorTheAcceptedAnswers() throws Exception {
+        JsonNode body =
+                json(
+                        this.mvc
+                                .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.activities[8].activityKey").value(FREE))
+                                .andExpect(jsonPath("$.data.activities[8].type").value("free"))
+                                .andExpect(
+                                        jsonPath("$.data.activities[8].prompt")
+                                                .value("Hi! I'm Alex. What's your name?"))
+                                .andExpect(
+                                        jsonPath("$.data.activities[8].extraHelp.bank[*].wordKey")
+                                                .value(
+                                                        org.hamcrest.Matchers.contains(
+                                                                "im", "meet", "is"))));
+        assertThat(keys(body.at("/data/activities/8")))
+                .doesNotContain("modelAnswer", "accepted", "justification");
+    }
+
+    /**
+     * ENVIAR: a conclusão VIEWED não leva o texto do aluno e devolve a resposta-modelo crua, com o
+     * recibo e sem XP. A repetição devolve a resposta-modelo sem recibo.
+     */
+    @Test
+    void viewingAFreeReturnsTheModelAnswerAndTheReceiptWithoutXp() throws Exception {
+        JsonNode body =
+                json(
+                        send(COMPLETIONS, completion(FREE, "VIEWED"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("VIEWED"))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                                .andExpect(
+                                        jsonPath("$.data.modelAnswer")
+                                                .value("Hi Alex! I'm {name}. Nice to meet you!")));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(FREE);
+        assertThat(payload.outcome()).isEqualTo(Outcome.VIEWED);
+        assertThat(payload.xpAwarded()).isZero();
+        FirstAttempt stored = this.content.attempts.values().iterator().next();
+        assertThat(stored.outcome()).isEqualTo(Outcome.VIEWED);
+        assertThat(stored.extraHelp()).isFalse();
+
+        send(COMPLETIONS, completion(FREE, "VIEWED"))
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.data.modelAnswer")
+                                .value("Hi Alex! I'm {name}. Nice to meet you!"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).hasSize(1);
+    }
+
+    @Test
+    void theCompletionOfAnotherTypeHasNoModelAnswer() throws Exception {
+        send(COMPLETIONS, completion(DIALOGUE, "VIEWED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.modelAnswer").doesNotExist());
+    }
+
+    @Test
+    void skippingAFreeIsNotAllowedAndNotStored() throws Exception {
+        expectProblem(
+                send(COMPLETIONS, completion(FREE, "SKIPPED")), 409, "COMPLETION_NOT_ALLOWED");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    /** Extra Help certo: as lacunas do banco, com {@code extraHelp}, XP cheio e recibo. */
+    @Test
+    void aRightExtraHelpCarriesTheFlagTheFullXpAndTheReceipt() throws Exception {
+        JsonNode body =
+                json(
+                        send(ATTEMPTS, extraHelp(FREE_IM, "I'm", FREE_MEET, "meet"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.outcome").value("GRADED"))
+                                .andExpect(jsonPath("$.data.resultPct").value(100))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(6))
+                                .andExpect(jsonPath("$.data.extraHelp").value(true))
+                                .andExpect(jsonPath("$.data.expected.type").value("free"))
+                                .andExpect(jsonPath("$.data.expected.items[0].value").value("I'm"))
+                                .andExpect(
+                                        jsonPath("$.data.items[0].justification")
+                                                .value("Para dizer o nome, use **I'm**.")));
+        ReceiptPayload payload = this.verifier.verify(body.at("/data/receipt").asString());
+        assertThat(payload.activityKey()).isEqualTo(FREE);
+        assertThat(payload.xpAwarded()).isEqualTo(6);
+        FirstAttempt stored = this.content.attempts.values().iterator().next();
+        assertThat(stored.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(stored.extraHelp()).isTrue();
+        assertThat(body.at("/data").has("modelAnswer")).isFalse();
+    }
+
+    /** Um de dois: 50%, XP proporcional e nada do gabarito. */
+    @Test
+    void aPartialExtraHelpHasProportionalXpAndNoExpected() throws Exception {
+        JsonNode body =
+                json(
+                        send(ATTEMPTS, extraHelp(FREE_IM, "I'm", FREE_MEET, "is"))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.data.resultPct").value(50))
+                                .andExpect(jsonPath("$.data.xpAwarded").value(3))
+                                .andExpect(jsonPath("$.data.extraHelp").value(true))
+                                .andExpect(jsonPath("$.data.items[1].correct").value(false)));
+        assertThat(keys(body)).doesNotContain("expected", "justification", "modelAnswer");
+    }
+
+    @Test
+    void revealAfterAnExtraHelpMissDisclosesTheExpectedWithoutXp() throws Exception {
+        ObjectNode attempt = extraHelp(FREE_IM, "is", FREE_MEET, "meet");
+        send(ATTEMPTS, attempt).andExpect(status().isOk());
+        send(REVEAL, attempt)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.xpAwarded").value(0))
+                .andExpect(jsonPath("$.data.extraHelp").value(true))
+                .andExpect(jsonPath("$.data.expected.items[0].value").value("I'm"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+    }
+
+    /** Ordem: a conclusão VIEWED vem primeiro; a Tentativa depois é corrigida, sem recibo. */
+    @Test
+    void anExtraHelpAfterViewingIsGradedWithoutReceiptAndKeepsTheCompletion() throws Exception {
+        send(COMPLETIONS, completion(FREE, "VIEWED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.receipt").exists());
+        // O xpAwarded da resposta é o da correção, como em toda Tentativa seguinte; o XP só vale
+        // pelo recibo, que ficou com a conclusão.
+        send(ATTEMPTS, extraHelp(FREE_IM, "I'm", FREE_MEET, "meet"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.resultPct").value(100))
+                .andExpect(jsonPath("$.data.xpAwarded").value(6))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).hasSize(1);
+        FirstAttempt stored = this.content.attempts.values().iterator().next();
+        assertThat(stored.outcome()).isEqualTo(Outcome.VIEWED);
+        assertThat(stored.extraHelp()).isFalse();
+    }
+
+    /**
+     * Extra Help primeiro, conclusão depois: a conclusão devolve a resposta-modelo, sem recibo, e o
+     * registro continua a Tentativa do Extra Help.
+     */
+    @Test
+    void viewingAfterAnExtraHelpReturnsTheModelAnswerWithoutReceiptAndKeepsTheAttempt()
+            throws Exception {
+        send(ATTEMPTS, extraHelp(FREE_IM, "I'm", FREE_MEET, "is"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.receipt").exists());
+        send(COMPLETIONS, completion(FREE, "VIEWED"))
+                .andExpect(status().isOk())
+                .andExpect(
+                        jsonPath("$.data.modelAnswer")
+                                .value("Hi Alex! I'm {name}. Nice to meet you!"))
+                .andExpect(jsonPath("$.data.receipt").doesNotExist());
+        assertThat(this.content.attempts).hasSize(1);
+        FirstAttempt stored = this.content.attempts.values().iterator().next();
+        assertThat(stored.outcome()).isEqualTo(Outcome.GRADED);
+        assertThat(stored.extraHelp()).isTrue();
+        assertThat(stored.xpAwarded()).isEqualTo(3);
+    }
+
+    /**
+     * O "Ver resposta" do Extra Help exige uma Tentativa dele: com só a conclusão VIEWED gravada, é
+     * {@code 409 ATTEMPT_REQUIRED}, e o gabarito não sai.
+     */
+    @Test
+    void revealOfTheExtraHelpAfterOnlyViewingIsAConflict() throws Exception {
+        send(COMPLETIONS, completion(FREE, "VIEWED")).andExpect(status().isOk());
+        JsonNode body =
+                json(
+                        expectProblem(
+                                send(REVEAL, extraHelp(FREE_IM, "is", FREE_MEET, "meet")),
+                                409,
+                                "ATTEMPT_REQUIRED"));
+        assertThat(body.toString()).doesNotContain("expected");
+        // Nem depois de uma Tentativa que não ficou gravada (a conclusão veio antes).
+        send(ATTEMPTS, extraHelp(FREE_IM, "is", FREE_MEET, "meet")).andExpect(status().isOk());
+        expectProblem(
+                send(REVEAL, extraHelp(FREE_IM, "is", FREE_MEET, "meet")), 409, "ATTEMPT_REQUIRED");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"missing-item", "repeated-item", "unknown-item", "blank-value"})
+    void anInvalidExtraHelpAnswerIs400AndNotStored(String change) throws Exception {
+        ObjectNode body =
+                switch (change) {
+                    case "missing-item" -> extraHelp(FREE_IM, "I'm");
+                    case "repeated-item" ->
+                            extraHelp(FREE_IM, "I'm", FREE_IM, "I am", FREE_MEET, "meet");
+                    case "unknown-item" -> extraHelp(FREE_IM, "I'm", "s1-nao-existe", "meet");
+                    case "blank-value" -> extraHelp(FREE_IM, " ", FREE_MEET, "meet");
+                    default -> throw new IllegalArgumentException(change);
+                };
+        expectProblem(send(ATTEMPTS, body), 400, "INVALID_ANSWER");
+        assertThat(this.content.attempts).isEmpty();
+    }
+
+    /** Os outros Tipos não levam {@code extraHelp} no Resultado. */
+    @Test
+    void anAttemptOfAnotherTypeHasNoExtraHelpFlag() throws Exception {
+        send(ATTEMPTS, allRight())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.extraHelp").doesNotExist());
+        assertThat(this.content.attempts.values().iterator().next().extraHelp()).isFalse();
+    }
+
     private static java.util.Set<String> keys(JsonNode node) {
         java.util.Set<String> keys = new java.util.TreeSet<>();
         collect(node, keys);

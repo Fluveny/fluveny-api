@@ -1,0 +1,32 @@
+{
+  "activityKey": "s1-about-you",
+  "type": "free",
+  "title": "Your Answer",
+  "prompt": "Hi! I'm Alex. Tell me about your roommate!",
+  "modelAnswer": {
+    "he": "My roommate is {name}. He is from {country}.",
+    "she": "My roommate is {name}. She is from {country}.",
+    "they": "My roommate is {name}. They are from {country}."
+  },
+  "extraHelp": {
+    "prompt": "Complete com as palavras do banco, {name}.",
+    "lines": ["Hi Alex! ___ {name}.", "I'm ___ {country}."],
+    "items": [
+      {
+        "itemKey": "s1-about-you-im",
+        "accepted": ["I'm", "I am"],
+        "justification": "Para dizer o nome, use **I'm**."
+      },
+      {
+        "itemKey": "s1-about-you-from",
+        "accepted": ["from"]
+      }
+    ],
+    "bank": [
+      { "wordKey": "im", "text": "I'm" },
+      { "wordKey": "from", "text": "from" },
+      { "wordKey": "is", "text": "is" }
+    ]
+  },
+  "xp": 8
+}
