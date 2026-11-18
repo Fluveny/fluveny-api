@@ -48,10 +48,11 @@ class MetaConfiguredTest {
                 .andExpect(jsonPath("$.data.activityTypes[1].type").value("fill-in"))
                 .andExpect(jsonPath("$.data.activityTypes[2].type").value("speech"))
                 .andExpect(jsonPath("$.data.activityTypes[2].sinceAppVersion").value("1.4.0"))
-                // O source real do learning, sem @Order, vem por último.
+                // O source real do learning, sem @Order, vem por último. Todos os Tipos dele
+                // têm a tag v0.1.0 do App (história 1.20).
                 .andExpect(jsonPath("$.data.activityTypes[3].type").value("choice"))
                 .andExpect(jsonPath("$.data.activityTypes[3].sinceAppVersion").value("0.1.0"))
-                // História 1.13: o Diálogo. Todos com a tag v0.1.0 do App (história 1.20).
+                // História 1.13: o Diálogo.
                 .andExpect(jsonPath("$.data.activityTypes[4].type").value("dialogue"))
                 .andExpect(jsonPath("$.data.activityTypes[4].sinceAppVersion").value("0.1.0"))
                 // História 1.14: os Cartões de expressões e a Expressão Útil destacada.

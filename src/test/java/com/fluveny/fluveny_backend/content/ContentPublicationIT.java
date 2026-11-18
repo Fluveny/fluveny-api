@@ -118,6 +118,11 @@ class ContentPublicationIT {
                 .content(bundle.toString());
     }
 
+    /** A razão da recusa de um Tipo do source real (0.1.0) acima do mínimo 0.0.0 do teste. */
+    private static String aboveTheMin(String type) {
+        return "O Tipo " + type + " só é renderizado a partir do App 0.1.0, acima do mínimo 0.0.0.";
+    }
+
     private long versions() {
         return this.mongo.getCollection("unit_versions").countDocuments();
     }
@@ -244,7 +249,8 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/1/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-hi-alex"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-hi-alex"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("dialogue")));
         assertThat(versions()).isZero();
     }
 
@@ -262,8 +268,10 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.errors.length()").value(2))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/2/type"))
                 .andExpect(jsonPath("$.errors[0].key").value("s1-greeting-cards"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("cards")))
                 .andExpect(jsonPath("$.errors[1].pointer").value("/activities/3/type"))
-                .andExpect(jsonPath("$.errors[1].key").value("s1-nice-to-meet-you"));
+                .andExpect(jsonPath("$.errors[1].key").value("s1-nice-to-meet-you"))
+                .andExpect(jsonPath("$.errors[1].message").value(aboveTheMin("expression")));
         assertThat(versions()).isZero();
     }
 
@@ -279,7 +287,8 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/4/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-your-turn"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-your-turn"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("speech")));
         assertThat(versions()).isZero();
     }
 
@@ -295,7 +304,8 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/5/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-speech-bubbles"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-speech-bubbles"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("match")));
         assertThat(versions()).isZero();
     }
 
@@ -312,8 +322,10 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.errors.length()").value(2))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/6/type"))
                 .andExpect(jsonPath("$.errors[0].key").value("s1-gaps-bank"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("gaps")))
                 .andExpect(jsonPath("$.errors[1].pointer").value("/activities/7/type"))
-                .andExpect(jsonPath("$.errors[1].key").value("s1-gaps-typed"));
+                .andExpect(jsonPath("$.errors[1].key").value("s1-gaps-typed"))
+                .andExpect(jsonPath("$.errors[1].message").value(aboveTheMin("gaps")));
         assertThat(versions()).isZero();
     }
 
@@ -329,7 +341,8 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/8/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-about-you"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-about-you"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("free")));
         assertThat(versions()).isZero();
     }
 
@@ -345,7 +358,8 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/9/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-grammar-time"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-grammar-time"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("grammar")));
         assertThat(versions()).isZero();
     }
 

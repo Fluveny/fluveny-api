@@ -284,6 +284,7 @@ Contas e termos são aceitos por quem administra o projeto, e cada conta tem pel
    - `FLUVENY_PROXY_SECRET` (`openssl rand -hex 32`; o mesmo valor vai para o Worker e para o GitHub);
    - `FLUVENY_WEB_ORIGINS` com a origem do Worker de homologação (por exemplo `https://fluveny-homolog.<conta>.workers.dev`);
    - `FLUVENY_DEPLOY_TOKEN_SHA256` (sha256 do token de deploy de homologação, veja o `CONTRIBUTING.md`);
+   - `FLUVENY_MIN_APP_VERSION=0.1.0` (a tag `v0.1.0` do `fluveny-app`; abaixo dela a publicação recusa os Tipos do Estágio 1 com `422 UNSUPPORTED_ACTIVITY_TYPE`);
    - `SENTRY_ENVIRONMENT=homolog` e, se houver, `SENTRY_DSN`.
 
    Depois, em Settings → Deploy Hook, copie a URL do hook. Ela é um segredo.
@@ -298,7 +299,7 @@ Contas e termos são aceitos por quem administra o projeto, e cada conta tem pel
      https://fluveny-api-homolog.onrender.com/api/v1/units                                          # 200
    ```
 
-   Prove a publicação sem publicar nada (Decisão 2 da história 1.6): com `FLUVENY_DEPLOY_TOKEN` e `FLUVENY_PROXY_SECRET` exportados só na sessão, `node scripts/content-bundle.mjs publish unit-1 --api https://fluveny-api-homolog.onrender.com --content src/test/resources/content-fixtures/valid` precisa sair com `422` e `UNSUPPORTED_ACTIVITY_TYPE`: token, segredo de proxy e URL estão certos, e a API recusa a fixture. Essa prova só vale com `FLUVENY_MIN_APP_VERSION` abaixo de `0.1.0`: com `0.1.0` ou mais (história 1.20), a API aceita os Tipos e o comando publicaria a fixture em homologação, então não rode. A primeira publicação real vem com o conteúdo da Unit 1, pelo workflow "Publicar conteúdo".
+   Prove a publicação sem publicar nada (Decisão 2 da história 1.6): com `FLUVENY_DEPLOY_TOKEN` e `FLUVENY_PROXY_SECRET` exportados só na sessão, `node scripts/content-bundle.mjs publish unit-1 --api https://fluveny-api-homolog.onrender.com --content src/test/resources/content-fixtures/missing-accepted-answer` precisa sair com `422` e `INVALID_CONTENT` (regra `MISSING_ACCEPTED_ANSWER`): token, segredo de proxy e URL estão certos, e a API recusa o pacote antes de olhar os Tipos, seja qual for o `FLUVENY_MIN_APP_VERSION`. Não use a fixture `content-fixtures/valid` nessa prova: com `FLUVENY_MIN_APP_VERSION=0.1.0` (história 1.20), a API aceita os Tipos dela e o comando publicaria a fixture por cima da `unit-1` de homologação. A publicação real vem pelo workflow "Publicar conteúdo", que também serve de prova.
 
    Rode o "Manter homologação acordada" à mão e veja o ping passar. Acompanhe a memória no painel do Render (Metrics) enquanto percorre o App: ela não pode reiniciar por falta de memória.
 
