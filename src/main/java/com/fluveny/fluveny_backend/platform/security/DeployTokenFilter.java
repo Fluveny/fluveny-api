@@ -22,15 +22,12 @@ import org.springframework.web.filter.OncePerRequestFilter;
  * Autentica o job de publicação pelo token de deploy do ambiente (Decisão 2 da história 1.7): lê
  * {@code Authorization: Bearer <token>}, calcula o sha256 e compara em tempo constante com {@code
  * FLUVENY_DEPLOY_TOKEN_SHA256}. Se bate, o principal de máquina {@code deploy} recebe só o papel
- * {@link Role#DEPLOY}. Se não bate (ou a variável falta), a requisição segue anônima e marcada com
- * {@link #UNRECOGNIZED_BEARER}: uma rota com papel responde 403, e uma pública segue normalmente.
- * Sem o cabeçalho, nada muda. O token nunca vai para o log.
+ * {@link Role#DEPLOY}. Se não bate (ou a variável falta), a requisição segue para o {@link
+ * SessionAuthenticationFilter}, que tenta o Bearer como sessão; se ninguém o reconhece, ela fica
+ * anônima, e uma rota com papel responde 401 (história 2.1). Sem o cabeçalho, nada muda. O token
+ * nunca vai para o log.
  */
 final class DeployTokenFilter extends OncePerRequestFilter {
-
-    /** Atributo da requisição com um Bearer que ninguém reconheceu. */
-    static final String UNRECOGNIZED_BEARER =
-            DeployTokenFilter.class.getName() + ".UNRECOGNIZED_BEARER";
 
     static final String PRINCIPAL = "deploy";
 
@@ -63,8 +60,6 @@ final class DeployTokenFilter extends OncePerRequestFilter {
                                 null,
                                 List.of(new SimpleGrantedAuthority(Role.DEPLOY.authority()))));
                 this.contexts.setContext(context);
-            } else {
-                request.setAttribute(UNRECOGNIZED_BEARER, Boolean.TRUE);
             }
         }
         chain.doFilter(request, response);

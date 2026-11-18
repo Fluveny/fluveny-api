@@ -29,8 +29,12 @@ class MongoEventStore implements EventStore {
     public boolean append(Event event) {
         Document document =
                 new Document("type", event.type().name())
-                        .append("occurredAt", Date.from(event.occurredAt()))
-                        .append("deviceId", event.deviceId());
+                        .append("occurredAt", Date.from(event.occurredAt()));
+        putIfPresent(document, "deviceId", event.deviceId());
+        putIfPresent(document, "metricsId", event.metricsId());
+        if (event.fromVisitor() != null) {
+            document.append("fromVisitor", event.fromVisitor());
+        }
         putIfPresent(document, "unitKey", event.unitKey());
         putIfPresent(document, "versionId", event.versionId());
         putIfPresent(document, "activityKey", event.activityKey());

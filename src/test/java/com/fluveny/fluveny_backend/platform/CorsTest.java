@@ -159,7 +159,7 @@ class CorsTest {
 
     @Test
     void securityProblemsCarryTheHeaders() throws Exception {
-        // 401 de rota com papel, 403 de Bearer que ninguém reconhece.
+        // 401 de rota com papel, sem credencial e com um Bearer que ninguém reconhece.
         this.mvc
                 .perform(
                         post("/api/v1/admin/content/units/x/versions")
@@ -175,7 +175,7 @@ class CorsTest {
                                 .header(HttpHeaders.AUTHORIZATION, "Bearer nope")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content("{}"))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ORIGIN));
     }
 

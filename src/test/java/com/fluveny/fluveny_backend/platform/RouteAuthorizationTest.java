@@ -7,17 +7,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import com.fluveny.fluveny_backend.account.NewStudent;
+import com.fluveny.fluveny_backend.account.RegisterStudent;
+import com.fluveny.fluveny_backend.account.RegisteredStudent;
+import com.fluveny.fluveny_backend.auth.Sessions;
+import jakarta.servlet.http.Cookie;
+import java.time.LocalDate;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 
-/** Deny-by-default e hierarquia de papéis (AD-12): linhas da matriz da história 1.2. */
+/**
+ * Deny-by-default e hierarquia de papéis (AD-12): linhas da matriz da história 1.2, e a sessão de
+ * verdade do Aluno (história 2.1).
+ */
 @PlatformWebTest
 class RouteAuthorizationTest {
 
     @Autowired private MockMvc mvc;
+
+    @Autowired private RegisterStudent register;
+
+    @Autowired private Sessions sessions;
 
     @Test
     void metaIsPublic() throws Exception {
@@ -124,15 +138,55 @@ class RouteAuthorizationTest {
                 .andExpect(status().isOk());
     }
 
-    /** Sem {@code FLUVENY_DEPLOY_TOKEN_SHA256}, nenhum token entra (história 1.7). */
+    /**
+     * Sem {@code FLUVENY_DEPLOY_TOKEN_SHA256}, nenhum token entra (história 1.7), e o Bearer que
+     * ninguém reconhece é 401 (história 2.1).
+     */
     @Test
     void withoutTheDeployHashEveryTokenIsDenied() throws Exception {
         expectProblem(
-                this.mvc.perform(
-                        get("/test/roles/deploy").header("Authorization", "Bearer qualquer-token")),
+                        this.mvc.perform(
+                                get("/test/roles/deploy")
+                                        .header("Authorization", "Bearer qualquer-token")),
+                        401,
+                        "UNAUTHENTICATED")
+                .andExpect(header().string("WWW-Authenticate", "Bearer realm=\"fluveny\""));
+        expectProblem(this.mvc.perform(get("/test/roles/deploy")), 401, "UNAUTHENTICATED");
+    }
+
+    /** A sessão de verdade (história 2.1): o Aluno do cadastro, pelo Bearer e pelo cookie. */
+    @Test
+    void aRealStudentSessionReachesOnlyStudentRoutes() throws Exception {
+        RegisteredStudent student =
+                this.register.register(
+                        new NewStudent(
+                                UUID.randomUUID() + "@example.com",
+                                "senha123",
+                                LocalDate.of(1995, 5, 20),
+                                null,
+                                "0.1",
+                                "0.2"));
+        String token = this.sessions.create(student.userId(), student.role()).token();
+        String bearer = "Bearer " + token;
+
+        this.mvc
+                .perform(get("/test/roles/student").header("Authorization", bearer))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").value("student"));
+        this.mvc
+                .perform(get("/test/roles/student").cookie(new Cookie("fluveny_session", token)))
+                .andExpect(status().isOk());
+        for (String path :
+                new String[] {"/test/roles/admin", "/test/roles/creator", "/test/roles/deploy"}) {
+            expectProblem(
+                    this.mvc.perform(get(path).header("Authorization", bearer)),
+                    403,
+                    "ACCESS_DENIED");
+        }
+        expectProblem(
+                this.mvc.perform(get("/test/undeclared").header("Authorization", bearer)),
                 403,
                 "ACCESS_DENIED");
-        expectProblem(this.mvc.perform(get("/test/roles/deploy")), 401, "UNAUTHENTICATED");
     }
 
     @Test

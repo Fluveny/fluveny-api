@@ -14,8 +14,8 @@ import org.springframework.stereotype.Service;
  * identificador e os campos do tipo, nunca nome, país, texto livre, IP ou cabeçalho. O {@code
  * occurredAt} é a hora do servidor, nunca a do aparelho.
  *
- * <p>Os eventos do Visitante levam o {@code deviceId}; os do Aluno ({@code metricsId}) chegam no
- * Épico 2.
+ * <p>Os eventos do Visitante levam o {@code deviceId}; os do Aluno, o {@code metricsId}, que não é
+ * o id da conta e nunca vem com e-mail, nome ou data de nascimento (história 2.1).
  */
 @Service
 public class MetricsPublisher {
@@ -70,6 +70,25 @@ public class MetricsPublisher {
                         required(versionId, "versionId"),
                         null,
                         required(stageKey, "stageKey")));
+    }
+
+    /**
+     * Uma conta de Aluno criada (história 2.1).
+     *
+     * @param fromVisitor se a conta veio do Visitante, com a migração do Progresso (2.6)
+     */
+    public void studentRegistered(UUID metricsId, boolean fromVisitor) {
+        append(
+                new Event(
+                        EventType.STUDENT_REGISTERED,
+                        now(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        Objects.requireNonNull(metricsId, "metricsId").toString(),
+                        fromVisitor));
     }
 
     private void append(Event event) {

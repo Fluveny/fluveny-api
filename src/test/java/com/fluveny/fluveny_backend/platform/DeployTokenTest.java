@@ -23,7 +23,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Token de deploy (Decisão 2 da história 1.7): o Bearer certo autentica o principal de máquina com
- * {@code Role.DEPLOY}, fora da hierarquia; sem token é 401, com token errado é 403.
+ * {@code Role.DEPLOY}, fora da hierarquia; sem token ou com token errado é 401 (história 2.1: um
+ * Bearer que ninguém reconhece deixa a requisição anônima).
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -72,16 +73,18 @@ public class DeployTokenTest {
     }
 
     @Test
-    void aWrongTokenIsForbidden() throws Exception {
+    void aWrongTokenIsUnauthenticated() throws Exception {
         expectProblem(
-                this.mvc.perform(
-                        get("/test/roles/deploy").header("Authorization", "Bearer " + TOKEN + "x")),
-                403,
-                "ACCESS_DENIED");
+                        this.mvc.perform(
+                                get("/test/roles/deploy")
+                                        .header("Authorization", "Bearer " + TOKEN + "x")),
+                        401,
+                        "UNAUTHENTICATED")
+                .andExpect(header().string("WWW-Authenticate", "Bearer realm=\"fluveny\""));
         expectProblem(
                 this.mvc.perform(get("/test/roles/deploy").header("Authorization", "Bearer ")),
-                403,
-                "ACCESS_DENIED");
+                401,
+                "UNAUTHENTICATED");
     }
 
     @Test

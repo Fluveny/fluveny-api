@@ -47,11 +47,11 @@ class LocalDataLoaderIT {
     void seedsOnStartupAndAgainWithoutDuplicates() throws Exception {
         assertThat(count()).as("carregado na partida").isEqualTo(2);
 
-        // Os carregadores de content (@Order(100)), learning (@Order(200)) e metrics (@Order(300))
-        // rodam depois dos dois de teste.
+        // Os carregadores de content (@Order(100)), account (@Order(150)), auth (@Order(160)),
+        // learning (@Order(200)) e metrics (@Order(300)) rodam depois dos dois de teste.
         assertThat(this.loader.load())
                 .containsSubsequence("first", "second", "content")
-                .endsWith("learning", "metrics");
+                .endsWith("account", "auth", "learning", "metrics");
         this.mvc
                 .perform(post("/local/seed"))
                 .andExpect(status().isOk())
@@ -88,6 +88,23 @@ class LocalDataLoaderIT {
                 .map(index -> index.getString("name"))
                 .into(eventIndexes);
         assertThat(eventIndexes).contains("stageCompletionKey_unique");
+        // Os de account e auth recriam os de users e sessions (história 2.1).
+        List<String> userIndexes = new ArrayList<>();
+        this.mongoTemplate
+                .getCollection("users")
+                .listIndexes()
+                .map(index -> index.getString("name"))
+                .into(userIndexes);
+        assertThat(userIndexes).contains("email_unique", "metricsId_unique");
+        List<String> sessionIndexes = new ArrayList<>();
+        this.mongoTemplate
+                .getCollection("sessions")
+                .listIndexes()
+                .map(index -> index.getString("name"))
+                .into(sessionIndexes);
+        assertThat(sessionIndexes).contains("tokenHash_unique", "expiresAt_ttl");
+        // E os dois Alunos de teste voltam.
+        assertThat(this.mongoTemplate.getCollection("users").countDocuments()).isEqualTo(2);
     }
 
     private long count() {

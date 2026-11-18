@@ -387,7 +387,7 @@ class ContentPublicationIT {
     }
 
     @Test
-    void withoutTokenIs401AndAWrongTokenIs403() throws Exception {
+    void withoutTokenOrWithAWrongTokenIs401() throws Exception {
         this.mvc
                 .perform(
                         post(UNIT)
@@ -402,8 +402,8 @@ class ContentPublicationIT {
                                 .header("Authorization", "Bearer " + TOKEN + "0")
                                 .contentType(MediaType.APPLICATION_JSON)
                                 .content(validBundle().toString()))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("ACCESS_DENIED"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("UNAUTHENTICATED"));
         this.mvc
                 .perform(get(UNIT + "/sha256:" + "0".repeat(64)))
                 .andExpect(status().isUnauthorized());
