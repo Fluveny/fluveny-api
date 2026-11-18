@@ -9,6 +9,8 @@ import com.fluveny.fluveny_backend.platform.web.ApiException;
 import com.fluveny.fluveny_backend.platform.web.ErrorCode;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
@@ -81,6 +83,22 @@ public class ContentActivities {
                                 .orElse(false);
         return new Found(
                 versionId, located.unitKey(), located.stageKey(), located.activity(), open);
+    }
+
+    /**
+     * As {@code activityKey}s de um Estágio numa Versão de Unidade: a base da cobertura do Estágio
+     * (AD-14, história 1.20).
+     *
+     * @return vazio se o Estágio não está na versão
+     * @throws ApiException {@code 400 INVALID_ID} se {@code versionId} está fora do formato; {@code
+     *     404 NOT_FOUND} se a versão não existe
+     */
+    public Set<String> stageActivityKeys(String versionId, String stageKey) {
+        ContentKeys.versionId(versionId);
+        return activities(versionId).values().stream()
+                .filter(located -> located.stageKey().equals(stageKey))
+                .map(located -> located.activity().activityKey())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private Map<String, Located> activities(String versionId) {

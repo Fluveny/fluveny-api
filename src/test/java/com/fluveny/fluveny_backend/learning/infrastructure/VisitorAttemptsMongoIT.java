@@ -141,6 +141,23 @@ class VisitorAttemptsMongoIT {
         assertThat(read.createdAt()).isEqualTo(now);
     }
 
+    /** História 1.20: as primeiras do aparelho dentro de um conjunto, de qualquer versão. */
+    @Test
+    void recordedActivityKeysAreTheDevicesFirstsWithinTheSet() {
+        UUID device = UUID.randomUUID();
+        this.store.insertIfAbsent(attempt(device, "s1-greetings"));
+        this.store.insertIfAbsent(attempt(device, "s1-hi-alex"));
+        this.store.insertIfAbsent(attempt(device, "s2-flags"));
+        this.store.insertIfAbsent(attempt(UUID.randomUUID(), "s1-grammar-time"));
+
+        assertThat(
+                        this.store.recordedActivityKeys(
+                                device, List.of("s1-greetings", "s1-hi-alex", "s1-grammar-time")))
+                .containsExactlyInAnyOrder("s1-greetings", "s1-hi-alex");
+        assertThat(this.store.recordedActivityKeys(UUID.randomUUID(), List.of("s1-greetings")))
+                .isEmpty();
+    }
+
     @Test
     void simultaneousFirstWritesStoreExactlyOne() throws Exception {
         UUID device = UUID.randomUUID();

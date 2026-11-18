@@ -43,6 +43,16 @@ class ApplicationIT {
                 .isEqualTo(90L * 24 * 60 * 60);
     }
 
+    /** O índice único parcial de {@code events} vem do {@code MetricsIndexes.OnStartup} (1.20). */
+    @Test
+    void createsTheEventsIndexOnStartup() {
+        List<Document> indexes = new ArrayList<>();
+        this.mongo.getCollection("events").listIndexes().into(indexes);
+        Document unique = byName(indexes, "stageCompletionKey_unique");
+        assertThat(unique.getBoolean("unique")).isTrue();
+        assertThat(unique.get("partialFilterExpression")).isNotNull();
+    }
+
     private static Document byName(List<Document> indexes, String name) {
         return indexes.stream()
                 .filter(index -> name.equals(index.getString("name")))

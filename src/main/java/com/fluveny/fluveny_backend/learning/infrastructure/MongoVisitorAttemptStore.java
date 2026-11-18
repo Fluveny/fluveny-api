@@ -5,8 +5,11 @@ import com.fluveny.fluveny_backend.learning.visitor.FirstAttempt;
 import com.fluveny.fluveny_backend.learning.visitor.VisitorAttemptStore;
 import com.mongodb.client.result.UpdateResult;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.bson.Document;
 import org.springframework.dao.DuplicateKeyException;
@@ -64,6 +67,22 @@ class MongoVisitorAttemptStore implements VisitorAttemptStore {
         return Optional.ofNullable(
                         this.mongo.findOne(key(deviceId, activityKey), Document.class, COLLECTION))
                 .map(MongoVisitorAttemptStore::toAttempt);
+    }
+
+    @Override
+    public Set<String> recordedActivityKeys(UUID deviceId, Collection<String> activityKeys) {
+        Query query =
+                Query.query(
+                        Criteria.where("deviceId")
+                                .is(deviceId.toString())
+                                .and("activityKey")
+                                .in(activityKeys));
+        query.fields().include("activityKey");
+        Set<String> recorded = new HashSet<>();
+        this.mongo
+                .find(query, Document.class, COLLECTION)
+                .forEach(document -> recorded.add(document.getString("activityKey")));
+        return recorded;
     }
 
     private static Query key(UUID deviceId, String activityKey) {

@@ -1,6 +1,8 @@
 package com.fluveny.fluveny_backend.learning.visitor;
 
+import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -17,4 +19,10 @@ public interface VisitorAttemptStore {
     boolean insertIfAbsent(FirstAttempt attempt);
 
     Optional<FirstAttempt> find(UUID deviceId, String activityKey);
+
+    /**
+     * As {@code activityKey}s, dentre {@code activityKeys}, em que o aparelho tem a primeira
+     * gravada, de qualquer versão (a cobertura do Estágio, história 1.20).
+     */
+    Set<String> recordedActivityKeys(UUID deviceId, Collection<String> activityKeys);
 }
