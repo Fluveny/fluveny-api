@@ -19,12 +19,18 @@ import org.springframework.stereotype.Component;
 
 /**
  * Os Tipos que o {@code learning} atende, em {@code GET /api/v1/meta} (AD-6, AD-11), e como cada um
- * pode ser concluído sem correção. O {@code sinceAppVersion} fica nulo até existir a tag do App que
- * renderiza o Tipo; até lá a publicação fora do perfil local recusa o Tipo ({@code 422
- * UNSUPPORTED_ACTIVITY_TYPE}).
+ * pode ser concluído sem correção. O {@code sinceAppVersion} é a tag do App que renderiza o Tipo
+ * (nulo enquanto ela não existe). A publicação fora do perfil local recusa o Tipo sem ela ou acima
+ * do {@code FLUVENY_MIN_APP_VERSION} do ambiente ({@code 422 UNSUPPORTED_ACTIVITY_TYPE}).
  */
 @Component
 public class LearningActivityTypes implements ActivityTypeSource {
+
+    /**
+     * A tag {@code v0.1.0} do {@code fluveny-app} (história 1.20): a primeira versão do App que
+     * renderiza os 9 Tipos do Estágio 1.
+     */
+    static final String APP_0_1_0 = "0.1.0";
 
     /**
      * As conclusões ({@code completions}) que cada Tipo aceita (histórias 1.13 a 1.19). Os
@@ -57,15 +63,15 @@ public class LearningActivityTypes implements ActivityTypeSource {
     @Override
     public List<ActivityTypeSupport> activityTypes() {
         return List.of(
-                new ActivityTypeSupport(ChoiceActivity.TYPE, null),
-                new ActivityTypeSupport(DialogueActivity.TYPE, null),
-                new ActivityTypeSupport(CardsActivity.TYPE, null),
-                new ActivityTypeSupport(ExpressionActivity.TYPE, null),
-                new ActivityTypeSupport(SpeechActivity.TYPE, null),
-                new ActivityTypeSupport(MatchActivity.TYPE, null),
-                new ActivityTypeSupport(GapsActivity.TYPE, null),
-                new ActivityTypeSupport(FreeActivity.TYPE, null),
-                new ActivityTypeSupport(GrammarActivity.TYPE, null));
+                new ActivityTypeSupport(ChoiceActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(DialogueActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(CardsActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(ExpressionActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(SpeechActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(MatchActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(GapsActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(FreeActivity.TYPE, APP_0_1_0),
+                new ActivityTypeSupport(GrammarActivity.TYPE, APP_0_1_0));
     }
 
     /** Os Tipos com regra de conclusão; o teste confere que batem com {@link #activityTypes()}. */

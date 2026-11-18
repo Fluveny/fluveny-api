@@ -147,6 +147,9 @@ jobs:
           export FLUVENY_RECEIPT_KEY="$RECEIPT_KEY"
           # Origens da CORS (história 1.22), obrigatórias em prod; o job não usa navegador.
           export FLUVENY_WEB_ORIGINS=https://app.fluveny.test
+          # Mínimo do App explícito (história 1.20): os Tipos têm sinceAppVersion 0.1.0, acima dele,
+          # e é isso que faz o step "Recusas" receber 422 UNSUPPORTED_ACTIVITY_TYPE.
+          export FLUVENY_MIN_APP_VERSION=0.0.0
           # Segredo de proxy (história 1.6), obrigatório em prod; gerado no job e mascarado. O
           # script e os curl abaixo o leem do ambiente, como o publish-content.yml.
           PROXY_SECRET="$(openssl rand -hex 32)"
@@ -195,9 +198,10 @@ jobs:
           if node scripts/content-bundle.mjs check unit-coming-soon "sha256:$(printf '0%.0s' $(seq 1 64))" --api "$API_URL"; then
             echo "::error::O check aceitou um hash inexistente."; exit 1
           fi
-          # A Escolha ainda não tem sinceAppVersion: 422 UNSUPPORTED_ACTIVITY_TYPE.
+          # Os Tipos têm sinceAppVersion 0.1.0, acima do FLUVENY_MIN_APP_VERSION=0.0.0 desta API
+          # (definido em "Subir a API"): 422 UNSUPPORTED_ACTIVITY_TYPE.
           if node scripts/content-bundle.mjs publish unit-1 --api "$API_URL" --content src/test/resources/content-fixtures/valid 2> "$RUNNER_TEMP/unsupported.txt"; then
-            echo "::error::A publicação aceitou um Tipo sem sinceAppVersion."; exit 1
+            echo "::error::A publicação aceitou um Tipo acima da versão mínima do App."; exit 1
           fi
           grep -q UNSUPPORTED_ACTIVITY_TYPE "$RUNNER_TEMP/unsupported.txt"
           # Token errado: 403.

@@ -19,9 +19,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * 2º critério de aceite da 1.7: com uma Unidade em {@code content/units/}, a API no perfil {@code
- * local} a publica sozinha, e {@code GET /api/v1/units} a lista sem nenhuma ação manual. A Escolha
- * tem {@code sinceAppVersion} nulo no {@code learning} e passa mesmo assim: o perfil local pula só
- * a compatibilidade de Tipo. O reset apaga o banco e publica de novo.
+ * local} a publica sozinha, e {@code GET /api/v1/units} a lista sem nenhuma ação manual. Os Tipos
+ * têm {@code sinceAppVersion} 0.1.0 no {@code learning}, acima do mínimo 0.0.0, e passam mesmo
+ * assim: o perfil local pula só a compatibilidade de Tipo. O reset apaga o banco e publica de novo.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -54,10 +54,10 @@ class ContentLocalSeederIT {
                 .perform(get("/api/v1/units/unit-1/stages/s1-meet-alex"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.activities[0].activityKey").value("s1-greetings"))
-                // História 1.13: o Diálogo, com sinceAppVersion nulo, sobe no perfil local.
+                // História 1.13: o Diálogo, acima do mínimo, sobe no perfil local.
                 .andExpect(jsonPath("$.data.activities[1].type").value("dialogue"))
                 .andExpect(jsonPath("$.data.activities[1].lines[2].ask").value("country"))
-                // História 1.14: os Cartões e a Expressão, com sinceAppVersion nulo, também.
+                // História 1.14: os Cartões e a Expressão, acima do mínimo, também.
                 .andExpect(jsonPath("$.data.activities[2].type").value("cards"))
                 .andExpect(jsonPath("$.data.activities[2].blocks.length()").value(2))
                 .andExpect(jsonPath("$.data.activities[3].type").value("expression"))

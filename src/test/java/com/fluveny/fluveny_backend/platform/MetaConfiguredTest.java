@@ -1,6 +1,5 @@
 package com.fluveny.fluveny_backend.platform;
 
-import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,32 +48,33 @@ class MetaConfiguredTest {
                 .andExpect(jsonPath("$.data.activityTypes[1].type").value("fill-in"))
                 .andExpect(jsonPath("$.data.activityTypes[2].type").value("speech"))
                 .andExpect(jsonPath("$.data.activityTypes[2].sinceAppVersion").value("1.4.0"))
-                // O source real do learning, sem @Order, vem por último.
+                // O source real do learning, sem @Order, vem por último. Todos os Tipos dele
+                // têm a tag v0.1.0 do App (história 1.20).
                 .andExpect(jsonPath("$.data.activityTypes[3].type").value("choice"))
-                .andExpect(jsonPath("$.data.activityTypes[3].sinceAppVersion").value(nullValue()))
-                // História 1.13: o Diálogo, nulo até a tag do App que o renderiza.
+                .andExpect(jsonPath("$.data.activityTypes[3].sinceAppVersion").value("0.1.0"))
+                // História 1.13: o Diálogo.
                 .andExpect(jsonPath("$.data.activityTypes[4].type").value("dialogue"))
-                .andExpect(jsonPath("$.data.activityTypes[4].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[4].sinceAppVersion").value("0.1.0"))
                 // História 1.14: os Cartões de expressões e a Expressão Útil destacada.
                 .andExpect(jsonPath("$.data.activityTypes[5].type").value("cards"))
-                .andExpect(jsonPath("$.data.activityTypes[5].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[5].sinceAppVersion").value("0.1.0"))
                 .andExpect(jsonPath("$.data.activityTypes[6].type").value("expression"))
-                .andExpect(jsonPath("$.data.activityTypes[6].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[6].sinceAppVersion").value("0.1.0"))
                 // História 1.15: a Fala.
                 .andExpect(jsonPath("$.data.activityTypes[7].type").value("speech"))
-                .andExpect(jsonPath("$.data.activityTypes[7].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[7].sinceAppVersion").value("0.1.0"))
                 // História 1.16: o Associar.
                 .andExpect(jsonPath("$.data.activityTypes[8].type").value("match"))
-                .andExpect(jsonPath("$.data.activityTypes[8].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[8].sinceAppVersion").value("0.1.0"))
                 // História 1.17: as Lacunas.
                 .andExpect(jsonPath("$.data.activityTypes[9].type").value("gaps"))
-                .andExpect(jsonPath("$.data.activityTypes[9].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[9].sinceAppVersion").value("0.1.0"))
                 // História 1.18: a Resposta Livre.
                 .andExpect(jsonPath("$.data.activityTypes[10].type").value("free"))
-                .andExpect(jsonPath("$.data.activityTypes[10].sinceAppVersion").value(nullValue()))
+                .andExpect(jsonPath("$.data.activityTypes[10].sinceAppVersion").value("0.1.0"))
                 // História 1.19: o Grammar Time.
                 .andExpect(jsonPath("$.data.activityTypes[11].type").value("grammar"))
-                .andExpect(jsonPath("$.data.activityTypes[11].sinceAppVersion").value(nullValue()));
+                .andExpect(jsonPath("$.data.activityTypes[11].sinceAppVersion").value("0.1.0"));
     }
 
     @TestConfiguration(proxyBeanMethods = false)

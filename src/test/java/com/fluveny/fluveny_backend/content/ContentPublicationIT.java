@@ -118,6 +118,11 @@ class ContentPublicationIT {
                 .content(bundle.toString());
     }
 
+    /** A razão da recusa de um Tipo do source real (0.1.0) acima do mínimo 0.0.0 do teste. */
+    private static String aboveTheMin(String type) {
+        return "O Tipo " + type + " só é renderizado a partir do App 0.1.0, acima do mínimo 0.0.0.";
+    }
+
     private long versions() {
         return this.mongo.getCollection("unit_versions").countDocuments();
     }
@@ -220,41 +225,54 @@ class ContentPublicationIT {
 
     @Test
     void unsupportedTypesAre422AndNothingIsStored() throws Exception {
-        for (String since : new String[] {null, "9.9.9"}) {
-            Types.SINCE.set(since);
+        // O source do teste vence o real: com nulo, a Escolha não tem sinceAppVersion.
+        String[][] cases = {
+            {
+                null,
+                "O Tipo choice ainda não tem sinceAppVersion: nenhuma versão do App o renderiza."
+            },
+            {
+                "9.9.9",
+                "O Tipo choice só é renderizado a partir do App 9.9.9, acima do mínimo 0.0.0."
+            }
+        };
+        for (String[] c : cases) {
+            Types.SINCE.set(c[0]);
             publish(UNIT, validBundle())
                     .andExpect(status().isUnprocessableContent())
                     .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                     .andExpect(jsonPath("$.errors[0].rule").value("UNSUPPORTED_ACTIVITY_TYPE"))
                     .andExpect(jsonPath("$.errors[0].pointer").value("/activities/0/type"))
-                    .andExpect(jsonPath("$.errors[0].key").value("s1-greetings"));
+                    .andExpect(jsonPath("$.errors[0].key").value("s1-greetings"))
+                    .andExpect(jsonPath("$.errors[0].message").value(c[1]));
         }
         assertThat(versions()).isZero();
     }
 
     /**
-     * História 1.13: o Diálogo com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicado fora do perfil local.
+     * História 1.13: o Diálogo com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicado fora do perfil local.
      */
     @Test
-    void aDialogueWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void aDialogueAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.DIALOGUE_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/1/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-hi-alex"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-hi-alex"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("dialogue")));
         assertThat(versions()).isZero();
     }
 
     /**
      * História 1.14: os Cartões de expressões e a Expressão Útil destacada com o {@code
-     * sinceAppVersion} nulo do source real do {@code learning} não são publicados fora do perfil
-     * local.
+     * sinceAppVersion} 0.1.0 do source real do {@code learning}, acima do mínimo 0.0.0 do teste,
+     * não são publicados fora do perfil local.
      */
     @Test
-    void cardsAndExpressionWithoutSinceAppVersionAre422AndNothingIsStored() throws Exception {
+    void cardsAndExpressionAboveTheMinAppVersionAre422AndNothingIsStored() throws Exception {
         Types.EXPRESSIONS_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -262,49 +280,53 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.errors.length()").value(2))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/2/type"))
                 .andExpect(jsonPath("$.errors[0].key").value("s1-greeting-cards"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("cards")))
                 .andExpect(jsonPath("$.errors[1].pointer").value("/activities/3/type"))
-                .andExpect(jsonPath("$.errors[1].key").value("s1-nice-to-meet-you"));
+                .andExpect(jsonPath("$.errors[1].key").value("s1-nice-to-meet-you"))
+                .andExpect(jsonPath("$.errors[1].message").value(aboveTheMin("expression")));
         assertThat(versions()).isZero();
     }
 
     /**
-     * História 1.15: a Fala com o {@code sinceAppVersion} nulo do source real do {@code learning}
-     * não é publicada fora do perfil local.
+     * História 1.15: a Fala com o {@code sinceAppVersion} 0.1.0 do source real do {@code learning},
+     * acima do mínimo 0.0.0 do teste, não é publicada fora do perfil local.
      */
     @Test
-    void speechWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void speechAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.SPEECH_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/4/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-your-turn"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-your-turn"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("speech")));
         assertThat(versions()).isZero();
     }
 
     /**
-     * História 1.16: o Associar com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicado fora do perfil local.
+     * História 1.16: o Associar com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicado fora do perfil local.
      */
     @Test
-    void matchWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void matchAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.MATCH_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/5/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-speech-bubbles"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-speech-bubbles"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("match")));
         assertThat(versions()).isZero();
     }
 
     /**
-     * História 1.17: as Lacunas com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não são publicadas fora do perfil local.
+     * História 1.17: as Lacunas com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não são publicadas fora do perfil local.
      */
     @Test
-    void gapsWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void gapsAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.GAPS_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
@@ -312,40 +334,44 @@ class ContentPublicationIT {
                 .andExpect(jsonPath("$.errors.length()").value(2))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/6/type"))
                 .andExpect(jsonPath("$.errors[0].key").value("s1-gaps-bank"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("gaps")))
                 .andExpect(jsonPath("$.errors[1].pointer").value("/activities/7/type"))
-                .andExpect(jsonPath("$.errors[1].key").value("s1-gaps-typed"));
+                .andExpect(jsonPath("$.errors[1].key").value("s1-gaps-typed"))
+                .andExpect(jsonPath("$.errors[1].message").value(aboveTheMin("gaps")));
         assertThat(versions()).isZero();
     }
 
     /**
-     * História 1.18: a Resposta Livre com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicada fora do perfil local.
+     * História 1.18: a Resposta Livre com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicada fora do perfil local.
      */
     @Test
-    void freeWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void freeAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.FREE_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/8/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-about-you"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-about-you"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("free")));
         assertThat(versions()).isZero();
     }
 
     /**
-     * História 1.19: o Grammar Time com o {@code sinceAppVersion} nulo do source real do {@code
-     * learning} não é publicado fora do perfil local.
+     * História 1.19: o Grammar Time com o {@code sinceAppVersion} 0.1.0 do source real do {@code
+     * learning}, acima do mínimo 0.0.0 do teste, não é publicado fora do perfil local.
      */
     @Test
-    void grammarWithoutSinceAppVersionIs422AndNothingIsStored() throws Exception {
+    void grammarAboveTheMinAppVersionIs422AndNothingIsStored() throws Exception {
         Types.GRAMMAR_SINCE.set(null);
         publish(UNIT, validBundle())
                 .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("UNSUPPORTED_ACTIVITY_TYPE"))
                 .andExpect(jsonPath("$.errors.length()").value(1))
                 .andExpect(jsonPath("$.errors[0].pointer").value("/activities/9/type"))
-                .andExpect(jsonPath("$.errors[0].key").value("s1-grammar-time"));
+                .andExpect(jsonPath("$.errors[0].key").value("s1-grammar-time"))
+                .andExpect(jsonPath("$.errors[0].message").value(aboveTheMin("grammar")));
         assertThat(versions()).isZero();
     }
 
@@ -639,10 +665,10 @@ class ContentPublicationIT {
     /**
      * Os Tipos {@code choice}, {@code dialogue}, {@code cards}, {@code expression}, {@code speech},
      * {@code match}, {@code gaps}, {@code free} e {@code grammar} com o {@code sinceAppVersion} que
-     * cada teste quiser. Vêm antes do source real do {@code learning} (nulo): na publicação, o
-     * primeiro source vence. Com {@code DIALOGUE_SINCE}, {@code EXPRESSIONS_SINCE}, {@code
-     * SPEECH_SINCE}, {@code MATCH_SINCE}, {@code GAPS_SINCE}, {@code FREE_SINCE} ou {@code
-     * GRAMMAR_SINCE} nulo, o Tipo fica de fora e vale o source real.
+     * cada teste quiser. Vêm antes do source real do {@code learning} (0.1.0, acima do mínimo 0.0.0
+     * do teste): na publicação, o primeiro source vence. Com {@code DIALOGUE_SINCE}, {@code
+     * EXPRESSIONS_SINCE}, {@code SPEECH_SINCE}, {@code MATCH_SINCE}, {@code GAPS_SINCE}, {@code
+     * FREE_SINCE} ou {@code GRAMMAR_SINCE} nulo, o Tipo fica de fora e vale o source real.
      */
     @TestConfiguration(proxyBeanMethods = false)
     static class Types {
