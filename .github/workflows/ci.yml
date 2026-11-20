@@ -303,6 +303,7 @@ jobs:
             -e SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_smoke \
             -e FLUVENY_RECEIPT_KEY \
             -e FLUVENY_WEB_ORIGINS=https://app.fluveny.test \
+            -e FLUVENY_APP_URL=https://app.fluveny.test \
             -e FLUVENY_PROXY_SECRET \
             fluveny-api:smoke
           status() { curl -s -o /dev/null -w '%{http_code}' "$@"; }
