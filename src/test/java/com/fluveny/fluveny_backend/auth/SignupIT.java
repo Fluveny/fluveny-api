@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fluveny.fluveny_backend.LocalMongoContainer;
 import com.fluveny.fluveny_backend.auth.infrastructure.AuthIndexes;
+import com.fluveny.fluveny_backend.platform.security.OpaqueTokens;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.time.Instant;
@@ -125,7 +126,7 @@ class SignupIT {
                 .containsExactlyInAnyOrder(
                         "_id", "tokenHash", "userId", "role", "createdAt", "expiresAt");
         assertThat(session.getString("tokenHash"))
-                .isEqualTo(Sessions.hash(token))
+                .isEqualTo(OpaqueTokens.hash(token))
                 .doesNotContain(token);
         assertThat(session.getObjectId("userId")).isEqualTo(user.getObjectId("_id"));
         assertThat(session.getString("role")).isEqualTo("STUDENT");

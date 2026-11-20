@@ -147,6 +147,8 @@ jobs:
           export FLUVENY_RECEIPT_KEY="$RECEIPT_KEY"
           # Origens da CORS (história 1.22), obrigatórias em prod; o job não usa navegador.
           export FLUVENY_WEB_ORIGINS=https://app.fluveny.test
+          # Endereço do App (história 2.2), obrigatório em prod: base do link de confirmação.
+          export FLUVENY_APP_URL=https://app.fluveny.test
           # Mínimo do App explícito (história 1.20): os Tipos têm sinceAppVersion 0.1.0, acima dele,
           # e é isso que faz o step "Recusas" receber 422 UNSUPPORTED_ACTIVITY_TYPE.
           export FLUVENY_MIN_APP_VERSION=0.0.0

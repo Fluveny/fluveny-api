@@ -2,3 +2,4 @@ com.fluveny.fluveny_backend.TestReceiptKey
 com.fluveny.fluveny_backend.TestWebOrigins
 com.fluveny.fluveny_backend.TestProxySecret
 com.fluveny.fluveny_backend.TestSeedPassword
+com.fluveny.fluveny_backend.TestAppUrl

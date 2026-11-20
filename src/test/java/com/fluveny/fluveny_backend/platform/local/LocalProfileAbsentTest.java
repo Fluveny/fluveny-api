@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.platform.local;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 /**
  * Fora do perfil {@code local} (aqui, o {@code prod} padrão), as rotas {@code /local/*} e os beans
- * do ambiente local não existem (AD-18): nada apaga nem carrega dados em homologação ou produção.
+ * do ambiente local não existem (AD-18): nada apaga nem carrega dados em homologação ou produção, e
+ * o {@code GET /local/mail} não expõe o outbox.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -35,6 +37,15 @@ class LocalProfileAbsentTest {
         assertThat(this.context.getBeanNamesForType(LocalDataLoader.class)).isEmpty();
         assertThat(this.context.getBeanNamesForType(LocalDataController.class)).isEmpty();
         assertThat(this.context.getBeanNamesForType(LocalProfileGuard.class)).isEmpty();
+        // O GET /local/mail (história 2.2) mostra endereços e tokens.
+        assertThat(this.context.containsBean("mailLocalController")).isFalse();
+    }
+
+    @Test
+    void theLocalMailIsNotServed() throws Exception {
+        int status = this.mvc.perform(get("/local/mail")).andReturn().getResponse().getStatus();
+
+        assertThat(status).isGreaterThanOrEqualTo(400);
     }
 
     @ParameterizedTest

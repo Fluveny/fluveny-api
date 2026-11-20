@@ -14,8 +14,9 @@ import org.springframework.web.util.UrlPathHelper;
 
 /**
  * Limite por IP das rotas anônimas do Visitante, {@code /api/v1/visitor/**} (Decisão 1 da história
- * 1.12), e das de {@code auth}, {@code /api/v1/auth/**} (o cadastro da história 2.1 roda o BCrypt),
- * com o mesmo limite e o mesmo contador por IP. O limite por {@code deviceId} fica em {@code
+ * 1.12), das de {@code auth}, {@code /api/v1/auth/**} (o cadastro da história 2.1 roda o BCrypt), e
+ * das públicas de {@code account}, {@code /api/v1/account/**} (a confirmação de e-mail da história
+ * 2.2), com o mesmo limite e o mesmo contador por IP. O limite por {@code deviceId} fica em {@code
  * learning}, que lê o corpo; este filtro não lê. Estouro responde {@code 429 TOO_MANY_REQUESTS} com
  * {@code Retry-After}.
  *
@@ -29,6 +30,8 @@ final class VisitorRateLimitFilter extends OncePerRequestFilter {
     static final String PATH_PREFIX = "/api/v1/visitor/";
 
     static final String AUTH_PATH_PREFIX = "/api/v1/auth/";
+
+    static final String ACCOUNT_PATH_PREFIX = "/api/v1/account/";
 
     private static final UrlPathHelper PATHS = new UrlPathHelper();
 
@@ -46,7 +49,9 @@ final class VisitorRateLimitFilter extends OncePerRequestFilter {
         // O caminho decodificado e normalizado, o mesmo que o Spring MVC usa para rotear: um
         // "/api/v1/%76isitor/attempts" cru escaparia do prefixo.
         String path = PATHS.getPathWithinApplication(request);
-        return !path.startsWith(PATH_PREFIX) && !path.startsWith(AUTH_PATH_PREFIX);
+        return !path.startsWith(PATH_PREFIX)
+                && !path.startsWith(AUTH_PATH_PREFIX)
+                && !path.startsWith(ACCOUNT_PATH_PREFIX);
     }
 
     @Override

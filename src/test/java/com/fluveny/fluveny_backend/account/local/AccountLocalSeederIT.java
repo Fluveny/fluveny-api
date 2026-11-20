@@ -74,6 +74,9 @@ class AccountLocalSeederIT {
         assertThat(withPronouns.getString("pronounSet")).isEqualTo("SHE");
         assertThat(withPronouns.getString("name")).isNotBlank();
         assertThat(withoutPronouns.get("pronounSet")).isNull();
+        // História 2.2: um confirmado, outro por confirmar.
+        assertThat(withPronouns.getDate("emailVerifiedAt")).isNotNull();
+        assertThat(withoutPronouns.get("emailVerifiedAt")).isNull();
         for (Document user : users) {
             assertThat(user.getString("status")).isEqualTo("ACTIVE");
             assertThat(user.getString("role")).isEqualTo("STUDENT");
