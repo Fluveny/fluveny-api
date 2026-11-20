@@ -58,6 +58,11 @@ class MongoSessionStore implements SessionStore {
                 byHash(tokenHash), Update.update("expiresAt", Date.from(expiresAt)), COLLECTION);
     }
 
+    @Override
+    public void deleteByTokenHash(String tokenHash) {
+        this.mongo.remove(byHash(tokenHash), COLLECTION);
+    }
+
     private static Query byHash(String tokenHash) {
         return Query.query(Criteria.where("tokenHash").is(tokenHash));
     }

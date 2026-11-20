@@ -57,6 +57,17 @@ public class Sessions implements SessionAuthenticator {
         return new NewSession(token, expiresAt);
     }
 
+    /**
+     * Encerra a sessão do token (o logout, história 2.3): a partir daqui ela não autentica mais.
+     * Sem token, ou com um que ninguém reconhece, não faz nada.
+     */
+    public void revoke(String token) {
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        this.store.deleteByTokenHash(OpaqueTokens.hash(token));
+    }
+
     @Override
     public Optional<AuthenticatedSession> authenticate(String token) {
         if (token == null || token.isEmpty()) {

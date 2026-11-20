@@ -1188,6 +1188,24 @@
         "required" : [ "correct", "itemKey" ],
         "type" : "object"
       },
+      "LoginRequest" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "password" : {
+            "maxLength" : 256,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email", "password" ],
+        "type" : "object"
+      },
       "MatchActivity" : {
         "properties" : {
           "activityKey" : {
@@ -1940,6 +1958,65 @@
           }
         },
         "tags" : [ "content-admin" ]
+      }
+    },
+    "/api/v1/auth/login" : {
+      "post" : {
+        "description" : "Entra com e-mail e senha. Exige X-Fluveny-Client: web ou android (senão 400 CLIENT_HEADER_REQUIRED). Responde como o cadastro: no web, a sessão vai só no cookie fluveny_session; no Android, só no sessionToken do corpo. E-mail desconhecido ou senha errada dão 401 INVALID_CREDENTIALS, com a mesma mensagem; conta desativada, só com a senha certa, 403 ACCOUNT_DEACTIVATED. Depois de 3 falhas, a espera cresce (1, 2, 4… s): tentar antes dá 429 LOGIN_THROTTLED com Retry-After, sem conferir a senha. A sessão que a requisição já trazia (cookie ou Bearer) é encerrada.",
+        "operationId" : "login",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Fluveny-Client",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "web", "android" ],
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseSignupResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/v1/auth/logout" : {
+      "post" : {
+        "description" : "Sai: apaga no servidor a sessão do token recebido (cookie fluveny_session ou Authorization: Bearer), se houver, e ela deixa de autenticar na hora. Exige X-Fluveny-Client: web ou android (senão 400 CLIENT_HEADER_REQUIRED). Sempre 204; no web, com o Set-Cookie que apaga o cookie (Max-Age=0).",
+        "operationId" : "logout",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "X-Fluveny-Client",
+          "required" : true,
+          "schema" : {
+            "enum" : [ "web", "android" ],
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "auth" ]
       }
     },
     "/api/v1/auth/signup" : {
