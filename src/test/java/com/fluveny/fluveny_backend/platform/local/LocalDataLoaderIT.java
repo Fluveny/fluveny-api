@@ -48,10 +48,11 @@ class LocalDataLoaderIT {
         assertThat(count()).as("carregado na partida").isEqualTo(2);
 
         // Os carregadores de content (@Order(100)), account (@Order(150)), auth (@Order(160)),
-        // learning (@Order(200)) e metrics (@Order(300)) rodam depois dos dois de teste.
+        // mail (@Order(170)), learning (@Order(200)) e metrics (@Order(300)) rodam depois dos
+        // dois de teste.
         assertThat(this.loader.load())
                 .containsSubsequence("first", "second", "content")
-                .endsWith("account", "auth", "learning", "metrics");
+                .endsWith("account", "auth", "mail", "learning", "metrics");
         this.mvc
                 .perform(post("/local/seed"))
                 .andExpect(status().isOk())

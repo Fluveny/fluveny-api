@@ -26,8 +26,9 @@ import org.springframework.stereotype.Component;
  * grava, por e-mail, os dois Alunos adultos de teste, com a senha da {@link LocalSeedPassword}:
  *
  * <ul>
- *   <li>{@value #WITH_PRONOUNS}, com nome e pronomes {@code SHE};
- *   <li>{@value #WITHOUT_PRONOUNS}, sem nome nem pronomes (vale they/them).
+ *   <li>{@value #WITH_PRONOUNS}, com nome e pronomes {@code SHE}, com o e-mail confirmado;
+ *   <li>{@value #WITHOUT_PRONOUNS}, sem nome nem pronomes (vale they/them), com o e-mail por
+ *       confirmar (história 2.2).
  * </ul>
  *
  * <p>Sem {@code LOCAL_SEED_PASSWORD}, ou com ela fora da {@link PasswordPolicy}, os Alunos não são
@@ -97,11 +98,12 @@ class AccountLocalSeeder implements LocalDataSeeder {
             return;
         }
         String hash = this.passwords.hash(password);
-        this.users.upsertByEmail(student(WITH_PRONOUNS, hash, "Ana", PronounSet.SHE));
-        this.users.upsertByEmail(student(WITHOUT_PRONOUNS, hash, null, null));
+        this.users.upsertByEmail(student(WITH_PRONOUNS, hash, "Ana", PronounSet.SHE, true));
+        this.users.upsertByEmail(student(WITHOUT_PRONOUNS, hash, null, null, false));
     }
 
-    private User student(String email, String hash, String name, PronounSet pronounSet) {
+    private User student(
+            String email, String hash, String name, PronounSet pronounSet, boolean confirmed) {
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
         return new User(
                 null,
@@ -117,7 +119,7 @@ class AccountLocalSeeder implements LocalDataSeeder {
                 PRIVACY_VERSION,
                 now,
                 now,
-                null,
+                confirmed ? now : null,
                 null,
                 null);
     }

@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.account.infrastructure;
 
 import com.fluveny.fluveny_backend.account.PronounSet;
+import java.time.Instant;
 import java.util.Optional;
 
 /** Coleção {@code users} (dona: {@code account}, AD-13). Só {@code account} chama. */
@@ -25,8 +26,17 @@ public interface UserStore {
     boolean updatePronounSet(String id, PronounSet pronounSet);
 
     /**
-     * Para o carregador local: cria a conta do e-mail ou atualiza senha, nome, pronomes, papel e
-     * status dela, sem trocar o {@code metricsId} nem o {@code createdAt}.
+     * Grava o {@code emailVerifiedAt}, só se o e-mail da conta ainda é {@code email} e se ela ainda
+     * não estava confirmada (a primeira confirmação fica; repetir não muda nada).
+     *
+     * @return {@code true} se a conta tem esse e-mail e agora está confirmada
+     */
+    boolean markEmailVerified(String id, String email, Instant verifiedAt);
+
+    /**
+     * Para o carregador local: cria a conta do e-mail ou atualiza senha, nome, pronomes, papel,
+     * status e {@code emailVerifiedAt} dela, sem trocar o {@code metricsId} nem o {@code
+     * createdAt}.
      */
     void upsertByEmail(User user);
 }

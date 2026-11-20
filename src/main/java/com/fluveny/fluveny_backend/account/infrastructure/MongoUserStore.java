@@ -75,6 +75,26 @@ class MongoUserStore implements UserStore {
     }
 
     @Override
+    public boolean markEmailVerified(String id, String email, Instant verifiedAt) {
+        if (id == null || !ObjectId.isValid(id)) {
+            return false;
+        }
+        Criteria sameEmail = Criteria.where("_id").is(new ObjectId(id)).and("email").is(email);
+        this.mongo.updateFirst(
+                Query.query(
+                        Criteria.where("_id")
+                                .is(new ObjectId(id))
+                                .and("email")
+                                .is(email)
+                                .and("emailVerifiedAt")
+                                .is(null)),
+                Update.update("emailVerifiedAt", Date.from(verifiedAt)),
+                COLLECTION);
+        return this.mongo.exists(
+                Query.query(sameEmail.and("emailVerifiedAt").ne(null)), COLLECTION);
+    }
+
+    @Override
     public void upsertByEmail(User user) {
         Update update =
                 new Update()
@@ -86,10 +106,10 @@ class MongoUserStore implements UserStore {
                         .set("pronounSet", name(user.pronounSet()))
                         .set("termsVersion", user.termsVersion())
                         .set("privacyVersion", user.privacyVersion())
+                        .set("emailVerifiedAt", date(user.emailVerifiedAt()))
                         .setOnInsert("metricsId", user.metricsId().toString())
                         .setOnInsert("termsAcceptedAt", date(user.termsAcceptedAt()))
                         .setOnInsert("createdAt", date(user.createdAt()))
-                        .setOnInsert("emailVerifiedAt", null)
                         .setOnInsert("pendingEmail", null)
                         .setOnInsert("deletionRequestedAt", null);
         this.mongo.upsert(

@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.account.web;
 
 import com.fasterxml.jackson.annotation.JsonAnySetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fluveny.fluveny_backend.account.EmailConfirmation;
 import com.fluveny.fluveny_backend.account.PronounSet;
 import com.fluveny.fluveny_backend.account.StudentProfile;
 import com.fluveny.fluveny_backend.account.StudentProfiles;
@@ -14,14 +15,18 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * O perfil mínimo do Aluno da sessão (história 2.1). O dono vem só da sessão; não há id na rota.
+ * O perfil mínimo do Aluno da sessão (história 2.1) e o reenvio da confirmação de e-mail (história
+ * 2.2). O dono vem só da sessão; não há id na rota.
  */
 @RestController
 @Tag(name = "students")
@@ -31,15 +36,18 @@ class StudentProfileController {
 
     private final StudentProfiles profiles;
 
-    StudentProfileController(StudentProfiles profiles) {
+    private final EmailConfirmation confirmation;
+
+    StudentProfileController(StudentProfiles profiles, EmailConfirmation confirmation) {
         this.profiles = profiles;
+        this.confirmation = confirmation;
     }
 
     @Operation(
             operationId = "getMyStudentProfile",
             description =
-                    "O perfil do Aluno da sessão: nome, e-mail e pronomes (nulo vale como THEY)."
-                            + " Sem sessão, 401.")
+                    "O perfil do Aluno da sessão: nome, e-mail, pronomes (nulo vale como THEY) e"
+                            + " se o e-mail já foi confirmado. Sem sessão, 401.")
     @GetMapping
     ApiResponse<StudentProfile> get() {
         return ApiResponse.of(this.profiles.get(SessionPrincipal.current().userId()));
@@ -56,6 +64,21 @@ class StudentProfileController {
         return ApiResponse.of(
                 this.profiles.updatePronouns(
                         SessionPrincipal.current().userId(), body.pronounSet()));
+    }
+
+    @Operation(
+            operationId = "resendMyEmailConfirmation",
+            description =
+                    "Reenvia o e-mail de confirmação do Aluno da sessão: o link anterior deixa de"
+                            + " valer. Responde 202 sem corpo; o e-mail sai pela fila, em até"
+                            + " alguns minutos. Já confirmado: 409 EMAIL_ALREADY_CONFIRMED. Mais de 1"
+                            + " por minuto ou 5 por dia: 429 TOO_MANY_REQUESTS com Retry-After. Com"
+                            + " a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403"
+                            + " CLIENT_HEADER_REQUIRED.")
+    @PostMapping("/email-confirmation")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    void resendEmailConfirmation() {
+        this.confirmation.resend(SessionPrincipal.current().userId());
     }
 
     /**

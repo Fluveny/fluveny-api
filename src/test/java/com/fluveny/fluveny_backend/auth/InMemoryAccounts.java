@@ -1,10 +1,15 @@
 package com.fluveny.fluveny_backend.auth;
 
 import com.fluveny.fluveny_backend.account.PronounSet;
+import com.fluveny.fluveny_backend.account.infrastructure.OneTimeToken;
+import com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore;
+import com.fluveny.fluveny_backend.account.infrastructure.TokenPurpose;
 import com.fluveny.fluveny_backend.account.infrastructure.User;
 import com.fluveny.fluveny_backend.account.infrastructure.UserStore;
 import com.fluveny.fluveny_backend.auth.infrastructure.Session;
 import com.fluveny.fluveny_backend.auth.infrastructure.SessionStore;
+import com.fluveny.fluveny_backend.mail.InMemoryOutbox;
+import com.fluveny.fluveny_backend.mail.infrastructure.OutboxStore;
 import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
 import com.fluveny.fluveny_backend.metrics.infrastructure.EventStore;
 import java.time.Instant;
@@ -20,9 +25,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 
 /**
- * {@code users}, {@code sessions} e {@code events} em memória, com as mesmas regras de unicidade do
- * Mongo (e-mail único, inclusive em cadastros simultâneos), para os testes de rota sem banco
- * (história 2.1). Os testes contra o Mongo ficam nos {@code *IT}.
+ * {@code users}, {@code sessions}, {@code events}, {@code one_time_tokens} e {@code mail_outbox} em
+ * memória, com as mesmas regras de unicidade e atomicidade do Mongo (e-mail único, inclusive em
+ * cadastros simultâneos; consumo do token de uso único), para os testes de rota sem banco
+ * (histórias 2.1 e 2.2). Os testes contra o Mongo ficam nos {@code *IT}.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class InMemoryAccounts {
@@ -38,6 +44,12 @@ public class InMemoryAccounts {
     /** {@code events}, na ordem de gravação. */
     public final List<Event> events = Collections.synchronizedList(new ArrayList<>());
 
+    /** {@code one_time_tokens} por {@code tokenHash}. */
+    public final Map<String, OneTimeToken> tokens = new ConcurrentHashMap<>();
+
+    /** {@code mail_outbox}. */
+    public final InMemoryOutbox outbox = new InMemoryOutbox();
+
     /** Quando ligado, o {@code EventStore} lança, como um Mongo fora do ar. */
     public volatile boolean failEvents;
 
@@ -46,6 +58,8 @@ public class InMemoryAccounts {
         this.idsByEmail.clear();
         this.sessions.clear();
         this.events.clear();
+        this.tokens.clear();
+        this.outbox.clear();
         this.failEvents = false;
     }
 
@@ -86,6 +100,19 @@ public class InMemoryAccounts {
             }
 
             @Override
+            public boolean markEmailVerified(String id, String email, Instant verifiedAt) {
+                User user =
+                        InMemoryAccounts.this.users.computeIfPresent(
+                                id,
+                                (key, current) ->
+                                        (current.email().equals(email)
+                                                        && current.emailVerifiedAt() == null)
+                                                ? withEmailVerifiedAt(current, verifiedAt)
+                                                : current);
+                return user != null && user.email().equals(email) && user.emailVerifiedAt() != null;
+            }
+
+            @Override
             public void upsertByEmail(User user) {
                 String id =
                         InMemoryAccounts.this.idsByEmail.computeIfAbsent(
@@ -122,6 +149,50 @@ public class InMemoryAccounts {
                                         expiresAt));
             }
         };
+    }
+
+    @Bean
+    @Primary
+    OneTimeTokenStore inMemoryTokens() {
+        return new OneTimeTokenStore() {
+            @Override
+            public void insert(OneTimeToken token) {
+                if (InMemoryAccounts.this.tokens.putIfAbsent(token.tokenHash(), token) != null) {
+                    throw new IllegalStateException("tokenHash repetido");
+                }
+            }
+
+            @Override
+            public Optional<OneTimeToken> consume(
+                    String tokenHash, TokenPurpose purpose, Instant now) {
+                OneTimeToken[] consumed = new OneTimeToken[1];
+                InMemoryAccounts.this.tokens.computeIfPresent(
+                        tokenHash,
+                        (hash, token) -> {
+                            if (token.purpose() == purpose && token.expiresAt().isAfter(now)) {
+                                consumed[0] = token;
+                                return null;
+                            }
+                            return token;
+                        });
+                return Optional.ofNullable(consumed[0]);
+            }
+
+            @Override
+            public void deleteByUser(String userId, TokenPurpose purpose) {
+                InMemoryAccounts.this
+                        .tokens
+                        .values()
+                        .removeIf(token ->
+                                token.userId().equals(userId) && token.purpose() == purpose);
+            }
+        };
+    }
+
+    @Bean
+    @Primary
+    OutboxStore inMemoryOutbox() {
+        return this.outbox;
     }
 
     @Bean
@@ -172,6 +243,26 @@ public class InMemoryAccounts {
                 user.termsAcceptedAt(),
                 user.createdAt(),
                 user.emailVerifiedAt(),
+                user.pendingEmail(),
+                user.deletionRequestedAt());
+    }
+
+    static User withEmailVerifiedAt(User user, Instant verifiedAt) {
+        return new User(
+                user.id(),
+                user.email(),
+                user.passwordHash(),
+                user.birthDate(),
+                user.role(),
+                user.status(),
+                user.metricsId(),
+                user.name(),
+                user.pronounSet(),
+                user.termsVersion(),
+                user.privacyVersion(),
+                user.termsAcceptedAt(),
+                user.createdAt(),
+                verifiedAt,
                 user.pendingEmail(),
                 user.deletionRequestedAt());
     }

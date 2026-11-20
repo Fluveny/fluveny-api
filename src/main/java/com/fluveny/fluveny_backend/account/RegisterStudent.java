@@ -24,11 +24,13 @@ import org.springframework.stereotype.Service;
 
 /**
  * Cadastro de Aluno adulto (história 2.1, FR-2, AD-13). Confere senha e idade, grava a conta em
- * {@code users} já {@code ACTIVE} e publica o {@code STUDENT_REGISTERED}. O e-mail repetido esbarra
- * no índice único, inclusive em dois cadastros ao mesmo tempo.
+ * {@code users} já {@code ACTIVE}, publica o {@code STUDENT_REGISTERED} e emite a confirmação de
+ * e-mail (história 2.2). O e-mail repetido esbarra no índice único, inclusive em dois cadastros ao
+ * mesmo tempo.
  *
  * <p>Sem transação: a conta é gravada primeiro, e quem chama ({@code auth}) cria a sessão depois.
- * Uma falha ao publicar o evento vai para o log e o Sentry e não desfaz a conta.
+ * Uma falha ao publicar o evento ou ao emitir a confirmação vai para o log e o Sentry e não desfaz
+ * a conta; o Aluno pede outro link pelo reenvio.
  */
 @Service
 public class RegisterStudent {
@@ -52,12 +54,20 @@ public class RegisterStudent {
 
     private final MetricsPublisher metrics;
 
+    private final EmailConfirmation confirmation;
+
     private final Clock clock;
 
-    RegisterStudent(UserStore users, Passwords passwords, MetricsPublisher metrics, Clock clock) {
+    RegisterStudent(
+            UserStore users,
+            Passwords passwords,
+            MetricsPublisher metrics,
+            EmailConfirmation confirmation,
+            Clock clock) {
         this.users = users;
         this.passwords = passwords;
         this.metrics = metrics;
+        this.confirmation = confirmation;
         this.clock = clock;
     }
 
@@ -103,8 +113,9 @@ public class RegisterStudent {
                                         "Este e-mail já tem uma conta. Entre ou recupere a"
                                                 + " senha."));
         publishRegistered(user.metricsId());
+        issueConfirmation(userId, email, user.name());
         return new RegisteredStudent(
-                userId, Role.STUDENT, new StudentProfile(user.name(), email, null));
+                userId, Role.STUDENT, new StudentProfile(user.name(), email, null, false));
     }
 
     /** {@code trim} e minúsculas: a chave única de {@code users}. */
@@ -141,6 +152,22 @@ public class RegisterStudent {
         } catch (RuntimeException ex) {
             log.error("Falha ao publicar STUDENT_REGISTERED", ex);
             Sentry.captureException(ex);
+        }
+    }
+
+    private void issueConfirmation(String userId, String email, String name) {
+        try {
+            this.confirmation.issue(userId, email, name);
+        } catch (RuntimeException ex) {
+            // Sem a mensagem original: ela pode trazer o e-mail.
+            log.error("Falha ao emitir a confirmação de e-mail ({})", ex.getClass().getName());
+            IllegalStateException sanitized =
+                    new IllegalStateException(
+                            "Falha ao emitir a confirmação de e-mail ("
+                                    + ex.getClass().getName()
+                                    + ")");
+            sanitized.setStackTrace(ex.getStackTrace());
+            Sentry.captureException(sanitized);
         }
     }
 

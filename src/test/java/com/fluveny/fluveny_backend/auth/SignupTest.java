@@ -14,6 +14,7 @@ import com.fluveny.fluveny_backend.account.infrastructure.User;
 import com.fluveny.fluveny_backend.auth.infrastructure.Session;
 import com.fluveny.fluveny_backend.metrics.EventType;
 import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
+import com.fluveny.fluveny_backend.platform.security.OpaqueTokens;
 import jakarta.servlet.http.Cookie;
 import java.time.Duration;
 import java.time.Instant;
@@ -54,7 +55,8 @@ import tools.jackson.databind.node.ObjectNode;
 @TestPropertySource(
         properties = {
             "SPRING_DATA_MONGODB_URI=mongodb://localhost:27017/fluveny_unit_tests",
-            "fluveny.mongo.indexes-on-startup=false"
+            "fluveny.mongo.indexes-on-startup=false",
+            "fluveny.mail.dispatch.enabled=false"
         })
 class SignupTest {
 
@@ -141,6 +143,8 @@ class SignupTest {
         assertThat(this.accounts.users).isEmpty();
         assertThat(this.accounts.sessions).isEmpty();
         assertThat(this.accounts.events).isEmpty();
+        assertThat(this.accounts.tokens).isEmpty();
+        assertThat(this.accounts.outbox.all()).isEmpty();
     }
 
     // Cadastro.
@@ -153,6 +157,7 @@ class SignupTest {
                         .andExpect(jsonPath("$.data.student.name").value("Ana"))
                         .andExpect(jsonPath("$.data.student.email").value("ana.silva@example.com"))
                         .andExpect(jsonPath("$.data.student.pronounSet").isEmpty())
+                        .andExpect(jsonPath("$.data.student.emailConfirmed").value(false))
                         .andExpect(jsonPath("$.data.sessionToken").doesNotExist())
                         .andReturn()
                         .getResponse()
@@ -184,7 +189,7 @@ class SignupTest {
         assertThat(session.userId()).isEqualTo(user.id());
         assertThat(session.expiresAt()).isEqualTo(NOW.plus(Duration.ofDays(30)));
         String token = setCookie.substring("fluveny_session=".length(), setCookie.indexOf(';'));
-        assertThat(session.tokenHash()).isEqualTo(Sessions.hash(token)).isNotEqualTo(token);
+        assertThat(session.tokenHash()).isEqualTo(OpaqueTokens.hash(token)).isNotEqualTo(token);
 
         assertThat(this.accounts.events)
                 .containsExactly(

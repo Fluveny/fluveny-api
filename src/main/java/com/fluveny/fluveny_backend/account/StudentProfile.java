@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
  * @param name o nome, se o Aluno informou
  * @param email o e-mail da conta, normalizado
  * @param pronounSet os pronomes; nulo vale como {@code THEY}
+ * @param emailConfirmed se o Aluno já confirmou o e-mail (história 2.2)
  */
 @Schema(name = "StudentProfile")
 public record StudentProfile(
@@ -18,4 +19,8 @@ public record StudentProfile(
                         requiredMode = RequiredMode.NOT_REQUIRED,
                         nullable = true,
                         description = "Nulo vale como THEY (they/them).")
-                PronounSet pronounSet) {}
+                PronounSet pronounSet,
+        @Schema(
+                        requiredMode = RequiredMode.REQUIRED,
+                        description = "Se o e-mail já foi confirmado.")
+                boolean emailConfirmed) {}

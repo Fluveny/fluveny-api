@@ -25,7 +25,7 @@ class ModularityTest {
     // Setas cheias do grafo da AD-3, mais platform para todos. Mudar aqui é mudar a spine.
     private static final Map<String, Set<String>> SPINE_GRAPH =
             Map.of(
-                    "account", Set.of("mail", "metrics", PLATFORM),
+                    "account", Set.of("mail", "mail :: sender", "metrics", PLATFORM),
                     "auth", Set.of("account", "mail", PLATFORM),
                     "team", Set.of("account", "auth", PLATFORM),
                     "content", Set.of(PLATFORM),
@@ -79,6 +79,20 @@ class ModularityTest {
         var interfaces = modules.getModuleByName("content").orElseThrow().getNamedInterfaces();
         assertThat(interfaces.getByName("activity")).isPresent();
         assertThat(interfaces.getByName("render")).isPresent();
+    }
+
+    // AD-15, história 2.2: mail expõe a porta MailSender (e a MailPriority) na named interface
+    // sender; account a declara na mesma seta account -> mail.
+    @Test
+    void mailExposesTheSenderNamedInterface() {
+        var sender =
+                modules.getModuleByName("mail")
+                        .orElseThrow()
+                        .getNamedInterfaces()
+                        .getByName("sender")
+                        .orElseThrow();
+        assertThat(sender.contains(com.fluveny.fluveny_backend.mail.MailSender.class)).isTrue();
+        assertThat(sender.contains(com.fluveny.fluveny_backend.mail.MailPriority.class)).isTrue();
     }
 
     // A platform expõe web, security e meta, e o SPI do perfil local (AD-18, história 1.4).

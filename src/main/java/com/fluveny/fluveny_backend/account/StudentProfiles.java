@@ -38,6 +38,7 @@ public class StudentProfiles {
     }
 
     private static StudentProfile toProfile(User user) {
-        return new StudentProfile(user.name(), user.email(), user.pronounSet());
+        return new StudentProfile(
+                user.name(), user.email(), user.pronounSet(), user.emailVerifiedAt() != null);
     }
 }

@@ -247,6 +247,16 @@
         "required" : [ "data" ],
         "type" : "object"
       },
+      "ApiResponseVoid" : {
+        "properties" : {
+          "data" : { },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "Attempt" : {
         "properties" : {
           "activityKey" : {
@@ -600,6 +610,18 @@
           }
         },
         "required" : [ "outcome", "xpAwarded" ],
+        "type" : "object"
+      },
+      "ConfirmEmail" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "token" : {
+            "maxLength" : 128,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "token" ],
         "type" : "object"
       },
       "ContentText" : {
@@ -1550,6 +1572,10 @@
           "email" : {
             "type" : "string"
           },
+          "emailConfirmed" : {
+            "description" : "Se o e-mail já foi confirmado.",
+            "type" : "boolean"
+          },
           "name" : {
             "type" : [ "string", "null" ]
           },
@@ -1559,7 +1585,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "email" ],
+        "required" : [ "email", "emailConfirmed" ],
         "type" : "object"
       },
       "UnitBundleContent" : {
@@ -1800,6 +1826,35 @@
   },
   "openapi" : "3.1.0",
   "paths" : {
+    "/api/v1/account/email-confirmation" : {
+      "post" : {
+        "description" : "Confirma o e-mail com o token do link (uso único, vale 7 dias). Responde 200; token desconhecido, vencido ou já usado dá 410 CONFIRMATION_LINK_INVALID. Campo desconhecido dá 400. Acima do limite por IP, 429 TOO_MANY_REQUESTS com Retry-After.",
+        "operationId" : "confirmEmail",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ConfirmEmail"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseVoid"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "account" ]
+      }
+    },
     "/api/v1/admin/content/units/{unitKey}/versions" : {
       "post" : {
         "operationId" : "publishUnitVersion",
@@ -1945,7 +2000,7 @@
     },
     "/api/v1/students/me" : {
       "get" : {
-        "description" : "O perfil do Aluno da sessão: nome, e-mail e pronomes (nulo vale como THEY). Sem sessão, 401.",
+        "description" : "O perfil do Aluno da sessão: nome, e-mail, pronomes (nulo vale como THEY) e se o e-mail já foi confirmado. Sem sessão, 401.",
         "operationId" : "getMyStudentProfile",
         "responses" : {
           "200" : {
@@ -1984,6 +2039,18 @@
               }
             },
             "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
+    "/api/v1/students/me/email-confirmation" : {
+      "post" : {
+        "description" : "Reenvia o e-mail de confirmação do Aluno da sessão: o link anterior deixa de valer. Responde 202 sem corpo; o e-mail sai pela fila, em até alguns minutos. Já confirmado: 409 EMAIL_ALREADY_CONFIRMED. Mais de 1 por minuto ou 5 por dia: 429 TOO_MANY_REQUESTS com Retry-After. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED.",
+        "operationId" : "resendMyEmailConfirmation",
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
           }
         },
         "tags" : [ "students" ]

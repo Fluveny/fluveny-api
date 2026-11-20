@@ -17,7 +17,7 @@ import org.springframework.mock.web.MockHttpServletResponse;
 
 /**
  * Limite por IP de {@code /api/v1/visitor/**} (Decisão 1 da história 1.12) e de {@code
- * /api/v1/auth/**} (história 2.1).
+ * /api/v1/auth/**} (história 2.1) e de {@code /api/v1/account/**} (história 2.2).
  */
 class VisitorRateLimitFilterTest {
 
@@ -80,12 +80,26 @@ class VisitorRateLimitFilterTest {
     }
 
     @Test
+    void theEmailConfirmationIsCountedPerIp() throws Exception {
+        String path = "/api/v1/account/email-confirmation";
+        assertThat(send(path, "10.0.0.6").getHeader("X-Passed")).isEqualTo("true");
+        assertThat(send(path, "10.0.0.6").getHeader("X-Passed")).isEqualTo("true");
+        MockHttpServletResponse refused = send(path, "10.0.0.6");
+        assertThat(refused.getHeader("X-Passed")).isEqualTo("false");
+        assertThat(refused.getHeader("Retry-After")).isNotNull();
+    }
+
+    @Test
     void otherRoutesAreNotCounted() throws Exception {
         for (int i = 0; i < 5; i++) {
             assertThat(send("/api/v1/meta", "10.0.0.3").getHeader("X-Passed")).isEqualTo("true");
             assertThat(send("/api/v1/visitorx", "10.0.0.3").getHeader("X-Passed"))
                     .isEqualTo("true");
             assertThat(send("/api/v1/students/me", "10.0.0.3").getHeader("X-Passed"))
+                    .isEqualTo("true");
+            assertThat(
+                            send("/api/v1/students/me/email-confirmation", "10.0.0.3")
+                                    .getHeader("X-Passed"))
                     .isEqualTo("true");
         }
         verify(this.problems, never()).write(any(), any(), any());
