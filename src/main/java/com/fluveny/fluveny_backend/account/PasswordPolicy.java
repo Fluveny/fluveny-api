@@ -6,7 +6,8 @@ import java.util.Optional;
 /**
  * A regra de senha, única para toda a API (história 2.1): 8 a 64 caracteres, ao menos uma letra e
  * um número {@code [ASSUMPTION]}. O teto de 64 (e de 72 bytes em UTF-8) vem do limite do BCrypt,
- * que ignoraria o resto. Use pela anotação {@link StudentPassword} na borda {@code web}.
+ * que ignoraria o resto. A senha é conferida em NFC, como o {@link Passwords} a guarda. Use pela
+ * anotação {@link StudentPassword} na borda {@code web}.
  */
 public final class PasswordPolicy {
 
@@ -32,6 +33,8 @@ public final class PasswordPolicy {
         if (password == null) {
             return Optional.of(MESSAGE);
         }
+        // A mesma forma que o BCrypt recebe (história 2.3).
+        password = Passwords.normalize(password);
         int length = password.codePointCount(0, password.length());
         boolean letter = password.codePoints().anyMatch(Character::isLetter);
         boolean digit = password.codePoints().anyMatch(Character::isDigit);

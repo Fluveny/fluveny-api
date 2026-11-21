@@ -32,4 +32,12 @@ public final class SessionCookie {
                 .build()
                 .toString();
     }
+
+    /**
+     * O cabeçalho {@code Set-Cookie} que apaga o cookie da sessão (o logout, história 2.3): valor
+     * vazio, {@code Max-Age=0} e os mesmos atributos.
+     */
+    public static String clearHeader() {
+        return header("", Duration.ZERO);
+    }
 }

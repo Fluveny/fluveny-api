@@ -12,7 +12,9 @@ import org.springframework.stereotype.Component;
 /**
  * Coleção e índices de {@code auth}, criados na partida e de forma idempotente (AD-3): em {@code
  * sessions}, o único do {@code tokenHash} e o TTL do {@code expiresAt}, que apaga a sessão quando
- * ela vence (história 2.1). A conferência do vencimento não depende do TTL, que roda a cada minuto.
+ * ela vence (história 2.1); em {@code login_throttle}, o único do {@code keyHash} e o TTL do {@code
+ * expiresAt}, que apaga a contagem 1 h depois da última falha (história 2.3). A conferência do
+ * vencimento não depende do TTL, que roda a cada minuto.
  *
  * <p>Testes {@code @SpringBootTest} sem Mongo desligam com {@code
  * fluveny.mongo.indexes-on-startup=false}; o carregador local chama {@link #ensure()} de novo,
@@ -25,25 +27,27 @@ public class AuthIndexes {
 
     static final String TTL_INDEX = "expiresAt_ttl";
 
+    static final String THROTTLE_KEY_INDEX = "keyHash_unique";
+
     private final MongoTemplate mongo;
 
     AuthIndexes(MongoTemplate mongo) {
         this.mongo = mongo;
     }
 
-    /** Cria a coleção e os índices que faltam. */
+    /** Cria as coleções e os índices que faltam. */
     public void ensure() {
-        String collection = MongoSessionStore.COLLECTION;
+        ensure(MongoSessionStore.COLLECTION, "tokenHash", TOKEN_HASH_INDEX);
+        ensure(MongoLoginThrottleStore.COLLECTION, "keyHash", THROTTLE_KEY_INDEX);
+    }
+
+    private void ensure(String collection, String key, String keyIndex) {
         if (!this.mongo.collectionExists(collection)) {
             this.mongo.createCollection(collection);
         }
         this.mongo
                 .indexOps(collection)
-                .createIndex(
-                        new Index()
-                                .on("tokenHash", Sort.Direction.ASC)
-                                .unique()
-                                .named(TOKEN_HASH_INDEX));
+                .createIndex(new Index().on(key, Sort.Direction.ASC).unique().named(keyIndex));
         this.mongo
                 .indexOps(collection)
                 .createIndex(

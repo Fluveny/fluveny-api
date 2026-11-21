@@ -19,8 +19,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * 1º critério de aceite da 2.1: no perfil {@code local}, o carregador de {@code account} cria os
- * dois Alunos de teste, e rodar de novo não duplica nada. A senha é a {@code LOCAL_SEED_PASSWORD}
- * gerada pela {@link TestSeedPassword}.
+ * Alunos de teste (o desativado vem da 2.3), e rodar de novo não duplica nada. A senha é a {@code
+ * LOCAL_SEED_PASSWORD} gerada pela {@link TestSeedPassword}.
  */
 @SpringBootTest
 @ActiveProfiles("local")
@@ -38,7 +38,7 @@ class AccountLocalSeederIT {
     }
 
     @Test
-    void seedingTwiceKeepsExactlyTheTwoStudents() {
+    void seedingTwiceKeepsExactlyTheThreeStudents() {
         // Já rodou na partida; roda mais duas vezes.
         this.seeder.seed();
         Map<String, Object> metricsIds = new HashMap<>();
@@ -59,7 +59,9 @@ class AccountLocalSeederIT {
         assertThat(users)
                 .extracting(user -> user.getString("email"))
                 .containsExactlyInAnyOrder(
-                        AccountLocalSeeder.WITH_PRONOUNS, AccountLocalSeeder.WITHOUT_PRONOUNS);
+                        AccountLocalSeeder.WITH_PRONOUNS,
+                        AccountLocalSeeder.WITHOUT_PRONOUNS,
+                        AccountLocalSeeder.DEACTIVATED);
         Document withPronouns =
                 users.stream()
                         .filter(u -> AccountLocalSeeder.WITH_PRONOUNS.equals(u.getString("email")))
@@ -78,7 +80,12 @@ class AccountLocalSeederIT {
         assertThat(withPronouns.getDate("emailVerifiedAt")).isNotNull();
         assertThat(withoutPronouns.get("emailVerifiedAt")).isNull();
         for (Document user : users) {
-            assertThat(user.getString("status")).isEqualTo("ACTIVE");
+            // História 2.3: um desativado, para o 403 ACCOUNT_DEACTIVATED do login.
+            assertThat(user.getString("status"))
+                    .isEqualTo(
+                            AccountLocalSeeder.DEACTIVATED.equals(user.getString("email"))
+                                    ? "DEACTIVATED"
+                                    : "ACTIVE");
             assertThat(user.getString("role")).isEqualTo("STUDENT");
             assertThat(user.getString("metricsId")).isNotBlank();
             assertThat(

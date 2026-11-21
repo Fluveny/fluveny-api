@@ -7,8 +7,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
- * Carregador local de {@code auth} (AD-18). Não grava dados: {@code sessions} nasce do cadastro e,
- * na 2.3, do login. Só recria os índices, que o {@code mise run reset} apaga com o banco.
+ * Carregador local de {@code auth} (AD-18). Não grava dados: {@code sessions} nasce do cadastro e
+ * do login, e {@code login_throttle}, das falhas de login (história 2.3). Só recria os índices, que
+ * o {@code mise run reset} apaga com o banco.
  */
 @Component
 @Profile("local")

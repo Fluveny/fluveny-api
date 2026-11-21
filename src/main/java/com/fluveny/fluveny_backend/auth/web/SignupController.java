@@ -6,8 +6,6 @@ import com.fluveny.fluveny_backend.account.RegisteredStudent;
 import com.fluveny.fluveny_backend.auth.Sessions;
 import com.fluveny.fluveny_backend.platform.security.ClientHeader;
 import com.fluveny.fluveny_backend.platform.security.PublicRoute;
-import com.fluveny.fluveny_backend.platform.security.SessionCookie;
-import com.fluveny.fluveny_backend.platform.web.ApiException;
 import com.fluveny.fluveny_backend.platform.web.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -16,7 +14,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,13 +67,7 @@ class SignupController {
                     String clientHeader,
             @Valid @RequestBody SignupRequest body,
             HttpServletResponse response) {
-        ClientHeader client =
-                ClientHeader.parse(clientHeader)
-                        .orElseThrow(() ->
-                                new ApiException(
-                                        HttpStatus.BAD_REQUEST,
-                                        ClientHeader.REQUIRED_CODE,
-                                        "Envie o cabeçalho X-Fluveny-Client com web ou android."));
+        ClientHeader client = SessionResponses.requireClient(clientHeader);
         RegisteredStudent student =
                 this.register.register(
                         new NewStudent(
@@ -87,12 +78,6 @@ class SignupController {
                                 body.acceptedTermsVersion(),
                                 body.acceptedPrivacyVersion()));
         Sessions.NewSession session = this.sessions.create(student.userId(), student.role());
-        if (client == ClientHeader.WEB) {
-            response.addHeader(
-                    HttpHeaders.SET_COOKIE,
-                    SessionCookie.header(session.token(), Sessions.STUDENT_TTL));
-            return ApiResponse.of(new SignupResponse(student.profile(), null));
-        }
-        return ApiResponse.of(new SignupResponse(student.profile(), session.token()));
+        return SessionResponses.deliver(client, student.profile(), session, response);
     }
 }

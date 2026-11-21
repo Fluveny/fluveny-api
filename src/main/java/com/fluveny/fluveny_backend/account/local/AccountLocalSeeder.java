@@ -23,12 +23,14 @@ import org.springframework.stereotype.Component;
 
 /**
  * Carregador local de {@code account} (AD-18, história 2.1): recria os índices de {@code users} e
- * grava, por e-mail, os dois Alunos adultos de teste, com a senha da {@link LocalSeedPassword}:
+ * grava, por e-mail, os Alunos adultos de teste, com a senha da {@link LocalSeedPassword}:
  *
  * <ul>
  *   <li>{@value #WITH_PRONOUNS}, com nome e pronomes {@code SHE}, com o e-mail confirmado;
  *   <li>{@value #WITHOUT_PRONOUNS}, sem nome nem pronomes (vale they/them), com o e-mail por
- *       confirmar (história 2.2).
+ *       confirmar (história 2.2);
+ *   <li>{@value #DEACTIVATED}, {@code DEACTIVATED}, para o {@code 403 ACCOUNT_DEACTIVATED} do login
+ *       (história 2.3).
  * </ul>
  *
  * <p>Sem {@code LOCAL_SEED_PASSWORD}, ou com ela fora da {@link PasswordPolicy}, os Alunos não são
@@ -42,6 +44,8 @@ class AccountLocalSeeder implements LocalDataSeeder {
     static final String WITH_PRONOUNS = "aluno@fluveny.local";
 
     static final String WITHOUT_PRONOUNS = "aluno.sem.pronomes@fluveny.local";
+
+    static final String DEACTIVATED = "aluno.desativado@fluveny.local";
 
     /** As versões dos documentos legais da 1.21 no App. */
     static final String TERMS_VERSION = "0.1";
@@ -98,12 +102,21 @@ class AccountLocalSeeder implements LocalDataSeeder {
             return;
         }
         String hash = this.passwords.hash(password);
-        this.users.upsertByEmail(student(WITH_PRONOUNS, hash, "Ana", PronounSet.SHE, true));
-        this.users.upsertByEmail(student(WITHOUT_PRONOUNS, hash, null, null, false));
+        this.users.upsertByEmail(
+                student(WITH_PRONOUNS, hash, "Ana", PronounSet.SHE, true, AccountStatus.ACTIVE));
+        this.users.upsertByEmail(
+                student(WITHOUT_PRONOUNS, hash, null, null, false, AccountStatus.ACTIVE));
+        this.users.upsertByEmail(
+                student(DEACTIVATED, hash, "Bia", null, true, AccountStatus.DEACTIVATED));
     }
 
     private User student(
-            String email, String hash, String name, PronounSet pronounSet, boolean confirmed) {
+            String email,
+            String hash,
+            String name,
+            PronounSet pronounSet,
+            boolean confirmed,
+            AccountStatus status) {
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
         return new User(
                 null,
@@ -111,7 +124,7 @@ class AccountLocalSeeder implements LocalDataSeeder {
                 hash,
                 BIRTH_DATE,
                 Role.STUDENT,
-                AccountStatus.ACTIVE,
+                status,
                 UUID.randomUUID(),
                 name,
                 pronounSet,
