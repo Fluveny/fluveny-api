@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.platform.security;
 
 import java.util.Objects;
+import java.util.Optional;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,11 +27,21 @@ public record SessionPrincipal(String userId, Role role) {
      *     UNAUTHENTICATED}); não acontece numa rota com {@code @RequiresRole} de papel de usuário
      */
     public static SessionPrincipal current() {
+        return find().orElseThrow(() ->
+                new AuthenticationCredentialsNotFoundException("Sem sessão de usuário."));
+    }
+
+    /**
+     * O usuário da sessão da requisição atual, se houver: para rota {@code @PublicRoute} que muda
+     * com a sessão (o {@code getStage}, história 2.4). Vazio sem sessão, com sessão vencida ou de
+     * conta fora de {@code ACTIVE} e com o token de deploy.
+     */
+    public static Optional<SessionPrincipal> find() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof SessionPrincipal p) {
-            return p;
+            return Optional.of(p);
         }
-        throw new AuthenticationCredentialsNotFoundException("Sem sessão de usuário.");
+        return Optional.empty();
     }
 
     /** Nunca o id inteiro no log. */

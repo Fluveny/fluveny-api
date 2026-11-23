@@ -15,7 +15,8 @@ public enum CompletionOutcome {
         this.outcome = outcome;
     }
 
-    Outcome outcome() {
+    /** O {@link Outcome} da conclusão. */
+    public Outcome outcome() {
         return this.outcome;
     }
 }

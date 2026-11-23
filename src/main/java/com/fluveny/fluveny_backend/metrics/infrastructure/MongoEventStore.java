@@ -39,6 +39,20 @@ class MongoEventStore implements EventStore {
         putIfPresent(document, "versionId", event.versionId());
         putIfPresent(document, "activityKey", event.activityKey());
         putIfPresent(document, "stageKey", event.stageKey());
+        putIfPresent(document, "outcome", event.outcome());
+        putIfPresent(document, "activityType", event.activityType());
+        if (event.resultPct() != null) {
+            document.append("resultPct", event.resultPct());
+        }
+        if (event.firstAttempt() != null) {
+            document.append("firstAttempt", event.firstAttempt());
+        }
+        if (event.extraHelp() != null) {
+            document.append("extraHelp", event.extraHelp());
+        }
+        if (event.studyTimeMs() != null) {
+            document.append("studyTimeMs", event.studyTimeMs());
+        }
         putIfPresent(document, STAGE_COMPLETION_KEY, event.stageCompletionKey());
         try {
             this.mongo.insert(document, COLLECTION);

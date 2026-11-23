@@ -211,6 +211,18 @@
         "required" : [ "data" ],
         "type" : "object"
       },
+      "ApiResponseStudentProgress" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StudentProgress"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "ApiResponseUnitStudentView" : {
         "properties" : {
           "data" : {
@@ -1585,6 +1597,125 @@
         "required" : [ "activityCount", "stageKey", "title" ],
         "type" : "object"
       },
+      "StudentActivityResult" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "GRADED", "SKIPPED", "VIEWED" ],
+            "type" : "string"
+          },
+          "resultPct" : {
+            "description" : "Ausente no VIEWED e no SKIPPED.",
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "studyTimeMs" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "unitKey" : {
+            "type" : "string"
+          },
+          "xpAwarded" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "outcome", "studyTimeMs", "unitKey", "xpAwarded" ],
+        "type" : "object"
+      },
+      "StudentAttempt" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "activityKey" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type" : "string"
+          },
+          "answer" : {
+            "$ref" : "#/components/schemas/Answer"
+          },
+          "attemptId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "studyTimeMs" : {
+            "format" : "int64",
+            "maximum" : 86400000,
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "type" : {
+            "minLength" : 1,
+            "type" : "string"
+          },
+          "versionId" : {
+            "pattern" : "^sha256:[0-9a-f]{64}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "answer", "attemptId", "studyTimeMs", "type", "versionId" ],
+        "type" : "object"
+      },
+      "StudentCompletion" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "activityKey" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type" : "string"
+          },
+          "attemptId" : {
+            "format" : "uuid",
+            "type" : "string"
+          },
+          "outcome" : {
+            "enum" : [ "VIEWED", "SKIPPED" ],
+            "type" : "string"
+          },
+          "studyTimeMs" : {
+            "format" : "int64",
+            "maximum" : 86400000,
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "versionId" : {
+            "pattern" : "^sha256:[0-9a-f]{64}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "attemptId", "outcome", "studyTimeMs", "versionId" ],
+        "type" : "object"
+      },
+      "StudentEvent" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "activityKey" : {
+            "maxLength" : 200,
+            "minLength" : 0,
+            "pattern" : "^[a-z0-9]+(-[a-z0-9]+)*$",
+            "type" : "string"
+          },
+          "type" : {
+            "enum" : [ "ACTIVITY_STARTED" ],
+            "type" : "string"
+          },
+          "versionId" : {
+            "pattern" : "^sha256:[0-9a-f]{64}$",
+            "type" : "string"
+          }
+        },
+        "required" : [ "activityKey", "type", "versionId" ],
+        "type" : "object"
+      },
       "StudentProfile" : {
         "properties" : {
           "email" : {
@@ -1604,6 +1735,23 @@
           }
         },
         "required" : [ "email", "emailConfirmed" ],
+        "type" : "object"
+      },
+      "StudentProgress" : {
+        "properties" : {
+          "results" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StudentActivityResult"
+            },
+            "type" : "array"
+          },
+          "xpTotal" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "results", "xpTotal" ],
         "type" : "object"
       },
       "UnitBundleContent" : {
@@ -2121,6 +2269,93 @@
         "tags" : [ "students" ]
       }
     },
+    "/api/v1/students/me/attempts" : {
+      "post" : {
+        "description" : "Corrige a Tentativa do Aluno e grava a primeira na Atividade, com o XP dela. expected e as justificativas só voltam no Acerto (100%). Reenviar o mesmo attemptId com o mesmo corpo devolve o XP gravado; outro attemptId (Tentar de novo, refazer) devolve o Feedback com xpAwarded 0, sem gravar. Tipo divergente ou expositivo: 400 INVALID_ANSWER; versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "operationId" : "submitStudentAttempt",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StudentAttempt"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttemptResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
+    "/api/v1/students/me/attempts/reveal" : {
+      "post" : {
+        "description" : "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e as justificativas, sem XP e sem gravar. Exige o registro do Aluno na Atividade (na Resposta Livre, uma Tentativa do Extra Help), senão 409 ATTEMPT_REQUIRED. Tipo divergente ou expositivo: 400 INVALID_ANSWER; versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "operationId" : "revealStudentAttempt",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StudentAttempt"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseAttemptResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
+    "/api/v1/students/me/completions" : {
+      "post" : {
+        "description" : "Conclui uma Atividade sem correção, sem XP, e grava a primeira na Atividade: os expositivos dialogue, cards, expression, grammar e free com VIEWED, e a speech pulada, com SKIPPED. Fora disso, 409 COMPLETION_NOT_ALLOWED. A conclusão VIEWED de um free devolve a modelAnswer. Versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "operationId" : "submitStudentCompletion",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StudentCompletion"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseCompletionResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
     "/api/v1/students/me/email-confirmation" : {
       "post" : {
         "description" : "Reenvia o e-mail de confirmação do Aluno da sessão: o link anterior deixa de valer. Responde 202 sem corpo; o e-mail sai pela fila, em até alguns minutos. Já confirmado: 409 EMAIL_ALREADY_CONFIRMED. Mais de 1 por minuto ou 5 por dia: 429 TOO_MANY_REQUESTS com Retry-After. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED.",
@@ -2128,6 +2363,47 @@
         "responses" : {
           "202" : {
             "description" : "Accepted"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
+    "/api/v1/students/me/events" : {
+      "post" : {
+        "description" : "Grava um evento do Aluno, sem PII, com a hora do servidor e o metricsId da conta. ACTIVITY_STARTED a cada abertura de Atividade, com versionId e activityKey; Atividade inexistente dá 404. Campo desconhecido dá 400. Responde 202 sem corpo. Se a gravação do evento falhar, 500. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "operationId" : "recordStudentEvent",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StudentEvent"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
+    "/api/v1/students/me/progress" : {
+      "get" : {
+        "description" : "O Progresso do Aluno da sessão: o XP total (soma de todos os registros, inclusive de Atividades removidas) e a primeira conclusão de cada Atividade. resultPct só no GRADED. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate.",
+        "operationId" : "getMyProgress",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStudentProgress"
+                }
+              }
+            },
+            "description" : "OK"
           }
         },
         "tags" : [ "students" ]
@@ -2179,6 +2455,7 @@
     },
     "/api/v1/units/{unitKey}/stages/{stageKey}" : {
       "get" : {
+        "description" : "O Estágio na visão do aluno. Sem sessão, só o primeiro Estágio da Unidade de menor order; os demais dão 401 UNAUTHENTICATED. Com sessão de Aluno, todos os Estágios publicados.",
         "operationId" : "getStage",
         "parameters" : [ {
           "in" : "path",

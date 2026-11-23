@@ -24,9 +24,10 @@ import tools.jackson.databind.node.ObjectNode;
  * Leitura do aluno sobre a versão {@code published} de cada Unidade (história 1.7). Tudo passa pelo
  * {@link StudentViewProjector}: nenhum campo {@code x-fluveny-secret} sai daqui.
  *
- * <p>Estágios liberados: só o primeiro Estágio da Unidade de menor {@code order}. Os demais
- * respondem {@code 401 UNAUTHENTICATED} até existir sessão; a 2.3 troca a regra por "sessão de
- * aluno libera os demais". A regra fica aqui porque a rota é {@code @PublicRoute}.
+ * <p>Estágios liberados: sem sessão, só o primeiro Estágio da Unidade de menor {@code order}; os
+ * demais respondem {@code 401 UNAUTHENTICATED}. Com sessão de Aluno, todos os Estágios publicados
+ * (AD-6, história 2.4; o {@code STAGE_LOCKED} da sequência chega na 2.5). A regra fica aqui porque
+ * a rota é {@code @PublicRoute}.
  */
 @Service
 public class PublishedUnits {
@@ -97,10 +98,12 @@ public class PublishedUnits {
     /**
      * O Estágio com as Atividades na visão do aluno.
      *
+     * @param student se a requisição tem sessão de Aluno (conta {@code ACTIVE}): libera todos os
+     *     Estágios publicados
      * @throws ApiException {@code 404} se a Unidade ou o Estágio não existem na versão publicada;
      *     {@code 401 UNAUTHENTICATED} se o Estágio não está liberado
      */
-    public StudentViews.Stage stage(String unitKey, String stageKey) {
+    public StudentViews.Stage stage(String unitKey, String stageKey, boolean student) {
         ContentKeys.key(unitKey);
         ContentKeys.key(stageKey);
         Published unit = find(unitKey);
@@ -113,7 +116,7 @@ public class PublishedUnits {
                                         HttpStatus.NOT_FOUND,
                                         "STAGE_NOT_FOUND",
                                         "O Estágio não existe na Unidade publicada."));
-        if (!isUnlocked(unit, stageKey)) {
+        if (!student && !isUnlocked(unit, stageKey)) {
             throw new ApiException(
                     ErrorCode.UNAUTHENTICATED,
                     "Entre na sua conta para acessar os próximos Estágios.");
@@ -139,7 +142,7 @@ public class PublishedUnits {
         return published().stream().findFirst().map(Published::unitKey);
     }
 
-    /** Só o primeiro Estágio da Unidade publicada de menor {@code order}. */
+    /** Sem sessão: só o primeiro Estágio da Unidade publicada de menor {@code order}. */
     private boolean isUnlocked(Published unit, String stageKey) {
         Optional<Published> first = published().stream().findFirst();
         return first.isPresent()

@@ -43,6 +43,16 @@ class ApplicationIT {
                 .isEqualTo(90L * 24 * 60 * 60);
     }
 
+    /** O índice único de {@code activity_results}, sem TTL, também da partida (história 2.4). */
+    @Test
+    void createsTheActivityResultsIndexOnStartup() {
+        List<Document> indexes = new ArrayList<>();
+        this.mongo.getCollection("activity_results").listIndexes().into(indexes);
+        Document unique = byName(indexes, "userId_unitKey_activityKey");
+        assertThat(unique.getBoolean("unique")).isTrue();
+        assertThat(unique.containsKey("expireAfterSeconds")).isFalse();
+    }
+
     /** O índice único parcial de {@code events} vem do {@code MetricsIndexes.OnStartup} (1.20). */
     @Test
     void createsTheEventsIndexOnStartup() {

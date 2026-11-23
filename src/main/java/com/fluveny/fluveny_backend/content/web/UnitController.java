@@ -3,6 +3,8 @@ package com.fluveny.fluveny_backend.content.web;
 import com.fluveny.fluveny_backend.content.publication.PublishedUnits;
 import com.fluveny.fluveny_backend.content.publication.StudentViews;
 import com.fluveny.fluveny_backend.platform.security.PublicRoute;
+import com.fluveny.fluveny_backend.platform.security.Role;
+import com.fluveny.fluveny_backend.platform.security.SessionPrincipal;
 import com.fluveny.fluveny_backend.platform.web.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -14,7 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Rotas do aluno sobre a versão {@code published} (história 1.7). Públicas e só com {@code
- * *StudentView}: nada aqui leva campo {@code x-fluveny-secret}.
+ * *StudentView}: nada aqui leva campo {@code x-fluveny-secret}. O {@code getStage} lê a sessão
+ * opcional: a de Aluno abre todos os Estágios publicados (AD-6, história 2.4).
  */
 @RestController
 @Tag(name = "units")
@@ -40,10 +43,19 @@ class UnitController {
         return ApiResponse.of(this.units.unit(unitKey));
     }
 
-    @Operation(operationId = "getStage")
+    @Operation(
+            operationId = "getStage",
+            description =
+                    "O Estágio na visão do aluno. Sem sessão, só o primeiro Estágio da Unidade de"
+                            + " menor order; os demais dão 401 UNAUTHENTICATED. Com sessão de Aluno,"
+                            + " todos os Estágios publicados.")
     @GetMapping("/{unitKey}/stages/{stageKey}")
     ApiResponse<StudentViews.Stage> stage(
             @PathVariable String unitKey, @PathVariable String stageKey) {
-        return ApiResponse.of(this.units.stage(unitKey, stageKey));
+        boolean student =
+                SessionPrincipal.find()
+                        .map(principal -> principal.role() == Role.STUDENT)
+                        .orElse(false);
+        return ApiResponse.of(this.units.stage(unitKey, stageKey, student));
     }
 }
