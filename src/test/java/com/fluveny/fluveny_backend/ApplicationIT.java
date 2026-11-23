@@ -53,6 +53,16 @@ class ApplicationIT {
         assertThat(unique.containsKey("expireAfterSeconds")).isFalse();
     }
 
+    /** O índice único de {@code unit_progress}, sem TTL, também da partida (história 2.5). */
+    @Test
+    void createsTheUnitProgressIndexOnStartup() {
+        List<Document> indexes = new ArrayList<>();
+        this.mongo.getCollection("unit_progress").listIndexes().into(indexes);
+        Document unique = byName(indexes, "userId_unitKey");
+        assertThat(unique.getBoolean("unique")).isTrue();
+        assertThat(unique.containsKey("expireAfterSeconds")).isFalse();
+    }
+
     /** O índice único parcial de {@code events} vem do {@code MetricsIndexes.OnStartup} (1.20). */
     @Test
     void createsTheEventsIndexOnStartup() {

@@ -13,7 +13,8 @@ import org.springframework.stereotype.Component;
  * Coleções e índices de {@code learning}, criados na partida e de forma idempotente (AD-3): em
  * {@code visitor_attempts}, o índice único por {@code (deviceId, activityKey)} e o TTL de 90 dias
  * em {@code createdAt} (história 1.12); em {@code activity_results}, o índice único por {@code
- * (userId, unitKey, activityKey)}, sem TTL (história 2.4).
+ * (userId, unitKey, activityKey)}, sem TTL (história 2.4); em {@code unit_progress}, o índice único
+ * por {@code (userId, unitKey)}, sem TTL (história 2.5).
  *
  * <p>Testes {@code @SpringBootTest} sem Mongo desligam com {@code
  * fluveny.mongo.indexes-on-startup=false}; o carregador local chama {@link #ensure()} de novo,
@@ -31,6 +32,8 @@ public class LearningIndexes {
 
     static final String ACTIVITY_RESULTS_UNIQUE_INDEX = "userId_unitKey_activityKey";
 
+    static final String UNIT_PROGRESS_UNIQUE_INDEX = "userId_unitKey";
+
     private final MongoTemplate mongo;
 
     LearningIndexes(MongoTemplate mongo) {
@@ -41,6 +44,22 @@ public class LearningIndexes {
     public void ensure() {
         ensureVisitorAttempts();
         ensureActivityResults();
+        ensureUnitProgress();
+    }
+
+    private void ensureUnitProgress() {
+        String collection = MongoUnitProgressStore.COLLECTION;
+        if (!this.mongo.collectionExists(collection)) {
+            this.mongo.createCollection(collection);
+        }
+        this.mongo
+                .indexOps(collection)
+                .createIndex(
+                        new Index()
+                                .on("userId", Sort.Direction.ASC)
+                                .on("unitKey", Sort.Direction.ASC)
+                                .unique()
+                                .named(UNIT_PROGRESS_UNIQUE_INDEX));
     }
 
     private void ensureActivityResults() {

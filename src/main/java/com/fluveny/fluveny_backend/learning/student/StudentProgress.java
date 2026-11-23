@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * O Progresso cru do Aluno (história 2.4): o XP total e um registro por Atividade concluída.
- * Posição, painel e médias chegam na 2.5.
+ * Posição, sequência e médias ficam no painel ({@link StudentDashboard}, história 2.5).
  *
  * @param xpTotal a soma do {@code xpAwarded} de todos os registros, inclusive de Atividades
  *     removidas do conteúdo; calculada a cada leitura

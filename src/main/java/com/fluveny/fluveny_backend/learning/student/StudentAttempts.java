@@ -29,16 +29,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
- * Tentativas, "Ver resposta", conclusões e Progresso do Aluno (história 2.4, AD-7, AD-9). A
- * correção é a mesma do Visitante ({@link AttemptGrading}), com o pronome da conta; qualquer
- * Estágio e qualquer versão existente valem (sem {@code STAGE_LOCKED} até a 2.5).
+ * Tentativas, "Ver resposta", conclusões e Progresso do Aluno (histórias 2.4 e 2.5, AD-7, AD-9). A
+ * correção é a mesma do Visitante ({@link AttemptGrading}), com o pronome da conta; qualquer versão
+ * existente vale. A sequência vale sobre a versão publicada: Tentativa, "Ver resposta" e conclusão
+ * em Estágio bloqueado dão {@code 409 STAGE_LOCKED} antes de corrigir, sem gravar ({@link
+ * StageSequence}).
  *
  * <p>A primeira Tentativa ou conclusão do Aluno numa Atividade fica em {@code activity_results},
  * com o XP dela, e publica o {@code ACTIVITY_COMPLETED} ({@code firstAttempt: true}). Reenviar o
  * mesmo {@code attemptId} com o mesmo {@code outcome} e {@code resultPct} devolve o XP gravado;
  * outro {@code attemptId} ("Tentar de novo", refazer) ou outro corpo devolve o Feedback normal com
  * XP 0, sem gravar nem publicar. Duas primeiras ao mesmo tempo esbarram no índice único, e só a que
- * gravou publica.
+ * gravou publica e confere a conclusão do Estágio.
  *
  * <p>Sem transação (chega na 2.6): uma falha ao publicar vai para o log e o Sentry e não muda a
  * resposta nem desfaz a gravação. Cada escrita conta no limite por {@code userId}.
@@ -58,6 +60,8 @@ class StudentAttempts {
 
     private final MetricsPublisher metrics;
 
+    private final StageSequence sequence;
+
     private final Clock clock;
 
     StudentAttempts(
@@ -66,12 +70,14 @@ class StudentAttempts {
             StudentIdentities identities,
             StudentWriteLimit limit,
             MetricsPublisher metrics,
+            StageSequence sequence,
             Clock clock) {
         this.activities = activities;
         this.store = store;
         this.identities = identities;
         this.limit = limit;
         this.metrics = metrics;
+        this.sequence = sequence;
         this.clock = clock;
     }
 
@@ -80,6 +86,8 @@ class StudentAttempts {
         this.limit.acquire(userId);
         ContentActivities.Found found =
                 this.activities.find(attempt.versionId(), attempt.activityKey());
+        this.sequence.requireUnlocked(
+                userId, found.unitKey(), found.activity().activityKey(), found.stageKey());
         StudentIdentity identity = this.identities.get(userId);
         GradeResult result =
                 AttemptGrading.grade(found, attempt.type(), attempt.answer(), vars(identity));
@@ -105,6 +113,8 @@ class StudentAttempts {
         this.limit.acquire(userId);
         ContentActivities.Found found =
                 this.activities.find(attempt.versionId(), attempt.activityKey());
+        this.sequence.requireUnlocked(
+                userId, found.unitKey(), found.activity().activityKey(), found.stageKey());
         StudentIdentity identity = this.identities.get(userId);
         GradeResult result =
                 AttemptGrading.grade(found, attempt.type(), attempt.answer(), vars(identity));
@@ -126,6 +136,8 @@ class StudentAttempts {
         this.limit.acquire(userId);
         ContentActivities.Found found =
                 this.activities.find(completion.versionId(), completion.activityKey());
+        this.sequence.requireUnlocked(
+                userId, found.unitKey(), found.activity().activityKey(), found.stageKey());
         Outcome outcome = completion.outcome().outcome();
         if (!LearningActivityTypes.allowsCompletion(found.activity().type(), outcome)) {
             throw new ApiException(
@@ -203,6 +215,7 @@ class StudentAttempts {
                         Instant.now(this.clock).truncatedTo(ChronoUnit.MILLIS));
         if (this.store.insertIfAbsent(first)) {
             publishCompleted(identity, first);
+            this.sequence.afterFirstRecord(userId, found.unitKey(), identity.metricsId());
             return first.xpAwarded();
         }
         // Perdeu a corrida: vale o que a outra gravou.
