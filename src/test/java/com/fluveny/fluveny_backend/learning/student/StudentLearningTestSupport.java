@@ -56,11 +56,12 @@ import tools.jackson.databind.node.ObjectNode;
 /**
  * Base dos testes de rota do Aluno (história 2.4), sem Mongo: {@code users}, {@code sessions} e
  * {@code events} em memória ({@link InMemoryAccounts}); {@code unit_versions}, {@code
- * unit_pointers} e {@code activity_results} também ({@link InMemoryLearning}). O conteúdo entra
- * pelo mesmo {@link PublishUnitVersion} da rota admin; a fixture {@code unit-1} tem {@code
- * s1-greetings} (2 itens, xp 10), o Diálogo {@code s1-hi-alex}, a Fala {@code s1-your-turn}, a
- * Resposta Livre {@code s1-about-you} no Estágio 1 e {@code s2-flags} (xp 5) no Estágio 2. Cada
- * teste tem um Aluno próprio, então o limite por {@code userId} não vaza entre testes.
+ * unit_pointers}, {@code activity_results} e {@code unit_progress} também ({@link
+ * InMemoryLearning}). O conteúdo entra pelo mesmo {@link PublishUnitVersion} da rota admin; a
+ * fixture {@code unit-1} tem {@code s1-greetings} (2 itens, xp 10), o Diálogo {@code s1-hi-alex}, a
+ * Fala {@code s1-your-turn}, a Resposta Livre {@code s1-about-you} no Estágio 1 e {@code s2-flags}
+ * (xp 5) no Estágio 2. Cada teste tem um Aluno próprio, então o limite por {@code userId} não vaza
+ * entre testes.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -85,6 +86,8 @@ abstract class StudentLearningTestSupport {
 
     static final String PROGRESS = BASE + "/progress";
 
+    static final String DASHBOARD = BASE + "/dashboard";
+
     static final String DIALOGUE = "s1-hi-alex";
 
     static final String SPEECH = "s1-your-turn";
@@ -96,6 +99,24 @@ abstract class StudentLearningTestSupport {
     static final String FREE_MEET = "s1-about-you-meet";
 
     static final Instant NOW = Instant.parse("2026-11-23T12:00:30Z");
+
+    static final String STAGE_1 = "s1-meet-alex";
+
+    static final String STAGE_2 = "s2-where-from";
+
+    /** As Atividades do Estágio 1 da fixture, na ordem do conteúdo. */
+    static final List<String> STAGE_1_ACTIVITIES =
+            List.of(
+                    "s1-greetings",
+                    DIALOGUE,
+                    "s1-greeting-cards",
+                    "s1-nice-to-meet-you",
+                    SPEECH,
+                    "s1-speech-bubbles",
+                    "s1-gaps-bank",
+                    "s1-gaps-typed",
+                    FREE,
+                    "s1-grammar-time");
 
     static final JsonMapper MAPPER = JsonMapper.builder().build();
 
@@ -165,6 +186,37 @@ abstract class StudentLearningTestSupport {
                                 null,
                                 null))
                 .orElseThrow();
+    }
+
+    /**
+     * Grava direto em {@code activity_results}, sem passar pela rota (nem pela reconciliação): um
+     * registro {@code VIEWED} sem XP do Aluno deste teste.
+     */
+    void stored(String activityKey, String stageKey) {
+        this.learning.results.put(
+                InMemoryLearning.key(this.userId, "unit-1", activityKey),
+                new ActivityResult(
+                        this.userId,
+                        "unit-1",
+                        activityKey,
+                        stageKey,
+                        this.versionId,
+                        "dialogue",
+                        UUID.randomUUID(),
+                        com.fluveny.fluveny_backend.learning.grading.Outcome.VIEWED,
+                        null,
+                        0,
+                        100,
+                        false,
+                        NOW));
+    }
+
+    /** Registros diretos de todo o Estágio 1, menos {@code except}. */
+    void storedStageOne(String... except) {
+        List<String> skip = List.of(except);
+        STAGE_1_ACTIVITIES.stream()
+                .filter(key -> !skip.contains(key))
+                .forEach(key -> stored(key, STAGE_1));
     }
 
     void setStatus(String userId, AccountStatus status) {
@@ -300,6 +352,12 @@ abstract class StudentLearningTestSupport {
         final Map<String, ActivityResult> results = new ConcurrentHashMap<>();
 
         /**
+         * {@code unit_progress}: as conclusões por {@code userId|unitKey}, e por {@code stageKey}.
+         */
+        final Map<String, Map<String, UnitProgress.StageCompletion>> progress =
+                new ConcurrentHashMap<>();
+
+        /**
          * Quando ligado, o próximo {@code find} responde vazio e desliga: simula a corrida em que
          * outra requisição grava entre a leitura e o {@code insertIfAbsent}.
          */
@@ -310,6 +368,7 @@ abstract class StudentLearningTestSupport {
             this.versions.clear();
             this.pointers.clear();
             this.results.clear();
+            this.progress.clear();
             this.hideNextFind.set(false);
         }
 
@@ -354,6 +413,46 @@ abstract class StudentLearningTestSupport {
                         }
                     }
                     found.sort(Comparator.comparing(ActivityResult::createdAt));
+                    return found;
+                }
+            };
+        }
+
+        @Bean
+        @Primary
+        UnitProgressStore inMemoryUnitProgress() {
+            return new UnitProgressStore() {
+                @Override
+                public boolean completeStage(
+                        String userId,
+                        String unitKey,
+                        String stageKey,
+                        String versionId,
+                        Instant completedAt) {
+                    return InMemoryLearning.this
+                                    .progress
+                                    .computeIfAbsent(
+                                            userId + "|" + unitKey,
+                                            key -> new ConcurrentHashMap<>())
+                                    .putIfAbsent(
+                                            stageKey,
+                                            new UnitProgress.StageCompletion(
+                                                    versionId, completedAt))
+                            == null;
+                }
+
+                @Override
+                public List<UnitProgress> findByUser(String userId) {
+                    List<UnitProgress> found = new ArrayList<>();
+                    InMemoryLearning.this.progress.forEach((key, stages) -> {
+                        if (key.startsWith(userId + "|")) {
+                            found.add(
+                                    new UnitProgress(
+                                            userId,
+                                            key.substring(userId.length() + 1),
+                                            Map.copyOf(stages)));
+                        }
+                    });
                     return found;
                 }
             };

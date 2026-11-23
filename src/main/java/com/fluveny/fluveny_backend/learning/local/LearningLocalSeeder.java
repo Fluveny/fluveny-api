@@ -7,9 +7,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
- * Carregador local de {@code learning} (AD-18). Não grava dados: {@code visitor_attempts} e {@code
- * activity_results} nascem das Tentativas do App (sem Progresso de exemplo, história 2.4). Só
- * recria os índices, que o {@code mise run reset} apaga com o banco.
+ * Carregador local de {@code learning} (AD-18). Não grava dados: {@code visitor_attempts}, {@code
+ * activity_results} e {@code unit_progress} nascem das Tentativas do App (sem Progresso de exemplo,
+ * histórias 2.4 e 2.5). Só recria os índices, que o {@code mise run reset} apaga com o banco.
  */
 @Component
 @Profile("local")

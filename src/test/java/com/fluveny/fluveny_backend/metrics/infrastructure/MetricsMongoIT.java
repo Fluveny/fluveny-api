@@ -211,6 +211,36 @@ class MetricsMongoIT {
                 .isEqualTo(3);
     }
 
+    /** O {@code STAGE_COMPLETED} do Aluno (história 2.5): uma vez por {@code metricsId}. */
+    @Test
+    void aStudentStageCompletesOncePerMetricsId() {
+        UUID metricsId = UUID.randomUUID();
+        this.publisher.studentStageCompleted(metricsId, "unit-1", VERSION, "s1-meet-alex");
+        this.publisher.studentStageCompleted(
+                metricsId, "unit-1", "sha256:" + "b".repeat(64), "s1-meet-alex");
+        this.publisher.studentStageCompleted(UUID.randomUUID(), "unit-1", VERSION, "s1-meet-alex");
+
+        List<Document> events = new ArrayList<>();
+        this.mongo
+                .getCollection(MongoEventStore.COLLECTION)
+                .find(new Document("metricsId", metricsId.toString()))
+                .into(events);
+        assertThat(events).hasSize(1);
+        assertThat(events.getFirst().keySet())
+                .containsExactlyInAnyOrder(
+                        "_id",
+                        "type",
+                        "occurredAt",
+                        "metricsId",
+                        "unitKey",
+                        "versionId",
+                        "stageKey",
+                        "stageCompletionKey");
+        assertThat(events.getFirst().getString("versionId")).isEqualTo(VERSION);
+        assertThat(this.mongo.getCollection(MongoEventStore.COLLECTION).countDocuments())
+                .isEqualTo(2);
+    }
+
     @Test
     void simultaneousStageCompletionsStoreExactlyOne() throws Exception {
         UUID device = UUID.randomUUID();

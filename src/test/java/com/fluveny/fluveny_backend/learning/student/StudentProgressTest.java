@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.learning.student;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -7,6 +8,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fluveny.fluveny_backend.account.AccountStatus;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
+import com.fluveny.fluveny_backend.metrics.EventType;
+import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
 import jakarta.servlet.http.Cookie;
 import java.time.Instant;
 import java.util.UUID;
@@ -56,7 +59,14 @@ class StudentProgressTest extends StudentLearningTestSupport {
         send(ATTEMPTS, halfRight()).andExpect(status().isOk());
         send(COMPLETIONS, completion(DIALOGUE, "VIEWED")).andExpect(status().isOk());
         send(COMPLETIONS, completion(SPEECH, "SKIPPED")).andExpect(status().isOk());
-        send(ATTEMPTS, attempt("s2-flags", "s2-flags-brazil", "brazil")).andExpect(status().isOk());
+        // O Estágio 2 só abre depois do 1 (história 2.5): o resto do Estágio 1 entra direto.
+        storedStageOne("s1-greetings", DIALOGUE, SPEECH);
+        send(ATTEMPTS, attempt("s2-flags", "s2-flags-brazil", "brazil"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.xpAwarded").value(5));
+        assertThat(events(EventType.ACTIVITY_COMPLETED))
+                .extracting(Event::activityKey)
+                .contains("s2-flags");
         // Uma Atividade que não existe mais no conteúdo continua contando.
         this.learning.results.put(
                 InMemoryLearning.key(this.userId, "unit-1", "s1-removida"),
@@ -78,7 +88,7 @@ class StudentProgressTest extends StudentLearningTestSupport {
         progress(this.token)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.xpTotal").value(5 + 5 + 7))
-                .andExpect(jsonPath("$.data.results.length()").value(5))
+                .andExpect(jsonPath("$.data.results.length()").value(12))
                 .andExpect(
                         jsonPath("$.data.results[?(@.activityKey == 's1-hi-alex')].resultPct")
                                 .isEmpty())

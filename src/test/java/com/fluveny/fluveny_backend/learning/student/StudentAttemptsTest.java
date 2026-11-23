@@ -264,8 +264,10 @@ class StudentAttemptsTest extends StudentLearningTestSupport {
         send(REVEAL, extraHelp(FREE_IM, "I'm", FREE_MEET, "is")).andExpect(status().isOk());
     }
 
+    /** Com o Estágio 1 coberto, o Estágio 2 está liberado (história 2.5). */
     @Test
-    void anAttemptInStageTwoIsAcceptedAndStored() throws Exception {
+    void anAttemptInStageTwoIsAcceptedAndStoredOnceStageOneIsCovered() throws Exception {
+        storedStageOne();
         send(ATTEMPTS, attempt("s2-flags", "s2-flags-brazil", "brazil"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.resultPct").value(100))

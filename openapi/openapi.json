@@ -199,6 +199,18 @@
         "required" : [ "data" ],
         "type" : "object"
       },
+      "ApiResponseStudentDashboard" : {
+        "properties" : {
+          "data" : {
+            "$ref" : "#/components/schemas/StudentDashboard"
+          },
+          "message" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "data" ],
+        "type" : "object"
+      },
       "ApiResponseStudentProfile" : {
         "properties" : {
           "data" : {
@@ -1726,6 +1738,121 @@
         "required" : [ "activityKey", "attemptId", "outcome", "studyTimeMs", "versionId" ],
         "type" : "object"
       },
+      "StudentDashboard" : {
+        "properties" : {
+          "badgeCount" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "name" : {
+            "description" : "O nome da conta. Ausente se o Aluno não informou.",
+            "type" : "string"
+          },
+          "units" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StudentDashboardUnit"
+            },
+            "type" : "array"
+          },
+          "xpTotal" : {
+            "format" : "int64",
+            "minimum" : 0,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "badgeCount", "units", "xpTotal" ],
+        "type" : "object"
+      },
+      "StudentDashboardNext" : {
+        "properties" : {
+          "activityKey" : {
+            "type" : "string"
+          },
+          "position" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          },
+          "stageKey" : {
+            "type" : "string"
+          },
+          "total" : {
+            "format" : "int32",
+            "minimum" : 1,
+            "type" : "integer"
+          }
+        },
+        "required" : [ "activityKey", "position", "stageKey", "total" ],
+        "type" : "object"
+      },
+      "StudentDashboardStage" : {
+        "properties" : {
+          "stageKey" : {
+            "type" : "string"
+          },
+          "state" : {
+            "$ref" : "#/components/schemas/StudentStageState"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          }
+        },
+        "required" : [ "stageKey", "state", "title" ],
+        "type" : "object"
+      },
+      "StudentDashboardUnit" : {
+        "properties" : {
+          "averageResultPct" : {
+            "description" : "A média arredondada do resultPct das Atividades corrigidas (GRADED) da versão publicada. Puladas e expositivas não entram. Ausente sem nenhuma.",
+            "format" : "int32",
+            "maximum" : 100,
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "comingSoon" : {
+            "type" : "boolean"
+          },
+          "next" : {
+            "$ref" : "#/components/schemas/StudentDashboardNext",
+            "description" : "A primeira Atividade sem registro do Estágio CURRENT. Ausente quando não há Estágio CURRENT."
+          },
+          "order" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "stages" : {
+            "items" : {
+              "$ref" : "#/components/schemas/StudentDashboardStage"
+            },
+            "type" : "array"
+          },
+          "stagesCompleted" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "stagesTotal" : {
+            "format" : "int32",
+            "minimum" : 0,
+            "type" : "integer"
+          },
+          "started" : {
+            "type" : "boolean"
+          },
+          "title" : {
+            "$ref" : "#/components/schemas/ContentText"
+          },
+          "unitKey" : {
+            "type" : "string"
+          },
+          "versionId" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "comingSoon", "order", "stages", "stagesCompleted", "stagesTotal", "started", "title", "unitKey", "versionId" ],
+        "type" : "object"
+      },
       "StudentEvent" : {
         "additionalProperties" : false,
         "properties" : {
@@ -1788,6 +1915,10 @@
         },
         "required" : [ "results", "xpTotal" ],
         "type" : "object"
+      },
+      "StudentStageState" : {
+        "enum" : [ "COMPLETED", "CURRENT", "LOCKED" ],
+        "type" : "string"
       },
       "UnitBundleContent" : {
         "properties" : {
@@ -2350,7 +2481,7 @@
     },
     "/api/v1/students/me/attempts" : {
       "post" : {
-        "description" : "Corrige a Tentativa do Aluno e grava a primeira na Atividade, com o XP dela. expected e as justificativas só voltam no Acerto (100%). Reenviar o mesmo attemptId com o mesmo corpo devolve o XP gravado; outro attemptId (Tentar de novo, refazer) devolve o Feedback com xpAwarded 0, sem gravar. Tipo divergente ou expositivo: 400 INVALID_ANSWER; versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "description" : "Corrige a Tentativa do Aluno e grava a primeira na Atividade, com o XP dela. expected e as justificativas só voltam no Acerto (100%). Reenviar o mesmo attemptId com o mesmo corpo devolve o XP gravado; outro attemptId (Tentar de novo, refazer) devolve o Feedback com xpAwarded 0, sem gravar. Tipo divergente ou expositivo: 400 INVALID_ANSWER; versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Estágio bloqueado na versão publicada (o anterior não está concluído): 409 STAGE_LOCKED, sem gravar nada (na Tentativa e no Ver resposta, antes de corrigir). O Estágio é o da Atividade na versão publicada, mesmo com versionId antigo; Atividade ou Estágio fora da versão publicada não trava. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
         "operationId" : "submitStudentAttempt",
         "requestBody" : {
           "content" : {
@@ -2379,7 +2510,7 @@
     },
     "/api/v1/students/me/attempts/reveal" : {
       "post" : {
-        "description" : "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e as justificativas, sem XP e sem gravar. Exige o registro do Aluno na Atividade (na Resposta Livre, uma Tentativa do Extra Help), senão 409 ATTEMPT_REQUIRED. Tipo divergente ou expositivo: 400 INVALID_ANSWER; versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "description" : "Ver resposta: corrige a mesma Tentativa e devolve o Resultado com expected e as justificativas, sem XP e sem gravar. Exige o registro do Aluno na Atividade (na Resposta Livre, uma Tentativa do Extra Help), senão 409 ATTEMPT_REQUIRED. Tipo divergente ou expositivo: 400 INVALID_ANSWER; versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Estágio bloqueado na versão publicada (o anterior não está concluído): 409 STAGE_LOCKED, sem gravar nada (na Tentativa e no Ver resposta, antes de corrigir). O Estágio é o da Atividade na versão publicada, mesmo com versionId antigo; Atividade ou Estágio fora da versão publicada não trava. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
         "operationId" : "revealStudentAttempt",
         "requestBody" : {
           "content" : {
@@ -2408,7 +2539,7 @@
     },
     "/api/v1/students/me/completions" : {
       "post" : {
-        "description" : "Conclui uma Atividade sem correção, sem XP, e grava a primeira na Atividade: os expositivos dialogue, cards, expression, grammar e free com VIEWED, e a speech pulada, com SKIPPED. Fora disso, 409 COMPLETION_NOT_ALLOWED. A conclusão VIEWED de um free devolve a modelAnswer. Versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
+        "description" : "Conclui uma Atividade sem correção, sem XP, e grava a primeira na Atividade: os expositivos dialogue, cards, expression, grammar e free com VIEWED, e a speech pulada, com SKIPPED. Fora disso, 409 COMPLETION_NOT_ALLOWED. A conclusão VIEWED de um free devolve a modelAnswer. Versão ou Atividade inexistente: 404. Campo desconhecido dá 400. Estágio bloqueado na versão publicada (o anterior não está concluído): 409 STAGE_LOCKED, sem gravar nada (na Tentativa e no Ver resposta, antes de corrigir). O Estágio é o da Atividade na versão publicada, mesmo com versionId antigo; Atividade ou Estágio fora da versão publicada não trava. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate. Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403 CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com Retry-After.",
         "operationId" : "submitStudentCompletion",
         "requestBody" : {
           "content" : {
@@ -2426,6 +2557,25 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/ApiResponseCompletionResult"
+                }
+              }
+            },
+            "description" : "OK"
+          }
+        },
+        "tags" : [ "students" ]
+      }
+    },
+    "/api/v1/students/me/dashboard" : {
+      "get" : {
+        "description" : "O painel do Aluno da sessão, calculado a cada leitura sobre a versão publicada de cada Unidade: XP total (o mesmo do /progress), Badges, Estágios concluídos de total, Resultado médio, o estado de cada Estágio (COMPLETED, CURRENT, LOCKED) e onde retomar (next). Atividade removida do conteúdo só conta no XP. name ausente se o Aluno não informou. A leitura reconcilia as conclusões: um Estágio coberto e ainda não gravado (por exemplo, porque uma versão nova removeu a Atividade pendente) é gravado nela, com completedAt na hora da leitura, e publica o STAGE_COMPLETED. Sem sessão, com sessão vencida ou de conta fora de ACTIVE: 401 com WWW-Authenticate.",
+        "operationId" : "getMyDashboard",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiResponseStudentDashboard"
                 }
               }
             },
@@ -2534,7 +2684,7 @@
     },
     "/api/v1/units/{unitKey}/stages/{stageKey}" : {
       "get" : {
-        "description" : "O Estágio na visão do aluno. Sem sessão, só o primeiro Estágio da Unidade de menor order; os demais dão 401 UNAUTHENTICATED. Com sessão de Aluno, todos os Estágios publicados.",
+        "description" : "O Estágio na visão do aluno. Sem sessão, só o primeiro Estágio da Unidade de menor order; os demais dão 401 UNAUTHENTICATED. Com sessão de Aluno, todos os Estágios publicados, inclusive os que o painel mostra bloqueados: a sequência (409 STAGE_LOCKED) vale na Tentativa, no Ver resposta e na conclusão.",
         "operationId" : "getStage",
         "parameters" : [ {
           "in" : "path",

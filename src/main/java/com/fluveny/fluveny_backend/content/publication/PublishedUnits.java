@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.content.publication;
 
+import com.fluveny.fluveny_backend.content.UnitStructure;
 import com.fluveny.fluveny_backend.content.activity.ActivityStudentView;
 import com.fluveny.fluveny_backend.content.activity.ContentText;
 import com.fluveny.fluveny_backend.content.projection.StudentViewProjector;
@@ -26,8 +27,9 @@ import tools.jackson.databind.node.ObjectNode;
  *
  * <p>Estágios liberados: sem sessão, só o primeiro Estágio da Unidade de menor {@code order}; os
  * demais respondem {@code 401 UNAUTHENTICATED}. Com sessão de Aluno, todos os Estágios publicados
- * (AD-6, história 2.4; o {@code STAGE_LOCKED} da sequência chega na 2.5). A regra fica aqui porque
- * a rota é {@code @PublicRoute}.
+ * (AD-6, história 2.4). A sequência ({@code STAGE_LOCKED}, história 2.5) vale onde o Progresso é
+ * gravado, em {@code learning}, e não aqui: {@code content} não lê o Progresso (AD-3) e a visão do
+ * aluno não tem segredo. A regra fica aqui porque a rota é {@code @PublicRoute}.
  */
 @Service
 public class PublishedUnits {
@@ -140,6 +142,28 @@ public class PublishedUnits {
      */
     public Optional<String> firstUnitKey() {
         return published().stream().findFirst().map(Published::unitKey);
+    }
+
+    /**
+     * A estrutura ordenada das Unidades publicadas, por {@code order} (história 2.5): a mesma
+     * versão e ordem do {@link #list()}, com as {@code activityKey}s de cada Estágio.
+     */
+    public List<UnitStructure> structures() {
+        return published().stream().map(this::toStructure).toList();
+    }
+
+    private UnitStructure toStructure(Published unit) {
+        List<UnitStructure.Stage> stages = new ArrayList<>();
+        for (JsonNode stage : unit.stages()) {
+            List<String> activityKeys = new ArrayList<>();
+            stage.get("activities")
+                    .forEach(activity -> activityKeys.add(activity.get("activityKey").asString()));
+            stages.add(
+                    new UnitStructure.Stage(
+                            stage.get("stageKey").asString(), title(stage), activityKeys));
+        }
+        return new UnitStructure(
+                unit.unitKey(), unit.versionId(), unit.order(), title(unit.unit()), stages);
     }
 
     /** Sem sessão: só o primeiro Estágio da Unidade publicada de menor {@code order}. */

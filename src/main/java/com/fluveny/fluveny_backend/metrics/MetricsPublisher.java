@@ -73,6 +73,27 @@ public class MetricsPublisher {
     }
 
     /**
+     * O Estágio concluído pelo Aluno (história 2.5), publicado por quem gravou a conclusão em
+     * {@code unit_progress}: o mesmo {@code STAGE_COMPLETED} do Visitante, com o {@code metricsId}
+     * no lugar do {@code deviceId}. Grava uma vez por {@code (metricsId, unitKey, stageKey)}; a
+     * repetição, inclusive concorrente, é ignorada pelo índice único.
+     */
+    public void studentStageCompleted(
+            UUID metricsId, String unitKey, String versionId, String stageKey) {
+        append(
+                new Event(
+                        EventType.STAGE_COMPLETED,
+                        now(),
+                        null,
+                        required(unitKey, "unitKey"),
+                        required(versionId, "versionId"),
+                        null,
+                        required(stageKey, "stageKey"),
+                        metricsId(metricsId),
+                        null));
+    }
+
+    /**
      * Uma abertura de Atividade pelo Aluno (história 2.4): o mesmo {@code ACTIVITY_STARTED} do
      * Visitante, com o {@code metricsId} no lugar do {@code deviceId}.
      */
