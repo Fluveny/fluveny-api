@@ -3,6 +3,8 @@ package com.fluveny.fluveny_backend.account;
 import com.fluveny.fluveny_backend.account.infrastructure.User;
 import com.fluveny.fluveny_backend.account.infrastructure.UserStore;
 import com.fluveny.fluveny_backend.metrics.MetricsPublisher;
+import com.fluveny.fluveny_backend.platform.events.AfterCommit;
+import com.fluveny.fluveny_backend.platform.events.StudentRegistered;
 import com.fluveny.fluveny_backend.platform.security.Role;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import com.fluveny.fluveny_backend.platform.web.ErrorCode;
@@ -19,18 +21,22 @@ import java.util.Map;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Cadastro de Aluno adulto (história 2.1, FR-2, AD-13). Confere senha e idade, grava a conta em
- * {@code users} já {@code ACTIVE}, publica o {@code STUDENT_REGISTERED} e emite a confirmação de
- * e-mail (história 2.2). O e-mail repetido esbarra no índice único, inclusive em dois cadastros ao
+ * Cadastro de Aluno adulto (histórias 2.1 e 2.6, FR-2, FR-7, AD-3, AD-10, AD-13). Confere senha,
+ * idade e país, grava a conta em {@code users} já {@code ACTIVE} e publica o evento {@link
+ * StudentRegistered}, que {@code learning} trata na mesma thread e na mesma transação, migrando o
+ * Progresso do Visitante. O e-mail repetido esbarra no índice único, inclusive em dois cadastros ao
  * mesmo tempo.
  *
- * <p>Sem transação: a conta é gravada primeiro, e quem chama ({@code auth}) cria a sessão depois.
- * Uma falha ao publicar o evento ou ao emitir a confirmação vai para o log e o Sentry e não desfaz
- * a conta; o Aluno pede outro link pelo reenvio.
+ * <p>Roda numa transação ({@code REQUIRED}): quem chama ({@code auth}) abre a transação, que cobre
+ * a conta, a migração e a sessão; qualquer falha desfaz tudo. O {@code STUDENT_REGISTERED} e a
+ * confirmação de e-mail (história 2.2) saem só depois do commit; uma falha neles vai para o log e o
+ * Sentry e não muda a resposta, e o Aluno pede outro link pelo reenvio.
  */
 @Service
 public class RegisterStudent {
@@ -58,6 +64,10 @@ public class RegisterStudent {
 
     private final StudentProfiles profiles;
 
+    private final Countries countries;
+
+    private final ApplicationEventPublisher events;
+
     private final Clock clock;
 
     RegisterStudent(
@@ -66,34 +76,75 @@ public class RegisterStudent {
             MetricsPublisher metrics,
             EmailConfirmation confirmation,
             StudentProfiles profiles,
+            Countries countries,
+            ApplicationEventPublisher events,
             Clock clock) {
         this.users = users;
         this.passwords = passwords;
         this.metrics = metrics;
         this.confirmation = confirmation;
         this.profiles = profiles;
+        this.countries = countries;
+        this.events = events;
         this.clock = clock;
     }
 
     /**
      * Cria a conta.
      *
-     * @throws ApiException {@code 400 VALIDATION_FAILED} (senha, data de nascimento), {@code 422
-     *     AGE_BELOW_MINIMUM}, {@code 422 GUARDIAN_CONSENT_REQUIRED} ou {@code 409
+     * @throws ApiException {@code 400 VALIDATION_FAILED} (senha, data de nascimento, país), {@code
+     *     422 AGE_BELOW_MINIMUM}, {@code 422 GUARDIAN_CONSENT_REQUIRED} ou {@code 409
      *     EMAIL_ALREADY_REGISTERED}; em todos, nada é gravado
      */
+    @Transactional
     public RegisteredStudent register(NewStudent student) {
+        return insert(prepare(student));
+    }
+
+    /**
+     * Grava a conta já conferida por {@link #prepare}, na transação de quem chama: o {@code auth}
+     * confere e roda o BCrypt uma vez, fora da transação, e só refaz esta parte se a transação
+     * precisar ser repetida.
+     *
+     * @throws ApiException {@code 409 EMAIL_ALREADY_REGISTERED}; nada é gravado
+     */
+    @Transactional
+    public RegisteredStudent register(PreparedStudent prepared) {
+        return insert(prepared);
+    }
+
+    /**
+     * Confere senha, idade e país e calcula o hash da senha, sem gravar nada e fora de transação.
+     *
+     * @throws ApiException {@code 400 VALIDATION_FAILED} (senha, data de nascimento, país), {@code
+     *     422 AGE_BELOW_MINIMUM} ou {@code 422 GUARDIAN_CONSENT_REQUIRED}
+     */
+    public PreparedStudent prepare(NewStudent student) {
         if (PasswordPolicy.violation(student.password()).isPresent()) {
             throw invalid("password", PasswordPolicy.MESSAGE);
         }
         checkAge(student.birthDate());
-        String email = normalizeEmail(student.email());
+        String country = blankToNull(student.country());
+        if (country != null && !this.countries.contains(country)) {
+            throw invalid("country", "Escolha um país da lista.");
+        }
+        return new PreparedStudent(
+                student,
+                normalizeEmail(student.email()),
+                country,
+                this.passwords.hash(student.password()));
+    }
+
+    private RegisteredStudent insert(PreparedStudent prepared) {
+        NewStudent student = prepared.student();
+        String email = prepared.email();
+        String country = prepared.country();
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
         User user =
                 new User(
                         null,
                         email,
-                        this.passwords.hash(student.password()),
+                        prepared.passwordHash(),
                         student.birthDate(),
                         Role.STUDENT,
                         AccountStatus.ACTIVE,
@@ -106,7 +157,8 @@ public class RegisterStudent {
                         now,
                         null,
                         null,
-                        null);
+                        null,
+                        country);
         String userId =
                 this.users
                         .insert(user)
@@ -116,8 +168,15 @@ public class RegisterStudent {
                                         "EMAIL_ALREADY_REGISTERED",
                                         "Este e-mail já tem uma conta. Entre ou recupere a"
                                                 + " senha."));
-        publishRegistered(user.metricsId());
-        issueConfirmation(userId, email, user.name());
+        boolean fromVisitor = student.visitor() != null;
+        // Os efeitos de fora da transação primeiro, para o STUDENT_REGISTERED sair antes do
+        // VISITOR_MIGRATED que a migração registra depois do commit.
+        AfterCommit.run(() -> {
+            publishRegistered(user.metricsId(), fromVisitor);
+            issueConfirmation(userId, email, user.name());
+        });
+        this.events.publishEvent(
+                new StudentRegistered(userId, user.metricsId(), student.visitor()));
         // A conta acabou de nascer: a faixa do e-mail não confirmado sai false.
         return new RegisteredStudent(userId, Role.STUDENT, this.profiles.toProfile(user));
     }
@@ -150,9 +209,9 @@ public class RegisterStudent {
         }
     }
 
-    private void publishRegistered(UUID metricsId) {
+    private void publishRegistered(UUID metricsId, boolean fromVisitor) {
         try {
-            this.metrics.studentRegistered(metricsId, false);
+            this.metrics.studentRegistered(metricsId, fromVisitor);
         } catch (RuntimeException ex) {
             log.error("Falha ao publicar STUDENT_REGISTERED", ex);
             Sentry.captureException(ex);

@@ -1747,6 +1747,12 @@ class VisitorAttemptsTest {
                     }
                     return recorded;
                 }
+
+                @Override
+                public boolean consume(
+                        UUID deviceId, String activityKey, UUID nonce, Instant consumedAt) {
+                    throw new UnsupportedOperationException("O Visitante não consome recibos.");
+                }
             };
         }
 

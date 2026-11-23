@@ -185,6 +185,25 @@ public class MetricsPublisher {
                         fromVisitor));
     }
 
+    /**
+     * O Progresso do Visitante migrado para a conta (história 2.6): só o {@code metricsId}, sem o
+     * {@code deviceId} nem contagens. Quem migrou publica depois do commit, se ao menos um recibo
+     * migrou.
+     */
+    public void visitorMigrated(UUID metricsId) {
+        append(
+                new Event(
+                        EventType.VISITOR_MIGRATED,
+                        now(),
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        metricsId(metricsId),
+                        null));
+    }
+
     private void append(Event event) {
         this.store.append(event);
     }

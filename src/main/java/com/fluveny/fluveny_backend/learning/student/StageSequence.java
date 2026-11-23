@@ -145,7 +145,8 @@ class StageSequence {
      *
      * @param recordedKeys as {@code activityKey}s com registro do Aluno na Unidade
      * @param stored as conclusões já gravadas da Unidade
-     * @param metricsId lido só se alguma conclusão for gravada
+     * @param metricsId lido só se alguma conclusão for gravada; nulo grava sem publicar o {@code
+     *     STAGE_COMPLETED} (a migração do Visitante)
      */
     Map<String, UnitProgress.StageCompletion> reconcile(
             String userId,
@@ -162,13 +163,36 @@ class StageSequence {
             }
             Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
             if (this.progress.completeStage(
-                    userId, unit.unitKey(), stage.stageKey(), unit.versionId(), now)) {
+                            userId, unit.unitKey(), stage.stageKey(), unit.versionId(), now)
+                    && metricsId != null) {
                 publishStageCompleted(metricsId, unit, stage.stageKey());
             }
             completions.put(
                     stage.stageKey(), new UnitProgress.StageCompletion(unit.versionId(), now));
         }
         return completions;
+    }
+
+    /**
+     * Na migração do Visitante (história 2.6), dentro da transação do cadastro: grava as conclusões
+     * que os registros migrados cobrem na versão publicada, sem publicar o {@code STAGE_COMPLETED}
+     * (o Estágio já foi contado pelo {@code deviceId}, e o {@code occurredAt} seria falso). Uma
+     * falha lança e desfaz a transação.
+     */
+    void recordMigratedCompletions(String userId, Set<String> unitKeys) {
+        List<ActivityResult> recorded = this.results.findByUser(userId);
+        Map<String, Map<String, UnitProgress.StageCompletion>> stored = storedByUnit(userId);
+        for (String unitKey : unitKeys) {
+            Optional<UnitStructure> unit = this.structures.unit(unitKey);
+            if (unit.isPresent()) {
+                reconcile(
+                        userId,
+                        unit.get(),
+                        recordedKeys(recorded, unitKey),
+                        stored.getOrDefault(unitKey, Map.of()),
+                        null);
+            }
+        }
     }
 
     /** As conclusões gravadas do Aluno, por {@code unitKey}. */

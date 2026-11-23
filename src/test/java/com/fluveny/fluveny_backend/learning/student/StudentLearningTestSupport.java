@@ -18,6 +18,8 @@ import com.fluveny.fluveny_backend.content.publication.UnitPointer;
 import com.fluveny.fluveny_backend.content.publication.UnitPointerStore;
 import com.fluveny.fluveny_backend.content.publication.UnitVersion;
 import com.fluveny.fluveny_backend.content.publication.UnitVersionStore;
+import com.fluveny.fluveny_backend.learning.visitor.FirstAttempt;
+import com.fluveny.fluveny_backend.learning.visitor.VisitorAttemptStore;
 import com.fluveny.fluveny_backend.metrics.EventType;
 import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
 import com.fluveny.fluveny_backend.platform.security.Role;
@@ -57,11 +59,11 @@ import tools.jackson.databind.node.ObjectNode;
  * Base dos testes de rota do Aluno (história 2.4), sem Mongo: {@code users}, {@code sessions} e
  * {@code events} em memória ({@link InMemoryAccounts}); {@code unit_versions}, {@code
  * unit_pointers}, {@code activity_results} e {@code unit_progress} também ({@link
- * InMemoryLearning}). O conteúdo entra pelo mesmo {@link PublishUnitVersion} da rota admin; a
- * fixture {@code unit-1} tem {@code s1-greetings} (2 itens, xp 10), o Diálogo {@code s1-hi-alex}, a
- * Fala {@code s1-your-turn}, a Resposta Livre {@code s1-about-you} no Estágio 1 e {@code s2-flags}
- * (xp 5) no Estágio 2. Cada teste tem um Aluno próprio, então o limite por {@code userId} não vaza
- * entre testes.
+ * InMemoryLearning}), e {@code visitor_attempts} para a migração da história 2.6. O conteúdo entra
+ * pelo mesmo {@link PublishUnitVersion} da rota admin; a fixture {@code unit-1} tem {@code
+ * s1-greetings} (2 itens, xp 10), o Diálogo {@code s1-hi-alex}, a Fala {@code s1-your-turn}, a
+ * Resposta Livre {@code s1-about-you} no Estágio 1 e {@code s2-flags} (xp 5) no Estágio 2. Cada
+ * teste tem um Aluno próprio, então o limite por {@code userId} não vaza entre testes.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -364,12 +366,82 @@ abstract class StudentLearningTestSupport {
         final java.util.concurrent.atomic.AtomicBoolean hideNextFind =
                 new java.util.concurrent.atomic.AtomicBoolean();
 
+        /**
+         * {@code visitor_attempts} por {@code deviceId|activityKey} (história 2.6): o documento e,
+         * depois da migração, o {@code consumedAt}.
+         */
+        final Map<String, FirstAttempt> visitorAttempts = new ConcurrentHashMap<>();
+
+        final Map<String, Instant> consumed = new ConcurrentHashMap<>();
+
+        /**
+         * Quando positivo, a {@code n}-ésima chamada a {@code insert} lança, como um Mongo que cai
+         * no meio da migração; zero ou negativo, nunca.
+         */
+        final java.util.concurrent.atomic.AtomicInteger failInsertAt =
+                new java.util.concurrent.atomic.AtomicInteger();
+
         void clear() {
             this.versions.clear();
             this.pointers.clear();
             this.results.clear();
             this.progress.clear();
             this.hideNextFind.set(false);
+            this.visitorAttempts.clear();
+            this.consumed.clear();
+            this.failInsertAt.set(0);
+        }
+
+        static String visitorKey(UUID deviceId, String activityKey) {
+            return deviceId + "|" + activityKey;
+        }
+
+        /** Como o Mongo: só a primeira por chave; o consumo é condicional ao nonce. */
+        @Bean
+        @Primary
+        VisitorAttemptStore inMemoryVisitorAttempts() {
+            return new VisitorAttemptStore() {
+                @Override
+                public boolean insertIfAbsent(FirstAttempt attempt) {
+                    return InMemoryLearning.this.visitorAttempts.putIfAbsent(
+                                    visitorKey(attempt.deviceId(), attempt.activityKey()), attempt)
+                            == null;
+                }
+
+                @Override
+                public Optional<FirstAttempt> find(UUID deviceId, String activityKey) {
+                    return Optional.ofNullable(
+                            InMemoryLearning.this.visitorAttempts.get(
+                                    visitorKey(deviceId, activityKey)));
+                }
+
+                @Override
+                public java.util.Set<String> recordedActivityKeys(
+                        UUID deviceId, Collection<String> activityKeys) {
+                    java.util.Set<String> recorded = new java.util.HashSet<>();
+                    for (String activityKey : activityKeys) {
+                        if (InMemoryLearning.this.visitorAttempts.containsKey(
+                                visitorKey(deviceId, activityKey))) {
+                            recorded.add(activityKey);
+                        }
+                    }
+                    return recorded;
+                }
+
+                @Override
+                public synchronized boolean consume(
+                        UUID deviceId, String activityKey, UUID nonce, Instant consumedAt) {
+                    String key = visitorKey(deviceId, activityKey);
+                    FirstAttempt attempt = InMemoryLearning.this.visitorAttempts.get(key);
+                    if (attempt == null
+                            || !attempt.nonce().equals(nonce)
+                            || InMemoryLearning.this.consumed.containsKey(key)) {
+                        return false;
+                    }
+                    InMemoryLearning.this.consumed.put(key, consumedAt);
+                    return true;
+                }
+            };
         }
 
         static String key(String userId, String unitKey, String activityKey) {
@@ -392,6 +464,19 @@ abstract class StudentLearningTestSupport {
                                     key(result.userId(), result.unitKey(), result.activityKey()),
                                     result)
                             == null;
+                }
+
+                @Override
+                public void insert(ActivityResult result) {
+                    if (InMemoryLearning.this.failInsertAt.decrementAndGet() == 0) {
+                        throw new IllegalStateException("activity_results fora do ar");
+                    }
+                    if (InMemoryLearning.this.results.putIfAbsent(
+                                    key(result.userId(), result.unitKey(), result.activityKey()),
+                                    result)
+                            != null) {
+                        throw new IllegalStateException("chave repetida em activity_results");
+                    }
                 }
 
                 @Override

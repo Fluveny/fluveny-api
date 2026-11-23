@@ -23,7 +23,8 @@ import org.springframework.stereotype.Repository;
  * {@code visitor_attempts}: um documento por {@code (deviceId, activityKey)}, com índice único
  * ({@link LearningIndexes}). Só a primeira gravação escreve ({@code $setOnInsert}); duas primeiras
  * ao mesmo tempo esbarram na chave única, e a perdedora recebe {@code false}. Os UUIDs ficam como
- * texto, sem depender da representação de UUID do driver.
+ * texto, sem depender da representação de UUID do driver. O {@code consumedAt} (história 2.6) só
+ * existe depois que a migração consumiu o recibo.
  */
 @Repository
 class MongoVisitorAttemptStore implements VisitorAttemptStore {
@@ -83,6 +84,27 @@ class MongoVisitorAttemptStore implements VisitorAttemptStore {
                 .find(query, Document.class, COLLECTION)
                 .forEach(document -> recorded.add(document.getString("activityKey")));
         return recorded;
+    }
+
+    @Override
+    public boolean consume(UUID deviceId, String activityKey, UUID nonce, Instant consumedAt) {
+        Query pending =
+                Query.query(
+                        Criteria.where("deviceId")
+                                .is(deviceId.toString())
+                                .and("activityKey")
+                                .is(activityKey)
+                                .and("nonce")
+                                .is(nonce.toString())
+                                .and("consumedAt")
+                                .exists(false));
+        return this.mongo
+                        .updateFirst(
+                                pending,
+                                Update.update("consumedAt", Date.from(consumedAt)),
+                                COLLECTION)
+                        .getModifiedCount()
+                > 0;
     }
 
     private static Query key(UUID deviceId, String activityKey) {

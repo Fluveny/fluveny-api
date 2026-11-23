@@ -1,7 +1,7 @@
 package com.fluveny.fluveny_backend.metrics;
 
 /**
- * Os tipos de evento gravados em {@code events} até aqui (AD-14, histórias 1.20, 2.1 e 2.4). O
+ * Os tipos de evento gravados em {@code events} até aqui (AD-14, histórias 1.20, 2.1, 2.4 e 2.6). O
  * catálogo fechado fica nas Consistency Conventions da spine; um tipo novo ou um campo novo muda a
  * spine antes.
  */
@@ -24,5 +24,11 @@ public enum EventType {
     STAGE_COMPLETED,
 
     /** Uma conta de Aluno criada (história 2.1); só o {@code metricsId} e o {@code fromVisitor}. */
-    STUDENT_REGISTERED
+    STUDENT_REGISTERED,
+
+    /**
+     * O Progresso do Visitante migrado para a conta no cadastro (história 2.6); só o {@code
+     * metricsId}, e só se ao menos um recibo migrou.
+     */
+    VISITOR_MIGRATED
 }

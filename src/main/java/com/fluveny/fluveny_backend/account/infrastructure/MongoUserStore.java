@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository;
  * AccountIndexes}). A {@link DuplicateKeyException} do e-mail repetido vira um {@code Optional}
  * vazio aqui mesmo: a mensagem do driver traz o e-mail e nunca vai para o log, o Sentry ou a
  * resposta. A data de nascimento fica como texto ISO ({@code yyyy-MM-dd}), sem fuso; o {@code
- * metricsId}, como texto.
+ * metricsId}, como texto. O {@code country} (história 2.6) só existe quando o Aluno informou.
  */
 @Repository
 class MongoUserStore implements UserStore {
@@ -152,21 +152,26 @@ class MongoUserStore implements UserStore {
     }
 
     private static Document toDocument(User user) {
-        return new Document("email", user.email())
-                .append("passwordHash", user.passwordHash())
-                .append("birthDate", user.birthDate().toString())
-                .append("role", user.role().name())
-                .append("status", user.status().name())
-                .append("metricsId", user.metricsId().toString())
-                .append("name", user.name())
-                .append("pronounSet", name(user.pronounSet()))
-                .append("termsVersion", user.termsVersion())
-                .append("privacyVersion", user.privacyVersion())
-                .append("termsAcceptedAt", date(user.termsAcceptedAt()))
-                .append("createdAt", date(user.createdAt()))
-                .append("emailVerifiedAt", date(user.emailVerifiedAt()))
-                .append("pendingEmail", user.pendingEmail())
-                .append("deletionRequestedAt", date(user.deletionRequestedAt()));
+        Document document =
+                new Document("email", user.email())
+                        .append("passwordHash", user.passwordHash())
+                        .append("birthDate", user.birthDate().toString())
+                        .append("role", user.role().name())
+                        .append("status", user.status().name())
+                        .append("metricsId", user.metricsId().toString())
+                        .append("name", user.name())
+                        .append("pronounSet", name(user.pronounSet()))
+                        .append("termsVersion", user.termsVersion())
+                        .append("privacyVersion", user.privacyVersion())
+                        .append("termsAcceptedAt", date(user.termsAcceptedAt()))
+                        .append("createdAt", date(user.createdAt()))
+                        .append("emailVerifiedAt", date(user.emailVerifiedAt()))
+                        .append("pendingEmail", user.pendingEmail())
+                        .append("deletionRequestedAt", date(user.deletionRequestedAt()));
+        if (user.country() != null) {
+            document.append("country", user.country());
+        }
+        return document;
     }
 
     private static User toUser(Document document) {
@@ -187,7 +192,8 @@ class MongoUserStore implements UserStore {
                 instant(document.getDate("createdAt")),
                 instant(document.getDate("emailVerifiedAt")),
                 document.getString("pendingEmail"),
-                instant(document.getDate("deletionRequestedAt")));
+                instant(document.getDate("deletionRequestedAt")),
+                document.getString("country"));
     }
 
     private static String name(Enum<?> value) {

@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.bson.Document;
 import org.springframework.dao.DuplicateKeyException;
@@ -31,6 +32,9 @@ class MongoActivityResultStore implements ActivityResultStore {
 
     static final String COLLECTION = "activity_results";
 
+    /** Os campos do índice único, que o upsert grava pelo filtro. */
+    private static final Set<String> KEY_FIELDS = Set.of("userId", "unitKey", "activityKey");
+
     private final MongoTemplate mongo;
 
     MongoActivityResultStore(MongoTemplate mongo) {
@@ -39,20 +43,14 @@ class MongoActivityResultStore implements ActivityResultStore {
 
     @Override
     public boolean insertIfAbsent(ActivityResult result) {
-        Update update =
-                new Update()
-                        .setOnInsert("stageKey", result.stageKey())
-                        .setOnInsert("versionId", result.versionId())
-                        .setOnInsert("activityType", result.activityType())
-                        .setOnInsert("attemptId", result.attemptId().toString())
-                        .setOnInsert("outcome", result.outcome().name())
-                        .setOnInsert("xpAwarded", result.xpAwarded())
-                        .setOnInsert("studyTimeMs", result.studyTimeMs())
-                        .setOnInsert("extraHelp", result.extraHelp())
-                        .setOnInsert("createdAt", Date.from(result.createdAt()));
-        if (result.resultPct() != null) {
-            update.setOnInsert("resultPct", result.resultPct());
-        }
+        Update update = new Update();
+        toDocument(result)
+                .forEach((field, value) -> {
+                    // A chave fica no filtro do upsert; o resto só entra na criação.
+                    if (!KEY_FIELDS.contains(field)) {
+                        update.setOnInsert(field, value);
+                    }
+                });
         try {
             UpdateResult written =
                     this.mongo.upsert(
@@ -64,6 +62,32 @@ class MongoActivityResultStore implements ActivityResultStore {
             // Duas primeiras ao mesmo tempo: a outra gravou primeiro.
             return false;
         }
+    }
+
+    @Override
+    public void insert(ActivityResult result) {
+        this.mongo.insert(toDocument(result), COLLECTION);
+    }
+
+    /** O documento inteiro; {@code resultPct} só no {@code GRADED}. */
+    private static Document toDocument(ActivityResult result) {
+        Document document =
+                new Document("userId", result.userId())
+                        .append("unitKey", result.unitKey())
+                        .append("activityKey", result.activityKey())
+                        .append("stageKey", result.stageKey())
+                        .append("versionId", result.versionId())
+                        .append("activityType", result.activityType())
+                        .append("attemptId", result.attemptId().toString())
+                        .append("outcome", result.outcome().name())
+                        .append("xpAwarded", result.xpAwarded())
+                        .append("studyTimeMs", result.studyTimeMs())
+                        .append("extraHelp", result.extraHelp())
+                        .append("createdAt", Date.from(result.createdAt()));
+        if (result.resultPct() != null) {
+            document.append("resultPct", result.resultPct());
+        }
+        return document;
     }
 
     @Override

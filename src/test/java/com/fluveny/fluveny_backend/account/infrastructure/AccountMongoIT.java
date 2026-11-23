@@ -8,6 +8,7 @@ import com.fluveny.fluveny_backend.account.NewStudent;
 import com.fluveny.fluveny_backend.account.PronounSet;
 import com.fluveny.fluveny_backend.account.RegisterStudent;
 import com.fluveny.fluveny_backend.account.RegisteredStudent;
+import com.fluveny.fluveny_backend.auth.Signup;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -29,7 +30,8 @@ import org.springframework.test.context.ActiveProfiles;
 /**
  * {@code users} contra o Mongo 8 (história 2.1): os índices únicos do e-mail e do {@code
  * metricsId}, os campos gravados (inclusive os da AD-13, nulos), o e-mail repetido em outra caixa e
- * a corrida de cadastros do mesmo e-mail.
+ * a corrida de cadastros do mesmo e-mail (pelo {@code Signup}, que abre a transação e refaz o
+ * {@code WriteConflict}, história 2.6).
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -44,11 +46,14 @@ class AccountMongoIT {
 
     @Autowired private UserStore users;
 
+    @Autowired private Signup signup;
+
     /** Apaga só os documentos: os índices ficam os da partida ({@code OnStartup}). */
     @BeforeEach
     void cleanCollection() {
         this.mongo.remove(new Query(), MongoUserStore.COLLECTION);
         this.mongo.remove(new Query(), "events");
+        this.mongo.remove(new Query(), "sessions");
     }
 
     private static NewStudent student(String email) {
@@ -185,9 +190,10 @@ class AccountMongoIT {
                         pool.submit(() -> {
                             start.await();
                             try {
-                                this.register.register(student("ana@example.com"));
+                                this.signup.signup(student("ana@example.com"));
                                 return true;
                             } catch (ApiException ex) {
+                                assertThat(ex.getCode()).isEqualTo("EMAIL_ALREADY_REGISTERED");
                                 return false;
                             }
                         }));
@@ -206,5 +212,6 @@ class AccountMongoIT {
         assertThat(created).isEqualTo(1);
         assertThat(conflicts).isEqualTo(threads - 1);
         assertThat(documents()).hasSize(1);
+        assertThat(this.mongo.getCollection("sessions").countDocuments()).isEqualTo(1);
     }
 }

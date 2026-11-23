@@ -9,6 +9,8 @@ import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
  *
  * @param name o nome, se o Aluno informou
  * @param email o e-mail da conta, normalizado
+ * @param country o país, se o Aluno informou no cadastro (história 2.6): o {@code name} em inglês
+ *     de {@code countries.json}
  * @param pronounSet os pronomes; nulo vale como {@code THEY}
  * @param emailConfirmed se o Aluno já confirmou o e-mail (história 2.2)
  * @param emailConfirmationOverdue se o e-mail segue sem confirmar 7 dias depois do cadastro: o App
@@ -18,6 +20,13 @@ import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 public record StudentProfile(
         @Schema(requiredMode = RequiredMode.NOT_REQUIRED, nullable = true) String name,
         @Schema(requiredMode = RequiredMode.REQUIRED) String email,
+        @Schema(
+                        requiredMode = RequiredMode.NOT_REQUIRED,
+                        nullable = true,
+                        description =
+                                "O país informado no cadastro: o name em inglês de um país de"
+                                        + " countries.json. Nulo se o Aluno não informou.")
+                String country,
         @Schema(
                         requiredMode = RequiredMode.NOT_REQUIRED,
                         nullable = true,
@@ -37,7 +46,7 @@ public record StudentProfile(
                                         + " a recuperação de senha não envia nada.")
                 boolean emailConfirmationOverdue) {
 
-    /** Sem o e-mail nem o nome. */
+    /** Sem o e-mail, o nome nem o país. */
     @Override
     public String toString() {
         return "StudentProfile[emailConfirmed="

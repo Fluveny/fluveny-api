@@ -3,22 +3,33 @@ package com.fluveny.fluveny_backend.learning.receipt;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Base64;
-import org.springframework.stereotype.Component;
 
 /**
  * Confere um recibo do {@link ReceiptSigner} (história 1.12), para a migração da história 2.6:
  * prefixo {@code v1}, as duas partes em base64url, o HMAC comparado em tempo constante e só depois
- * o JSON. Não consome o {@code nonce}; isso é da 2.6.
+ * o JSON. Não consome o {@code nonce}; isso é da migração.
+ *
+ * <p>Na rotação da chave (história 2.6), o recibo assinado com a chave anterior também vale; a
+ * anterior nunca assina. O bean sai do {@link ReceiptConfig}.
  */
-@Component
 public class ReceiptVerifier {
 
     private static final Base64.Decoder DECODER = Base64.getUrlDecoder();
 
     private final ReceiptKey key;
 
+    private final ReceiptKey previousKey;
+
     public ReceiptVerifier(ReceiptKey key) {
+        this(key, null);
+    }
+
+    /**
+     * @param previousKey a chave anterior, só para conferir; nula sem rotação
+     */
+    public ReceiptVerifier(ReceiptKey key, ReceiptKey previousKey) {
         this.key = key;
+        this.previousKey = previousKey;
     }
 
     /**
@@ -42,9 +53,12 @@ public class ReceiptVerifier {
         } catch (IllegalArgumentException ex) {
             throw new InvalidReceiptException("base64url inválido");
         }
-        byte[] expected =
-                this.key.hmac((parts[0] + "." + parts[1]).getBytes(StandardCharsets.US_ASCII));
-        if (!MessageDigest.isEqual(expected, presented)) {
+        byte[] signed = (parts[0] + "." + parts[1]).getBytes(StandardCharsets.US_ASCII);
+        boolean valid = MessageDigest.isEqual(this.key.hmac(signed), presented);
+        if (!valid && this.previousKey != null) {
+            valid = MessageDigest.isEqual(this.previousKey.hmac(signed), presented);
+        }
+        if (!valid) {
             throw new InvalidReceiptException("HMAC não confere");
         }
         ReceiptPayload payload;

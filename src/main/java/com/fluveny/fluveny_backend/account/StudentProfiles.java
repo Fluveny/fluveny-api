@@ -52,6 +52,7 @@ public class StudentProfiles {
         return new StudentProfile(
                 user.name(),
                 user.email(),
+                user.country(),
                 user.pronounSet(),
                 user.emailVerifiedAt() != null,
                 emailConfirmationOverdue(user, this.clock.instant()));
