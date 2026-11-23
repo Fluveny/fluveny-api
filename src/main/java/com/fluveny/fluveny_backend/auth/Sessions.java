@@ -68,6 +68,14 @@ public class Sessions implements SessionAuthenticator {
         this.store.deleteByTokenHash(OpaqueTokens.hash(token));
     }
 
+    /**
+     * Encerra todas as sessões da conta (a redefinição de senha, história 2.8): nenhuma delas
+     * autentica mais, em nenhum aparelho.
+     */
+    public void revokeAll(String userId) {
+        this.store.deleteByUser(userId);
+    }
+
     @Override
     public Optional<AuthenticatedSession> authenticate(String token) {
         if (token == null || token.isEmpty()) {

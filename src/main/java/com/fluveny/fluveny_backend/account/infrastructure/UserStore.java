@@ -37,6 +37,15 @@ public interface UserStore {
     boolean markEmailVerified(String id, String email, Instant verifiedAt);
 
     /**
+     * Grava o hash da senha nova (a redefinição, história 2.8), só se a conta ainda está {@code
+     * ACTIVE}, com o e-mail confirmado e com o e-mail {@code email}: a desativação ou a troca de
+     * e-mail depois do pedido fecham o link.
+     *
+     * @return {@code true} se a conta cumpria as três condições e o hash foi gravado
+     */
+    boolean updatePasswordHash(String id, String email, String passwordHash);
+
+    /**
      * Para o carregador local: cria a conta do e-mail ou atualiza senha, nome, pronomes, papel,
      * status e {@code emailVerifiedAt} dela, sem trocar o {@code metricsId} nem o {@code
      * createdAt}.

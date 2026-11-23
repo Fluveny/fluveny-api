@@ -16,4 +16,7 @@ public interface SessionStore {
 
     /** Apaga a sessão do hash, se existe (o logout, história 2.3). */
     void deleteByTokenHash(String tokenHash);
+
+    /** Apaga todas as sessões da conta (a redefinição de senha, história 2.8). */
+    void deleteByUser(String userId);
 }

@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fluveny.fluveny_backend.LocalMongoContainer;
 import com.fluveny.fluveny_backend.TestSeedPassword;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,8 +21,8 @@ import org.springframework.test.context.ActiveProfiles;
 
 /**
  * 1º critério de aceite da 2.1: no perfil {@code local}, o carregador de {@code account} cria os
- * Alunos de teste (o desativado vem da 2.3), e rodar de novo não duplica nada. A senha é a {@code
- * LOCAL_SEED_PASSWORD} gerada pela {@link TestSeedPassword}.
+ * Alunos de teste (o desativado vem da 2.3; o atrasado, da 2.8), e rodar de novo não duplica nada.
+ * A senha é a {@code LOCAL_SEED_PASSWORD} gerada pela {@link TestSeedPassword}.
  */
 @SpringBootTest
 @ActiveProfiles("local")
@@ -38,7 +40,7 @@ class AccountLocalSeederIT {
     }
 
     @Test
-    void seedingTwiceKeepsExactlyTheThreeStudents() {
+    void seedingTwiceKeepsExactlyTheFourStudents() {
         // Já rodou na partida; roda mais duas vezes.
         this.seeder.seed();
         Map<String, Object> metricsIds = new HashMap<>();
@@ -61,7 +63,8 @@ class AccountLocalSeederIT {
                 .containsExactlyInAnyOrder(
                         AccountLocalSeeder.WITH_PRONOUNS,
                         AccountLocalSeeder.WITHOUT_PRONOUNS,
-                        AccountLocalSeeder.DEACTIVATED);
+                        AccountLocalSeeder.DEACTIVATED,
+                        AccountLocalSeeder.OVERDUE);
         Document withPronouns =
                 users.stream()
                         .filter(u -> AccountLocalSeeder.WITH_PRONOUNS.equals(u.getString("email")))
@@ -79,6 +82,15 @@ class AccountLocalSeederIT {
         // História 2.2: um confirmado, outro por confirmar.
         assertThat(withPronouns.getDate("emailVerifiedAt")).isNotNull();
         assertThat(withoutPronouns.get("emailVerifiedAt")).isNull();
+        // História 2.8: ativo, sem confirmar e criado há 8 dias, para a faixa.
+        Document overdue =
+                users.stream()
+                        .filter(u -> AccountLocalSeeder.OVERDUE.equals(u.getString("email")))
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(overdue.get("emailVerifiedAt")).isNull();
+        assertThat(overdue.getDate("createdAt").toInstant())
+                .isBefore(Instant.now().minus(Duration.ofDays(7)));
         for (Document user : users) {
             // História 2.3: um desativado, para o 403 ACCOUNT_DEACTIVATED do login.
             assertThat(user.getString("status"))

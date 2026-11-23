@@ -22,9 +22,12 @@ public class Credentials {
 
     private final Passwords passwords;
 
-    Credentials(UserStore users, Passwords passwords) {
+    private final StudentProfiles profiles;
+
+    Credentials(UserStore users, Passwords passwords, StudentProfiles profiles) {
         this.users = users;
         this.passwords = passwords;
+        this.profiles = profiles;
     }
 
     /**
@@ -57,11 +60,7 @@ public class Credentials {
                             Outcome.VERIFIED,
                             user.id(),
                             user.role(),
-                            new StudentProfile(
-                                    user.name(),
-                                    user.email(),
-                                    user.pronounSet(),
-                                    user.emailVerifiedAt() != null));
+                            this.profiles.toProfile(user));
             case DEACTIVATED -> Verification.DEACTIVATED;
             // O adolescente pendente entra na 2.11; até lá, o 401 genérico.
             case PENDING_GUARDIAN_CONSENT, INVITED -> Verification.INVALID;

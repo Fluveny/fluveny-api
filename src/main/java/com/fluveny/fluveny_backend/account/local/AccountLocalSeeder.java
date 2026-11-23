@@ -11,6 +11,7 @@ import com.fluveny.fluveny_backend.platform.local.LocalDataSeeder;
 import com.fluveny.fluveny_backend.platform.local.LocalSeedPassword;
 import com.fluveny.fluveny_backend.platform.security.Role;
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -30,7 +31,11 @@ import org.springframework.stereotype.Component;
  *   <li>{@value #WITHOUT_PRONOUNS}, sem nome nem pronomes (vale they/them), com o e-mail por
  *       confirmar (história 2.2);
  *   <li>{@value #DEACTIVATED}, {@code DEACTIVATED}, para o {@code 403 ACCOUNT_DEACTIVATED} do login
- *       (história 2.3).
+ *       (história 2.3);
+ *   <li>{@value #OVERDUE}, {@code ACTIVE}, sem confirmar o e-mail e com o cadastro de {@value
+ *       #OVERDUE_DAYS} dias atrás, para a faixa {@code emailConfirmationOverdue} (história 2.8). O
+ *       {@code createdAt} só é gravado na criação: nos {@code seed} seguintes, a conta fica mais
+ *       velha, e a faixa continua.
  * </ul>
  *
  * <p>Sem {@code LOCAL_SEED_PASSWORD}, ou com ela fora da {@link PasswordPolicy}, os Alunos não são
@@ -46,6 +51,10 @@ class AccountLocalSeeder implements LocalDataSeeder {
     static final String WITHOUT_PRONOUNS = "aluno.sem.pronomes@fluveny.local";
 
     static final String DEACTIVATED = "aluno.desativado@fluveny.local";
+
+    static final String OVERDUE = "aluno.atrasado@fluveny.local";
+
+    static final int OVERDUE_DAYS = 8;
 
     /** As versões dos documentos legais da 1.21 no App. */
     static final String TERMS_VERSION = "0.1";
@@ -108,6 +117,15 @@ class AccountLocalSeeder implements LocalDataSeeder {
                 student(WITHOUT_PRONOUNS, hash, null, null, false, AccountStatus.ACTIVE));
         this.users.upsertByEmail(
                 student(DEACTIVATED, hash, "Bia", null, true, AccountStatus.DEACTIVATED));
+        this.users.upsertByEmail(
+                student(
+                        OVERDUE,
+                        hash,
+                        "Caio",
+                        null,
+                        false,
+                        AccountStatus.ACTIVE,
+                        Duration.ofDays(OVERDUE_DAYS)));
     }
 
     private User student(
@@ -117,7 +135,22 @@ class AccountLocalSeeder implements LocalDataSeeder {
             PronounSet pronounSet,
             boolean confirmed,
             AccountStatus status) {
+        return student(email, hash, name, pronounSet, confirmed, status, Duration.ZERO);
+    }
+
+    /**
+     * @param age há quanto tempo a conta foi criada
+     */
+    private User student(
+            String email,
+            String hash,
+            String name,
+            PronounSet pronounSet,
+            boolean confirmed,
+            AccountStatus status,
+            Duration age) {
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
+        Instant createdAt = now.minus(age);
         return new User(
                 null,
                 email,
@@ -130,8 +163,8 @@ class AccountLocalSeeder implements LocalDataSeeder {
                 pronounSet,
                 TERMS_VERSION,
                 PRIVACY_VERSION,
-                now,
-                now,
+                createdAt,
+                createdAt,
                 confirmed ? now : null,
                 null,
                 null);

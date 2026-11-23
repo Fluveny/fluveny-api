@@ -1,5 +1,6 @@
 package com.fluveny.fluveny_backend.auth;
 
+import com.fluveny.fluveny_backend.account.AccountStatus;
 import com.fluveny.fluveny_backend.account.PronounSet;
 import com.fluveny.fluveny_backend.account.infrastructure.OneTimeToken;
 import com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore;
@@ -31,8 +32,9 @@ import org.springframework.context.annotation.Primary;
  * {@code users}, {@code sessions}, {@code events}, {@code one_time_tokens} e {@code mail_outbox} em
  * memória (e {@code login_throttle}, história 2.3), com as mesmas regras de unicidade e atomicidade
  * do Mongo (e-mail único, inclusive em cadastros simultâneos; consumo do token de uso único), para
- * os testes de rota sem banco (histórias 2.1, 2.2 e 2.3, esta com {@code login_throttle}). Os
- * testes contra o Mongo ficam nos {@code *IT}.
+ * os testes de rota sem banco (histórias 2.1, 2.2, 2.3, esta com {@code login_throttle}, e 2.8, com
+ * a gravação condicional da senha e as sessões apagadas por conta). Os testes contra o Mongo ficam
+ * nos {@code *IT}.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class InMemoryAccounts {
@@ -129,6 +131,26 @@ public class InMemoryAccounts {
             }
 
             @Override
+            public boolean updatePasswordHash(String id, String email, String passwordHash) {
+                boolean[] updated = new boolean[1];
+                if (id == null) {
+                    return false;
+                }
+                InMemoryAccounts.this.users.computeIfPresent(
+                        id,
+                        (key, current) -> {
+                            if (current.email().equals(email)
+                                    && current.status() == AccountStatus.ACTIVE
+                                    && current.emailVerifiedAt() != null) {
+                                updated[0] = true;
+                                return withPasswordHash(current, passwordHash);
+                            }
+                            return current;
+                        });
+                return updated[0];
+            }
+
+            @Override
             public void upsertByEmail(User user) {
                 String id =
                         InMemoryAccounts.this.idsByEmail.computeIfAbsent(
@@ -168,6 +190,14 @@ public class InMemoryAccounts {
             @Override
             public void deleteByTokenHash(String tokenHash) {
                 InMemoryAccounts.this.sessions.remove(tokenHash);
+            }
+
+            @Override
+            public void deleteByUser(String userId) {
+                InMemoryAccounts.this
+                        .sessions
+                        .values()
+                        .removeIf(session -> session.userId().equals(userId));
             }
         };
     }
@@ -292,6 +322,26 @@ public class InMemoryAccounts {
                 user.metricsId(),
                 user.name(),
                 pronounSet,
+                user.termsVersion(),
+                user.privacyVersion(),
+                user.termsAcceptedAt(),
+                user.createdAt(),
+                user.emailVerifiedAt(),
+                user.pendingEmail(),
+                user.deletionRequestedAt());
+    }
+
+    static User withPasswordHash(User user, String passwordHash) {
+        return new User(
+                user.id(),
+                user.email(),
+                passwordHash,
+                user.birthDate(),
+                user.role(),
+                user.status(),
+                user.metricsId(),
+                user.name(),
+                user.pronounSet(),
                 user.termsVersion(),
                 user.privacyVersion(),
                 user.termsAcceptedAt(),
