@@ -27,6 +27,11 @@ import org.bson.types.ObjectId;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 /**
  * {@code users}, {@code sessions}, {@code events}, {@code one_time_tokens} e {@code mail_outbox} em
@@ -35,6 +40,10 @@ import org.springframework.context.annotation.Primary;
  * os testes de rota sem banco (histórias 2.1, 2.2, 2.3, esta com {@code login_throttle}, e 2.8, com
  * a gravação condicional da senha e as sessões apagadas por conta). Os testes contra o Mongo ficam
  * nos {@code *IT}.
+ *
+ * <p>Sem Mongo não há transação (história 2.6): um gerenciador sem efeito no lugar do {@code
+ * MongoTransactionManager} abre, junta e fecha a transação e roda os {@code afterCommit}, mas não
+ * desfaz nada no rollback. A atomicidade fica nos {@code *IT}.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class InMemoryAccounts {
@@ -275,6 +284,12 @@ public class InMemoryAccounts {
 
     @Bean
     @Primary
+    PlatformTransactionManager inMemoryTransactions() {
+        return new NoOpTransactionManager();
+    }
+
+    @Bean
+    @Primary
     OutboxStore inMemoryOutbox() {
         return this.outbox;
     }
@@ -289,6 +304,35 @@ public class InMemoryAccounts {
             InMemoryAccounts.this.events.add(event);
             return true;
         };
+    }
+
+    /**
+     * Abre, junta ({@code REQUIRED}, {@code MANDATORY}) e fecha a transação, com as sincronizações
+     * ({@code afterCommit}), sem tocar em banco nenhum.
+     */
+    static final class NoOpTransactionManager extends AbstractPlatformTransactionManager {
+
+        @Override
+        protected Object doGetTransaction() {
+            return new Object();
+        }
+
+        @Override
+        protected boolean isExistingTransaction(Object transaction) {
+            return TransactionSynchronizationManager.isActualTransactionActive();
+        }
+
+        @Override
+        protected void doBegin(Object transaction, TransactionDefinition definition) {}
+
+        @Override
+        protected void doCommit(DefaultTransactionStatus status) {}
+
+        @Override
+        protected void doRollback(DefaultTransactionStatus status) {}
+
+        @Override
+        protected void doSetRollbackOnly(DefaultTransactionStatus status) {}
     }
 
     static User withId(User user, String id) {
@@ -308,7 +352,8 @@ public class InMemoryAccounts {
                 user.createdAt(),
                 user.emailVerifiedAt(),
                 user.pendingEmail(),
-                user.deletionRequestedAt());
+                user.deletionRequestedAt(),
+                user.country());
     }
 
     static User withPronouns(User user, PronounSet pronounSet) {
@@ -328,7 +373,8 @@ public class InMemoryAccounts {
                 user.createdAt(),
                 user.emailVerifiedAt(),
                 user.pendingEmail(),
-                user.deletionRequestedAt());
+                user.deletionRequestedAt(),
+                user.country());
     }
 
     static User withPasswordHash(User user, String passwordHash) {
@@ -348,7 +394,8 @@ public class InMemoryAccounts {
                 user.createdAt(),
                 user.emailVerifiedAt(),
                 user.pendingEmail(),
-                user.deletionRequestedAt());
+                user.deletionRequestedAt(),
+                user.country());
     }
 
     static User withEmailVerifiedAt(User user, Instant verifiedAt) {
@@ -368,6 +415,7 @@ public class InMemoryAccounts {
                 user.createdAt(),
                 verifiedAt,
                 user.pendingEmail(),
-                user.deletionRequestedAt());
+                user.deletionRequestedAt(),
+                user.country());
     }
 }

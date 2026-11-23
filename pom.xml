@@ -135,7 +135,8 @@
 				</configuration>
 			</plugin>
 			<!-- O JSON Schema de content/schema/ entra no classpath em content/schema/: a publicação
-			     valida o pacote com ele na imagem, sem a pasta do repositório (história 1.7). -->
+			     valida o pacote com ele na imagem, sem a pasta do repositório (história 1.7). A lista
+			     de países (countries.json) também: o cadastro confere o país com ela (história 2.6). -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -153,6 +154,7 @@
 									<directory>${project.basedir}/content/schema</directory>
 									<includes>
 										<include>**/*.schema.json</include>
+										<include>countries.json</include>
 									</includes>
 								</resource>
 							</resources>

@@ -1,15 +1,18 @@
 package com.fluveny.fluveny_backend.account;
 
+import com.fluveny.fluveny_backend.platform.events.StudentRegistered;
 import java.time.LocalDate;
 
 /**
- * Os dados de um cadastro de Aluno (história 2.1), já validados na borda {@code web}. A senha nunca
- * vai para o log.
+ * Os dados de um cadastro de Aluno (histórias 2.1 e 2.6), já validados na borda {@code web}. A
+ * senha nunca vai para o log.
  *
  * @param email o e-mail como digitado; {@link RegisterStudent} normaliza
  * @param name o nome, opcional
  * @param termsVersion a versão dos termos de uso aceita
  * @param privacyVersion a versão da política de privacidade aceita
+ * @param country o país, opcional: o {@code name} em inglês de um país de {@code countries.json}
+ * @param visitor os recibos do Visitante, quando o cadastro vem do convite; nulo sem eles
  */
 public record NewStudent(
         String email,
@@ -17,7 +20,20 @@ public record NewStudent(
         LocalDate birthDate,
         String name,
         String termsVersion,
-        String privacyVersion) {
+        String privacyVersion,
+        String country,
+        StudentRegistered.Visitor visitor) {
+
+    /** Um cadastro sem país e sem o Visitante (história 2.1). */
+    public NewStudent(
+            String email,
+            String password,
+            LocalDate birthDate,
+            String name,
+            String termsVersion,
+            String privacyVersion) {
+        this(email, password, birthDate, name, termsVersion, privacyVersion, null, null);
+    }
 
     /** Nunca a senha. */
     @Override

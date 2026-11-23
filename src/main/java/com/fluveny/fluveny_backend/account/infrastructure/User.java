@@ -20,6 +20,8 @@ import java.util.UUID;
  * @param emailVerifiedAt nulo até a confirmação (2.2)
  * @param pendingEmail nulo até a troca de e-mail (2.9)
  * @param deletionRequestedAt nulo até o pedido de exclusão (2.10)
+ * @param country opcional: o {@code name} em inglês de um país de {@code countries.json}, informado
+ *     no cadastro (história 2.6); dado pessoal
  */
 public record User(
         String id,
@@ -37,9 +39,48 @@ public record User(
         Instant createdAt,
         Instant emailVerifiedAt,
         String pendingEmail,
-        Instant deletionRequestedAt) {
+        Instant deletionRequestedAt,
+        String country) {
 
-    /** Sem e-mail, nome, data nem hash. */
+    /** Uma conta sem país (as de antes da história 2.6 e as do carregador local). */
+    public User(
+            String id,
+            String email,
+            String passwordHash,
+            LocalDate birthDate,
+            Role role,
+            AccountStatus status,
+            UUID metricsId,
+            String name,
+            PronounSet pronounSet,
+            String termsVersion,
+            String privacyVersion,
+            Instant termsAcceptedAt,
+            Instant createdAt,
+            Instant emailVerifiedAt,
+            String pendingEmail,
+            Instant deletionRequestedAt) {
+        this(
+                id,
+                email,
+                passwordHash,
+                birthDate,
+                role,
+                status,
+                metricsId,
+                name,
+                pronounSet,
+                termsVersion,
+                privacyVersion,
+                termsAcceptedAt,
+                createdAt,
+                emailVerifiedAt,
+                pendingEmail,
+                deletionRequestedAt,
+                null);
+    }
+
+    /** Sem e-mail, nome, país, data nem hash. */
     @Override
     public String toString() {
         return "User[id=" + this.id + ", role=" + this.role + ", status=" + this.status + "]";

@@ -42,8 +42,9 @@ import org.springframework.stereotype.Service;
  * XP 0, sem gravar nem publicar. Duas primeiras ao mesmo tempo esbarram no índice único, e só a que
  * gravou publica e confere a conclusão do Estágio.
  *
- * <p>Sem transação (chega na 2.6): uma falha ao publicar vai para o log e o Sentry e não muda a
- * resposta nem desfaz a gravação. Cada escrita conta no limite por {@code userId}.
+ * <p>Sem transação (na 2.6, só o cadastro abre uma): uma falha ao publicar vai para o log e o
+ * Sentry e não muda a resposta nem desfaz a gravação. Cada escrita conta no limite por {@code
+ * userId}.
  */
 @Service
 class StudentAttempts {

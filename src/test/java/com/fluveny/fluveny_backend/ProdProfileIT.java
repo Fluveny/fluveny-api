@@ -3,11 +3,20 @@ package com.fluveny.fluveny_backend;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
+import com.fluveny.fluveny_backend.learning.grading.Outcome;
+import com.fluveny.fluveny_backend.learning.receipt.ReceiptKey;
+import com.fluveny.fluveny_backend.learning.receipt.ReceiptPayload;
+import com.fluveny.fluveny_backend.learning.receipt.ReceiptSigner;
+import com.fluveny.fluveny_backend.learning.receipt.ReceiptVerifier;
+import java.time.Instant;
+import java.util.Base64;
 import java.util.Map;
+import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.MutablePropertySources;
 import org.springframework.core.env.StandardEnvironment;
@@ -94,6 +103,72 @@ class ProdProfileIT {
 
         assertThat(failure).isNotNull();
         assertThat(rootMessage(failure)).contains("FLUVENY_RECEIPT_KEY precisa ter pelo menos");
+    }
+
+    @Test
+    void refusesToStartWithAnInvalidPreviousReceiptKey() {
+        String key = TestReceiptKey.generate();
+        for (String previous : new String[] {"c2hvcnQ=", key}) {
+            Throwable failure = start(validProd(key, previous));
+
+            assertThat(failure).isNotNull();
+            assertThat(rootMessage(failure))
+                    .contains("FLUVENY_RECEIPT_PREVIOUS_KEY")
+                    .doesNotContain(previous);
+        }
+    }
+
+    /** Rotação (história 2.6): a chave anterior do ambiente confere o recibo assinado com ela. */
+    @Test
+    void aValidPreviousReceiptKeyVerifiesAReceiptSignedWithIt() {
+        String previous = TestReceiptKey.generate();
+        ReceiptPayload payload =
+                new ReceiptPayload(
+                        UUID.randomUUID(),
+                        "unit-1",
+                        "sha256:" + "a".repeat(64),
+                        "s1-greetings",
+                        Outcome.VIEWED,
+                        0,
+                        0,
+                        UUID.randomUUID(),
+                        Instant.parse("2026-11-23T12:00:00Z"));
+        String receipt =
+                new ReceiptSigner(new ReceiptKey(Base64.getDecoder().decode(previous)))
+                        .sign(payload);
+        StandardEnvironment environment = new EmptyEnvironment();
+        environment
+                .getPropertySources()
+                .addFirst(
+                        new MapPropertySource(
+                                "test",
+                                Map.<String, Object>copyOf(
+                                        validProd(TestReceiptKey.generate(), previous))));
+        try (ConfigurableApplicationContext context =
+                new SpringApplicationBuilder(FluvenyBackendApplication.class)
+                        .environment(environment)
+                        .properties("server.port=0")
+                        .run()) {
+            assertThat(context.getBean(ReceiptVerifier.class).verify(receipt)).isEqualTo(payload);
+        }
+    }
+
+    private static Map<String, String> validProd(String key, String previous) {
+        return Map.of(
+                "SPRING_DATA_MONGODB_URI",
+                "mongodb://localhost:27017/fluveny_unit_tests",
+                "FLUVENY_RECEIPT_KEY",
+                key,
+                "FLUVENY_RECEIPT_PREVIOUS_KEY",
+                previous,
+                "FLUVENY_WEB_ORIGINS",
+                "https://app.fluveny.test",
+                "FLUVENY_PROXY_SECRET",
+                TestProxySecret.generate(),
+                "FLUVENY_APP_URL",
+                TestAppUrl.URL,
+                "fluveny.mongo.indexes-on-startup",
+                "false");
     }
 
     @Test

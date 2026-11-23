@@ -12,6 +12,7 @@ import com.fluveny.fluveny_backend.metrics.MetricsPublisher;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
 import com.fluveny.fluveny_backend.platform.web.ErrorCode;
 import io.sentry.Sentry;
+import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
@@ -57,17 +58,21 @@ class VisitorAttempts {
 
     private final MetricsPublisher metrics;
 
+    private final Clock clock;
+
     VisitorAttempts(
             ContentActivities activities,
             VisitorAttemptStore store,
             ReceiptSigner signer,
             VisitorDeviceLimit deviceLimit,
-            MetricsPublisher metrics) {
+            MetricsPublisher metrics,
+            Clock clock) {
         this.activities = activities;
         this.store = store;
         this.signer = signer;
         this.deviceLimit = deviceLimit;
         this.metrics = metrics;
+        this.clock = clock;
     }
 
     /** Corrige; {@code expected} e as justificativas só no Acerto. */
@@ -192,7 +197,8 @@ class VisitorAttempts {
         if (existing.isPresent()) {
             return sameAttempt(existing.get(), attemptId, outcome, resultPct);
         }
-        Instant now = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+        // O relógio da API: a migração (história 2.6) confere o issuedAt contra o mesmo relógio.
+        Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
         UUID nonce = UUID.randomUUID();
         String receipt =
                 this.signer.sign(

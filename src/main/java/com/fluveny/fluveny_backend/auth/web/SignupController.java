@@ -1,9 +1,8 @@
 package com.fluveny.fluveny_backend.auth.web;
 
 import com.fluveny.fluveny_backend.account.NewStudent;
-import com.fluveny.fluveny_backend.account.RegisterStudent;
-import com.fluveny.fluveny_backend.account.RegisteredStudent;
-import com.fluveny.fluveny_backend.auth.Sessions;
+import com.fluveny.fluveny_backend.auth.Signup;
+import com.fluveny.fluveny_backend.platform.events.StudentRegistered;
 import com.fluveny.fluveny_backend.platform.security.ClientHeader;
 import com.fluveny.fluveny_backend.platform.security.PublicRoute;
 import com.fluveny.fluveny_backend.platform.web.ApiResponse;
@@ -23,8 +22,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Cadastro de Aluno adulto (história 2.1, FR-2): cria a conta em {@code account} e já entra, com a
- * sessão criada aqui. Fica em {@code auth} porque {@code account} não chama {@code auth} (AD-3).
+ * Cadastro de Aluno adulto (histórias 2.1 e 2.6, FR-2, FR-7): cria a conta em {@code account},
+ * migra o Progresso do Visitante quando vem com os recibos e já entra, numa única transação ({@link
+ * Signup}). Fica em {@code auth} porque {@code account} não chama {@code auth} (AD-3).
  */
 @RestController
 @Tag(name = "auth")
@@ -32,13 +32,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/auth")
 class SignupController {
 
-    private final RegisterStudent register;
+    private final Signup signup;
 
-    private final Sessions sessions;
-
-    SignupController(RegisterStudent register, Sessions sessions) {
-        this.register = register;
-        this.sessions = sessions;
+    SignupController(Signup signup) {
+        this.signup = signup;
     }
 
     @Operation(
@@ -52,7 +49,14 @@ class SignupController {
                             + " de nascimento inválida dão 400 VALIDATION_FAILED; menor de 12,"
                             + " 422 AGE_BELOW_MINIMUM; de 12 a 17, 422"
                             + " GUARDIAN_CONSENT_REQUIRED; e-mail já cadastrado, 409"
-                            + " EMAIL_ALREADY_REGISTERED.")
+                            + " EMAIL_ALREADY_REGISTERED. country fora de countries.json dá 400"
+                            + " VALIDATION_FAILED no campo country. Vindo do convite do Visitante,"
+                            + " visitor leva o deviceId e os recibos das rotas do Visitante: os"
+                            + " válidos viram o Progresso e o XP da conta, na mesma transação do"
+                            + " cadastro, e os inválidos (adulterados, de outro aparelho, com mais"
+                            + " de 90 dias, reemitidos, já usados ou repetidos) são descartados"
+                            + " sem erro. A resposta é a mesma com ou sem recibos descartados; o"
+                            + " App limpa a loja do Visitante depois do 201.")
     @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
     ApiResponse<SignupResponse> signup(
@@ -68,16 +72,23 @@ class SignupController {
             @Valid @RequestBody SignupRequest body,
             HttpServletResponse response) {
         ClientHeader client = SessionResponses.requireClient(clientHeader);
-        RegisteredStudent student =
-                this.register.register(
+        StudentRegistered.Visitor visitor =
+                (body.visitor() == null)
+                        ? null
+                        : new StudentRegistered.Visitor(
+                                body.visitor().deviceId(), body.visitor().receipts());
+        Signup.Registered registered =
+                this.signup.signup(
                         new NewStudent(
                                 body.email(),
                                 body.password(),
                                 body.birthDate(),
                                 body.name(),
                                 body.acceptedTermsVersion(),
-                                body.acceptedPrivacyVersion()));
-        Sessions.NewSession session = this.sessions.create(student.userId(), student.role());
-        return SessionResponses.deliver(client, student.profile(), session, response);
+                                body.acceptedPrivacyVersion(),
+                                body.country(),
+                                visitor));
+        return SessionResponses.deliver(
+                client, registered.student().profile(), registered.session(), response);
     }
 }

@@ -16,6 +16,13 @@ public interface ActivityResultStore {
      */
     boolean insertIfAbsent(ActivityResult result);
 
+    /**
+     * Grava o registro sem conferir se já existe (a migração do Visitante, história 2.6): a conta é
+     * nova, então não há registro anterior. Dentro da transação, uma chave repetida lança e desfaz
+     * tudo; nada aqui captura a {@code DuplicateKeyException} para seguir.
+     */
+    void insert(ActivityResult result);
+
     Optional<ActivityResult> find(String userId, String unitKey, String activityKey);
 
     /** Todos os registros do Aluno, pela ordem de gravação. */

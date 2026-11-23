@@ -19,7 +19,7 @@ class ModularityTest {
             ApplicationModules.of(FluvenyBackendApplication.class);
 
     // A API pública da platform fica nas named interfaces dela (web, security,
-    // meta, local); "platform" sozinho só daria acesso ao pacote base.
+    // meta, local, events); "platform" sozinho só daria acesso ao pacote base.
     private static final String PLATFORM = "platform :: *";
 
     // Setas cheias do grafo da AD-3, mais platform para todos. Mudar aqui é mudar a spine.
@@ -95,11 +95,12 @@ class ModularityTest {
         assertThat(sender.contains(com.fluveny.fluveny_backend.mail.MailPriority.class)).isTrue();
     }
 
-    // A platform expõe web, security e meta, e o SPI do perfil local (AD-18, história 1.4).
+    // A platform expõe web, security e meta, o SPI do perfil local (AD-18, história 1.4) e os
+    // eventos de domínio no sentido inverso do grafo (AD-3, história 2.6).
     @Test
     void platformExposesItsNamedInterfaces() {
         var interfaces = modules.getModuleByName("platform").orElseThrow().getNamedInterfaces();
-        for (String name : new String[] {"web", "security", "meta", "local"}) {
+        for (String name : new String[] {"web", "security", "meta", "local", "events"}) {
             assertThat(interfaces.getByName(name)).as(name).isPresent();
         }
     }
