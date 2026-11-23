@@ -104,8 +104,8 @@ class LocalDataLoaderIT {
                 .map(index -> index.getString("name"))
                 .into(sessionIndexes);
         assertThat(sessionIndexes).contains("tokenHash_unique", "expiresAt_ttl");
-        // E os três Alunos de teste voltam (o desativado entrou na história 2.3).
-        assertThat(this.mongoTemplate.getCollection("users").countDocuments()).isEqualTo(3);
+        // E os quatro Alunos de teste voltam (o desativado entrou na 2.3; o atrasado, na 2.8).
+        assertThat(this.mongoTemplate.getCollection("users").countDocuments()).isEqualTo(4);
     }
 
     private long count() {

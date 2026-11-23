@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * Coleção e índices de {@code auth}, criados na partida e de forma idempotente (AD-3): em {@code
  * sessions}, o único do {@code tokenHash} e o TTL do {@code expiresAt}, que apaga a sessão quando
- * ela vence (história 2.1); em {@code login_throttle}, o único do {@code keyHash} e o TTL do {@code
+ * ela vence (história 2.1), e o do {@code userId}, para a redefinição de senha apagar as sessões da
+ * conta (história 2.8); em {@code login_throttle}, o único do {@code keyHash} e o TTL do {@code
  * expiresAt}, que apaga a contagem 1 h depois da última falha (história 2.3). A conferência do
  * vencimento não depende do TTL, que roda a cada minuto.
  *
@@ -29,6 +30,8 @@ public class AuthIndexes {
 
     static final String THROTTLE_KEY_INDEX = "keyHash_unique";
 
+    static final String SESSION_USER_INDEX = "userId";
+
     private final MongoTemplate mongo;
 
     AuthIndexes(MongoTemplate mongo) {
@@ -38,23 +41,28 @@ public class AuthIndexes {
     /** Cria as coleções e os índices que faltam. */
     public void ensure() {
         ensure(MongoSessionStore.COLLECTION, "tokenHash", TOKEN_HASH_INDEX);
+        ensure(
+                MongoSessionStore.COLLECTION,
+                new Index().on("userId", Sort.Direction.ASC).named(SESSION_USER_INDEX));
         ensure(MongoLoginThrottleStore.COLLECTION, "keyHash", THROTTLE_KEY_INDEX);
     }
 
     private void ensure(String collection, String key, String keyIndex) {
+        ensure(collection, new Index().on(key, Sort.Direction.ASC).unique().named(keyIndex));
+        ensure(
+                collection,
+                new Index()
+                        .on("expiresAt", Sort.Direction.ASC)
+                        .expire(Duration.ZERO)
+                        .named(TTL_INDEX));
+    }
+
+    /** Cria a coleção, se falta, e o índice. */
+    private void ensure(String collection, Index index) {
         if (!this.mongo.collectionExists(collection)) {
             this.mongo.createCollection(collection);
         }
-        this.mongo
-                .indexOps(collection)
-                .createIndex(new Index().on(key, Sort.Direction.ASC).unique().named(keyIndex));
-        this.mongo
-                .indexOps(collection)
-                .createIndex(
-                        new Index()
-                                .on("expiresAt", Sort.Direction.ASC)
-                                .expire(Duration.ZERO)
-                                .named(TTL_INDEX));
+        this.mongo.indexOps(collection).createIndex(index);
     }
 
     @Component

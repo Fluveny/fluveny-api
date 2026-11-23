@@ -56,6 +56,8 @@ public class RegisterStudent {
 
     private final EmailConfirmation confirmation;
 
+    private final StudentProfiles profiles;
+
     private final Clock clock;
 
     RegisterStudent(
@@ -63,11 +65,13 @@ public class RegisterStudent {
             Passwords passwords,
             MetricsPublisher metrics,
             EmailConfirmation confirmation,
+            StudentProfiles profiles,
             Clock clock) {
         this.users = users;
         this.passwords = passwords;
         this.metrics = metrics;
         this.confirmation = confirmation;
+        this.profiles = profiles;
         this.clock = clock;
     }
 
@@ -114,8 +118,8 @@ public class RegisterStudent {
                                                 + " senha."));
         publishRegistered(user.metricsId());
         issueConfirmation(userId, email, user.name());
-        return new RegisteredStudent(
-                userId, Role.STUDENT, new StudentProfile(user.name(), email, null, false));
+        // A conta acabou de nascer: a faixa do e-mail não confirmado sai false.
+        return new RegisteredStudent(userId, Role.STUDENT, this.profiles.toProfile(user));
     }
 
     /** {@code trim} e minúsculas: a chave única de {@code users}. */
@@ -171,7 +175,7 @@ public class RegisterStudent {
         }
     }
 
-    private static ApiException invalid(String field, String message) {
+    static ApiException invalid(String field, String message) {
         return new ApiException(
                 ErrorCode.VALIDATION_FAILED.status(),
                 ErrorCode.VALIDATION_FAILED.name(),

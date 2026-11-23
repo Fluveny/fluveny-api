@@ -15,7 +15,7 @@ import org.springframework.stereotype.Repository;
 /**
  * {@code sessions} no Mongo, com o índice único do {@code tokenHash} e o TTL do {@code expiresAt}
  * ({@link AuthIndexes}). O {@code userId} fica como {@code ObjectId}, o mesmo {@code _id} de {@code
- * users}.
+ * users}, com índice (a redefinição de senha apaga as sessões da conta, história 2.8).
  */
 @Repository
 class MongoSessionStore implements SessionStore {
@@ -61,6 +61,15 @@ class MongoSessionStore implements SessionStore {
     @Override
     public void deleteByTokenHash(String tokenHash) {
         this.mongo.remove(byHash(tokenHash), COLLECTION);
+    }
+
+    @Override
+    public void deleteByUser(String userId) {
+        if (userId == null || !ObjectId.isValid(userId)) {
+            return;
+        }
+        this.mongo.remove(
+                Query.query(Criteria.where("userId").is(new ObjectId(userId))), COLLECTION);
     }
 
     private static Query byHash(String tokenHash) {

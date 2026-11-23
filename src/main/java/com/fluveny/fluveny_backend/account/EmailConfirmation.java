@@ -170,7 +170,7 @@ public class EmailConfirmation {
         return this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
     }
 
-    private static String stripTrailingSlashes(String url) {
+    static String stripTrailingSlashes(String url) {
         String result = url;
         while (result.endsWith("/")) {
             result = result.substring(0, result.length() - 1);

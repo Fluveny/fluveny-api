@@ -1390,6 +1390,37 @@
         "required" : [ "activityTypes", "minAppVersion" ],
         "type" : "object"
       },
+      "PasswordRecoveryRequest" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "email" : {
+            "format" : "email",
+            "maxLength" : 254,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "email" ],
+        "type" : "object"
+      },
+      "PasswordResetRequest" : {
+        "additionalProperties" : false,
+        "properties" : {
+          "password" : {
+            "description" : "De 8 a 64 caracteres, com pelo menos uma letra e um número. Senhas com muitos acentos ou emoji podem precisar ser mais curtas (o limite é de 72 bytes em UTF-8).",
+            "maxLength" : 64,
+            "minLength" : 8,
+            "type" : "string"
+          },
+          "token" : {
+            "maxLength" : 128,
+            "minLength" : 1,
+            "type" : "string"
+          }
+        },
+        "required" : [ "password", "token" ],
+        "type" : "object"
+      },
       "PronounVariants" : {
         "properties" : {
           "he" : {
@@ -1721,6 +1752,10 @@
           "email" : {
             "type" : "string"
           },
+          "emailConfirmationOverdue" : {
+            "description" : "Se o e-mail segue sem confirmar 7 dias ou mais depois do cadastro (relógio do servidor). Com true, o App mostra a faixa \"Confirme seu e-mail para poder recuperar a senha.\" com o Reenviar; até confirmar, a recuperação de senha não envia nada.",
+            "type" : "boolean"
+          },
           "emailConfirmed" : {
             "description" : "Se o e-mail já foi confirmado.",
             "type" : "boolean"
@@ -1734,7 +1769,7 @@
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "email", "emailConfirmed" ],
+        "required" : [ "email", "emailConfirmationOverdue", "emailConfirmed" ],
         "type" : "object"
       },
       "StudentProgress" : {
@@ -2159,6 +2194,50 @@
             "type" : "string"
           }
         } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          }
+        },
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/v1/auth/password-recovery" : {
+      "post" : {
+        "description" : "Pede o link de redefinição de senha. Sempre 202 sem corpo, para e-mail cadastrado ou não: o link (vale 1 hora, uso único) só sai, pela fila com prioridade, para conta ativa com o e-mail confirmado. Um pedido novo não invalida os links anteriores; o uso de um invalida os outros. Pedidos repetidos do mesmo e-mail (mais de 1 por minuto, 5 por dia da mesma origem ou 20 por dia) também dão 202, sem envio. Mais de 20 pedidos por hora do mesmo IP: 429 TOO_MANY_REQUESTS com Retry-After. E-mail inválido ou campo desconhecido: 400 VALIDATION_FAILED.",
+        "operationId" : "requestPasswordRecovery",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordRecoveryRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "202" : {
+            "description" : "Accepted"
+          }
+        },
+        "tags" : [ "auth" ]
+      }
+    },
+    "/api/v1/auth/password-reset" : {
+      "post" : {
+        "description" : "Redefine a senha com o token do link e encerra todas as sessões da conta, em todos os aparelhos. Responde 204 sem corpo e não abre sessão: o App leva a Entrar. Senha fora da regra: 400 VALIDATION_FAILED, sem gastar o token. Token desconhecido, vencido, já usado ou de conta que mudou depois do pedido: 410 PASSWORD_RESET_LINK_INVALID.",
+        "operationId" : "resetPassword",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PasswordResetRequest"
+              }
+            }
+          },
+          "required" : true
+        },
         "responses" : {
           "204" : {
             "description" : "No Content"

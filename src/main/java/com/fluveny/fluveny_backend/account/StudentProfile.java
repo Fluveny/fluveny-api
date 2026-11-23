@@ -4,12 +4,15 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 
 /**
- * O perfil mínimo do Aluno (história 2.1): o que o App mostra e usa nas Falas.
+ * O perfil mínimo do Aluno (história 2.1): o que o App mostra e usa nas Falas. Montado só pelo
+ * {@link StudentProfiles}.
  *
  * @param name o nome, se o Aluno informou
  * @param email o e-mail da conta, normalizado
  * @param pronounSet os pronomes; nulo vale como {@code THEY}
  * @param emailConfirmed se o Aluno já confirmou o e-mail (história 2.2)
+ * @param emailConfirmationOverdue se o e-mail segue sem confirmar 7 dias depois do cadastro: o App
+ *     mostra a faixa "Confirme seu e-mail para poder recuperar a senha." (história 2.8)
  */
 @Schema(name = "StudentProfile")
 public record StudentProfile(
@@ -23,4 +26,24 @@ public record StudentProfile(
         @Schema(
                         requiredMode = RequiredMode.REQUIRED,
                         description = "Se o e-mail já foi confirmado.")
-                boolean emailConfirmed) {}
+                boolean emailConfirmed,
+        @Schema(
+                        requiredMode = RequiredMode.REQUIRED,
+                        description =
+                                "Se o e-mail segue sem confirmar 7 dias ou mais depois do"
+                                        + " cadastro (relógio do servidor). Com true, o App"
+                                        + " mostra a faixa \"Confirme seu e-mail para poder"
+                                        + " recuperar a senha.\" com o Reenviar; até confirmar,"
+                                        + " a recuperação de senha não envia nada.")
+                boolean emailConfirmationOverdue) {
+
+    /** Sem o e-mail nem o nome. */
+    @Override
+    public String toString() {
+        return "StudentProfile[emailConfirmed="
+                + this.emailConfirmed
+                + ", emailConfirmationOverdue="
+                + this.emailConfirmationOverdue
+                + "]";
+    }
+}

@@ -108,6 +108,28 @@ class MongoUserStore implements UserStore {
     }
 
     @Override
+    public boolean updatePasswordHash(String id, String email, String passwordHash) {
+        if (id == null || !ObjectId.isValid(id) || email == null) {
+            return false;
+        }
+        return this.mongo
+                        .updateFirst(
+                                Query.query(
+                                        Criteria.where("_id")
+                                                .is(new ObjectId(id))
+                                                .and("email")
+                                                .is(email)
+                                                .and("status")
+                                                .is(AccountStatus.ACTIVE.name())
+                                                .and("emailVerifiedAt")
+                                                .ne(null)),
+                                Update.update("passwordHash", passwordHash),
+                                COLLECTION)
+                        .getMatchedCount()
+                > 0;
+    }
+
+    @Override
     public void upsertByEmail(User user) {
         Update update =
                 new Update()
