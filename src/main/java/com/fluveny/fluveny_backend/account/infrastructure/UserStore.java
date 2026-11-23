@@ -18,6 +18,9 @@ public interface UserStore {
     /** A conta do id; vazio se não existe ou o id não é válido. */
     Optional<User> findById(String id);
 
+    /** A conta do e-mail já normalizado (trim e minúsculas); vazio se não existe. */
+    Optional<User> findByEmail(String email);
+
     /**
      * Grava os pronomes.
      *

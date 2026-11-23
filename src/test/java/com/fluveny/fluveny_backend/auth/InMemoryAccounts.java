@@ -6,14 +6,17 @@ import com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore;
 import com.fluveny.fluveny_backend.account.infrastructure.TokenPurpose;
 import com.fluveny.fluveny_backend.account.infrastructure.User;
 import com.fluveny.fluveny_backend.account.infrastructure.UserStore;
+import com.fluveny.fluveny_backend.auth.infrastructure.LoginThrottleStore;
 import com.fluveny.fluveny_backend.auth.infrastructure.Session;
 import com.fluveny.fluveny_backend.auth.infrastructure.SessionStore;
+import com.fluveny.fluveny_backend.auth.infrastructure.ThrottleEntry;
 import com.fluveny.fluveny_backend.mail.InMemoryOutbox;
 import com.fluveny.fluveny_backend.mail.infrastructure.OutboxStore;
 import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
 import com.fluveny.fluveny_backend.metrics.infrastructure.EventStore;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -26,9 +29,10 @@ import org.springframework.context.annotation.Primary;
 
 /**
  * {@code users}, {@code sessions}, {@code events}, {@code one_time_tokens} e {@code mail_outbox} em
- * memória, com as mesmas regras de unicidade e atomicidade do Mongo (e-mail único, inclusive em
- * cadastros simultâneos; consumo do token de uso único), para os testes de rota sem banco
- * (histórias 2.1 e 2.2). Os testes contra o Mongo ficam nos {@code *IT}.
+ * memória (e {@code login_throttle}, história 2.3), com as mesmas regras de unicidade e atomicidade
+ * do Mongo (e-mail único, inclusive em cadastros simultâneos; consumo do token de uso único), para
+ * os testes de rota sem banco (histórias 2.1, 2.2 e 2.3, esta com {@code login_throttle}). Os
+ * testes contra o Mongo ficam nos {@code *IT}.
  */
 @TestConfiguration(proxyBeanMethods = false)
 public class InMemoryAccounts {
@@ -47,6 +51,9 @@ public class InMemoryAccounts {
     /** {@code one_time_tokens} por {@code tokenHash}. */
     public final Map<String, OneTimeToken> tokens = new ConcurrentHashMap<>();
 
+    /** {@code login_throttle} por {@code keyHash} (história 2.3). */
+    public final Map<String, ThrottleEntry> throttle = new ConcurrentHashMap<>();
+
     /** {@code mail_outbox}. */
     public final InMemoryOutbox outbox = new InMemoryOutbox();
 
@@ -57,6 +64,7 @@ public class InMemoryAccounts {
         this.users.clear();
         this.idsByEmail.clear();
         this.sessions.clear();
+        this.throttle.clear();
         this.events.clear();
         this.tokens.clear();
         this.outbox.clear();
@@ -84,6 +92,14 @@ public class InMemoryAccounts {
 
             @Override
             public Optional<User> findById(String id) {
+                return (id == null)
+                        ? Optional.empty()
+                        : Optional.ofNullable(InMemoryAccounts.this.users.get(id));
+            }
+
+            @Override
+            public Optional<User> findByEmail(String email) {
+                String id = (email == null) ? null : InMemoryAccounts.this.idsByEmail.get(email);
                 return (id == null)
                         ? Optional.empty()
                         : Optional.ofNullable(InMemoryAccounts.this.users.get(id));
@@ -147,6 +163,44 @@ public class InMemoryAccounts {
                                         session.role(),
                                         session.createdAt(),
                                         expiresAt));
+            }
+
+            @Override
+            public void deleteByTokenHash(String tokenHash) {
+                InMemoryAccounts.this.sessions.remove(tokenHash);
+            }
+        };
+    }
+
+    @Bean
+    @Primary
+    LoginThrottleStore inMemoryThrottle() {
+        return new LoginThrottleStore() {
+            @Override
+            public List<ThrottleEntry> find(Collection<String> keyHashes) {
+                return keyHashes.stream()
+                        .map(InMemoryAccounts.this.throttle::get)
+                        .filter(java.util.Objects::nonNull)
+                        .toList();
+            }
+
+            @Override
+            public void recordFailure(String keyHash, String kind, Instant now, Instant expiresAt) {
+                InMemoryAccounts.this.throttle.compute(
+                        keyHash,
+                        (hash, current) ->
+                                new ThrottleEntry(
+                                        hash,
+                                        (current == null || !current.expiresAt().isAfter(now))
+                                                ? 1
+                                                : current.failures() + 1,
+                                        now,
+                                        expiresAt));
+            }
+
+            @Override
+            public void delete(Collection<String> keyHashes) {
+                keyHashes.forEach(InMemoryAccounts.this.throttle::remove);
             }
         };
     }

@@ -59,6 +59,19 @@ class MongoUserStore implements UserStore {
     }
 
     @Override
+    public Optional<User> findByEmail(String email) {
+        if (email == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(
+                        this.mongo.findOne(
+                                Query.query(Criteria.where("email").is(email)),
+                                Document.class,
+                                COLLECTION))
+                .map(MongoUserStore::toUser);
+    }
+
+    @Override
     public boolean updatePronounSet(String id, PronounSet pronounSet) {
         if (id == null || !ObjectId.isValid(id)) {
             return false;

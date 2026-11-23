@@ -6,8 +6,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
 
 /**
- * A conta criada e, só no Android, o token da sessão (história 2.1). No web o token vai só no
- * cookie.
+ * A conta e, só no Android, o token da sessão: a resposta do cadastro (história 2.1) e do login
+ * (história 2.3). No web o token vai só no cookie.
  *
  * @param sessionToken só com {@code X-Fluveny-Client: android}; o App guarda no {@code
  *     expo-secure-store} e envia como {@code Authorization: Bearer}

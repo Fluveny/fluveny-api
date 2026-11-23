@@ -13,4 +13,7 @@ public interface SessionStore {
 
     /** Troca o vencimento da sessão (a renovação deslizante). */
     void renew(String tokenHash, Instant expiresAt);
+
+    /** Apaga a sessão do hash, se existe (o logout, história 2.3). */
+    void deleteByTokenHash(String tokenHash);
 }

@@ -13,6 +13,15 @@ public class RateLimitedException extends ApiException {
         this.retryAfterSeconds = retryAfterSeconds;
     }
 
+    /**
+     * {@code 429} com código de domínio próprio (por exemplo, {@code LOGIN_THROTTLED}, história
+     * 2.3), também com o {@code Retry-After}.
+     */
+    public RateLimitedException(String code, String detail, long retryAfterSeconds) {
+        super(ErrorCode.TOO_MANY_REQUESTS.status(), code, detail);
+        this.retryAfterSeconds = retryAfterSeconds;
+    }
+
     /** Segundos até a próxima janela. */
     public long getRetryAfterSeconds() {
         return this.retryAfterSeconds;
