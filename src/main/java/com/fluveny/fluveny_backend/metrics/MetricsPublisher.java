@@ -73,6 +73,79 @@ public class MetricsPublisher {
     }
 
     /**
+     * Uma abertura de Atividade pelo Aluno (história 2.4): o mesmo {@code ACTIVITY_STARTED} do
+     * Visitante, com o {@code metricsId} no lugar do {@code deviceId}.
+     */
+    public void studentActivityStarted(
+            UUID metricsId, String unitKey, String versionId, String activityKey) {
+        append(
+                new Event(
+                        EventType.ACTIVITY_STARTED,
+                        now(),
+                        null,
+                        required(unitKey, "unitKey"),
+                        required(versionId, "versionId"),
+                        required(activityKey, "activityKey"),
+                        null,
+                        metricsId(metricsId),
+                        null));
+    }
+
+    /**
+     * A conclusão de uma Atividade pelo Aluno (história 2.4), publicada por quem gravou o {@code
+     * ActivityResult}.
+     */
+    public void activityCompleted(ActivityCompleted completed) {
+        append(
+                new Event(
+                        EventType.ACTIVITY_COMPLETED,
+                        now(),
+                        null,
+                        completed.unitKey(),
+                        completed.versionId(),
+                        completed.activityKey(),
+                        null,
+                        completed.metricsId().toString(),
+                        null,
+                        completed.outcome(),
+                        completed.activityType(),
+                        completed.resultPct(),
+                        completed.firstAttempt(),
+                        completed.extraHelp(),
+                        completed.studyTimeMs()));
+    }
+
+    /**
+     * Os campos do {@code ACTIVITY_COMPLETED} (AD-14): nada além do catálogo da spine.
+     *
+     * @param outcome {@code GRADED}, {@code SKIPPED} ou {@code VIEWED}
+     * @param resultPct só no {@code GRADED}; nulo nos outros
+     * @param firstAttempt se é a primeira conclusão da Atividade pelo Aluno
+     * @param extraHelp se é uma Tentativa do Extra Help da Resposta Livre
+     */
+    public record ActivityCompleted(
+            UUID metricsId,
+            String unitKey,
+            String versionId,
+            String activityKey,
+            String outcome,
+            String activityType,
+            Integer resultPct,
+            boolean firstAttempt,
+            boolean extraHelp,
+            long studyTimeMs) {
+
+        public ActivityCompleted {
+            Objects.requireNonNull(metricsId, "metricsId");
+            Objects.requireNonNull(unitKey, "unitKey");
+            Objects.requireNonNull(versionId, "versionId");
+            Objects.requireNonNull(activityKey, "activityKey");
+            Objects.requireNonNull(outcome, "outcome");
+            Objects.requireNonNull(activityType, "activityType");
+        }
+    }
+
+    /**
      * Uma conta de Aluno criada (história 2.1).
      *
      * @param fromVisitor se a conta veio do Visitante, com a migração do Progresso (2.6)
@@ -87,7 +160,7 @@ public class MetricsPublisher {
                         null,
                         null,
                         null,
-                        Objects.requireNonNull(metricsId, "metricsId").toString(),
+                        metricsId(metricsId),
                         fromVisitor));
     }
 
@@ -101,6 +174,10 @@ public class MetricsPublisher {
 
     private static String id(UUID deviceId) {
         return Objects.requireNonNull(deviceId, "deviceId").toString();
+    }
+
+    private static String metricsId(UUID metricsId) {
+        return Objects.requireNonNull(metricsId, "metricsId").toString();
     }
 
     private static String required(String value, String name) {

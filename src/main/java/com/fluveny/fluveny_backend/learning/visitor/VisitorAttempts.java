@@ -4,7 +4,6 @@ import com.fluveny.fluveny_backend.content.ContentActivities;
 import com.fluveny.fluveny_backend.content.activity.FreeActivity;
 import com.fluveny.fluveny_backend.learning.LearningActivityTypes;
 import com.fluveny.fluveny_backend.learning.grading.GradeResult;
-import com.fluveny.fluveny_backend.learning.grading.Grader;
 import com.fluveny.fluveny_backend.learning.grading.Outcome;
 import com.fluveny.fluveny_backend.learning.grading.StudentVars;
 import com.fluveny.fluveny_backend.learning.receipt.ReceiptPayload;
@@ -44,9 +43,9 @@ class VisitorAttempts {
 
     private static final Logger log = LoggerFactory.getLogger(VisitorAttempts.class);
 
-    static final String ATTEMPT_REQUIRED = "ATTEMPT_REQUIRED";
+    static final String ATTEMPT_REQUIRED = AttemptGrading.ATTEMPT_REQUIRED;
 
-    static final String COMPLETION_NOT_ALLOWED = "COMPLETION_NOT_ALLOWED";
+    static final String COMPLETION_NOT_ALLOWED = AttemptGrading.COMPLETION_NOT_ALLOWED;
 
     private final ContentActivities activities;
 
@@ -115,10 +114,7 @@ class VisitorAttempts {
                         ? Optional.empty()
                         : this.store.find(attempt.deviceId(), attempt.activityKey());
         if (first.isEmpty() || (isExtraHelp(found) && first.get().outcome() != Outcome.GRADED)) {
-            throw new ApiException(
-                    HttpStatus.CONFLICT,
-                    ATTEMPT_REQUIRED,
-                    "Responda a Atividade antes de ver a resposta.");
+            throw AttemptGrading.attemptRequired();
         }
         return toResult(found, result, true, 0, null);
     }
@@ -176,13 +172,7 @@ class VisitorAttempts {
     }
 
     private static GradeResult grade(ContentActivities.Found found, Attempt attempt) {
-        if (!found.activity().type().equals(attempt.type())) {
-            throw new ApiException(
-                    HttpStatus.BAD_REQUEST,
-                    Grader.INVALID_ANSWER,
-                    "O Tipo da Tentativa difere do Tipo da Atividade.");
-        }
-        return Grader.grade(found.activity(), attempt.answer(), StudentVars.NONE);
+        return AttemptGrading.grade(found, attempt.type(), attempt.answer(), StudentVars.NONE);
     }
 
     /**
@@ -279,9 +269,8 @@ class VisitorAttempts {
         return same ? first.receipt() : null;
     }
 
-    /** Tentativa da Resposta Livre: sempre do Extra Help (história 1.18). */
     private static boolean isExtraHelp(ContentActivities.Found found) {
-        return found.activity() instanceof FreeActivity;
+        return AttemptGrading.isExtraHelp(found);
     }
 
     private static AttemptResult toResult(
@@ -290,19 +279,6 @@ class VisitorAttempts {
             boolean disclose,
             int xp,
             String receipt) {
-        return new AttemptResult(
-                result.outcome(),
-                result.resultPct(),
-                result.items().stream()
-                        .map(item ->
-                                new ItemResult(
-                                        item.itemKey(),
-                                        item.correct(),
-                                        disclose ? item.justification() : null))
-                        .toList(),
-                xp,
-                disclose ? result.expected() : null,
-                receipt,
-                isExtraHelp(found) ? Boolean.TRUE : null);
+        return AttemptGrading.toResult(found, result, disclose, xp, receipt);
     }
 }

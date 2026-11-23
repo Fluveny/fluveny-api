@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * Coleções e índices de {@code learning}, criados na partida e de forma idempotente (AD-3): em
  * {@code visitor_attempts}, o índice único por {@code (deviceId, activityKey)} e o TTL de 90 dias
- * em {@code createdAt} (história 1.12).
+ * em {@code createdAt} (história 1.12); em {@code activity_results}, o índice único por {@code
+ * (userId, unitKey, activityKey)}, sem TTL (história 2.4).
  *
  * <p>Testes {@code @SpringBootTest} sem Mongo desligam com {@code
  * fluveny.mongo.indexes-on-startup=false}; o carregador local chama {@link #ensure()} de novo,
@@ -28,14 +29,37 @@ public class LearningIndexes {
 
     static final String TTL_INDEX = "createdAt_ttl";
 
+    static final String ACTIVITY_RESULTS_UNIQUE_INDEX = "userId_unitKey_activityKey";
+
     private final MongoTemplate mongo;
 
     LearningIndexes(MongoTemplate mongo) {
         this.mongo = mongo;
     }
 
-    /** Cria a coleção e os índices que faltam. */
+    /** Cria as coleções e os índices que faltam. */
     public void ensure() {
+        ensureVisitorAttempts();
+        ensureActivityResults();
+    }
+
+    private void ensureActivityResults() {
+        String collection = MongoActivityResultStore.COLLECTION;
+        if (!this.mongo.collectionExists(collection)) {
+            this.mongo.createCollection(collection);
+        }
+        this.mongo
+                .indexOps(collection)
+                .createIndex(
+                        new Index()
+                                .on("userId", Sort.Direction.ASC)
+                                .on("unitKey", Sort.Direction.ASC)
+                                .on("activityKey", Sort.Direction.ASC)
+                                .unique()
+                                .named(ACTIVITY_RESULTS_UNIQUE_INDEX));
+    }
+
+    private void ensureVisitorAttempts() {
         String collection = MongoVisitorAttemptStore.COLLECTION;
         if (!this.mongo.collectionExists(collection)) {
             this.mongo.createCollection(collection);
