@@ -76,6 +76,18 @@ public class Sessions implements SessionAuthenticator {
         this.store.deleteByUser(userId);
     }
 
+    /**
+     * Encerra todas as sessões da conta, menos a do token (a troca de senha, história 2.9): o
+     * aparelho que trocou segue entrando. Sem token, encerra todas.
+     */
+    public void revokeAllExcept(String userId, String keptToken) {
+        if (keptToken == null || keptToken.isBlank()) {
+            revokeAll(userId);
+            return;
+        }
+        this.store.deleteByUserExcept(userId, OpaqueTokens.hash(keptToken));
+    }
+
     @Override
     public Optional<AuthenticatedSession> authenticate(String token) {
         if (token == null || token.isEmpty()) {

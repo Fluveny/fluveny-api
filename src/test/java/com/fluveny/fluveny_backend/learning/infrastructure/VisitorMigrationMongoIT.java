@@ -518,6 +518,11 @@ class VisitorMigrationMongoIT {
                 public void deleteByUser(String userId) {
                     real.deleteByUser(userId);
                 }
+
+                @Override
+                public void deleteByUserExcept(String userId, String keptTokenHash) {
+                    real.deleteByUserExcept(userId, keptTokenHash);
+                }
             };
         }
 

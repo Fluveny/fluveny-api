@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.auth;
 
 import com.fluveny.fluveny_backend.account.AccountStatus;
+import com.fluveny.fluveny_backend.account.ProfileChange;
 import com.fluveny.fluveny_backend.account.PronounSet;
 import com.fluveny.fluveny_backend.account.infrastructure.OneTimeToken;
 import com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore;
@@ -117,16 +118,6 @@ public class InMemoryAccounts {
             }
 
             @Override
-            public boolean updatePronounSet(String id, PronounSet pronounSet) {
-                User user = InMemoryAccounts.this.users.get(id);
-                if (user == null) {
-                    return false;
-                }
-                InMemoryAccounts.this.users.put(id, withPronouns(user, pronounSet));
-                return true;
-            }
-
-            @Override
             public boolean markEmailVerified(String id, String email, Instant verifiedAt) {
                 User user =
                         InMemoryAccounts.this.users.computeIfPresent(
@@ -157,6 +148,132 @@ public class InMemoryAccounts {
                             return current;
                         });
                 return updated[0];
+            }
+
+            @Override
+            public boolean updateProfile(String id, ProfileChange change) {
+                if (id == null) {
+                    return false;
+                }
+                User found = InMemoryAccounts.this.users.get(id);
+                if (found == null
+                        || found.status() != AccountStatus.ACTIVE
+                        || found.role()
+                                != com.fluveny.fluveny_backend.platform.security.Role.STUDENT) {
+                    return false;
+                }
+                return InMemoryAccounts.this.users.computeIfPresent(
+                                id,
+                                (key, u) ->
+                                        with(
+                                                u,
+                                                u.email(),
+                                                u.passwordHash(),
+                                                (change.name() == null)
+                                                        ? u.name()
+                                                        : change.name().value(),
+                                                (change.pronounSet() == null)
+                                                        ? u.pronounSet()
+                                                        : change.pronounSet().value(),
+                                                u.emailVerifiedAt(),
+                                                u.pendingEmail(),
+                                                (change.country() == null)
+                                                        ? u.country()
+                                                        : change.country().value()))
+                        != null;
+            }
+
+            @Override
+            public boolean replacePasswordHash(String id, String currentHash, String newHash) {
+                boolean[] updated = new boolean[1];
+                if (id == null) {
+                    return false;
+                }
+                InMemoryAccounts.this.users.computeIfPresent(
+                        id,
+                        (key, current) -> {
+                            if (current.status() == AccountStatus.ACTIVE
+                                    && current.passwordHash().equals(currentHash)) {
+                                updated[0] = true;
+                                return withPasswordHash(current, newHash);
+                            }
+                            return current;
+                        });
+                return updated[0];
+            }
+
+            @Override
+            public boolean setPendingEmail(String id, String pendingEmail) {
+                boolean[] updated = new boolean[1];
+                if (id == null) {
+                    return false;
+                }
+                InMemoryAccounts.this.users.computeIfPresent(
+                        id,
+                        (key, u) -> {
+                            if (u.status() != AccountStatus.ACTIVE) {
+                                return u;
+                            }
+                            updated[0] = true;
+                            return with(
+                                    u,
+                                    u.email(),
+                                    u.passwordHash(),
+                                    u.name(),
+                                    u.pronounSet(),
+                                    u.emailVerifiedAt(),
+                                    pendingEmail,
+                                    u.country());
+                        });
+                return updated[0];
+            }
+
+            @Override
+            public synchronized PromotionResult promotePendingEmail(
+                    String id, String pendingEmail, Instant verifiedAt) {
+                User u = (id == null) ? null : InMemoryAccounts.this.users.get(id);
+                if (u == null
+                        || u.status() != AccountStatus.ACTIVE
+                        || !pendingEmail.equals(u.pendingEmail())) {
+                    return PromotionResult.NOT_PENDING;
+                }
+                if (InMemoryAccounts.this.idsByEmail.putIfAbsent(pendingEmail, id) != null) {
+                    return PromotionResult.TAKEN;
+                }
+                InMemoryAccounts.this.idsByEmail.remove(u.email());
+                InMemoryAccounts.this.users.put(
+                        id,
+                        with(
+                                u,
+                                pendingEmail,
+                                u.passwordHash(),
+                                u.name(),
+                                u.pronounSet(),
+                                verifiedAt,
+                                null,
+                                u.country()));
+                return PromotionResult.PROMOTED;
+            }
+
+            @Override
+            public void clearPendingEmail(String id, String pendingEmail) {
+                if (id == null) {
+                    return;
+                }
+                InMemoryAccounts.this.users.computeIfPresent(
+                        id,
+                        (key, u) ->
+                                pendingEmail.equals(u.pendingEmail())
+                                        ? with(
+                                                u,
+                                                u.email(),
+                                                u.passwordHash(),
+                                                u.name(),
+                                                u.pronounSet(),
+                                                u.emailVerifiedAt(),
+                                                null,
+                                                u.country())
+                                        : u);
             }
 
             @Override
@@ -207,6 +324,16 @@ public class InMemoryAccounts {
                         .sessions
                         .values()
                         .removeIf(session -> session.userId().equals(userId));
+            }
+
+            @Override
+            public void deleteByUserExcept(String userId, String keptTokenHash) {
+                InMemoryAccounts.this
+                        .sessions
+                        .values()
+                        .removeIf(session ->
+                                session.userId().equals(userId)
+                                        && !session.tokenHash().equals(keptTokenHash));
             }
         };
     }
@@ -417,5 +544,34 @@ public class InMemoryAccounts {
                 user.pendingEmail(),
                 user.deletionRequestedAt(),
                 user.country());
+    }
+
+    static User with(
+            User user,
+            String email,
+            String passwordHash,
+            String name,
+            PronounSet pronounSet,
+            Instant emailVerifiedAt,
+            String pendingEmail,
+            String country) {
+        return new User(
+                user.id(),
+                email,
+                passwordHash,
+                user.birthDate(),
+                user.role(),
+                user.status(),
+                user.metricsId(),
+                name,
+                pronounSet,
+                user.termsVersion(),
+                user.privacyVersion(),
+                user.termsAcceptedAt(),
+                user.createdAt(),
+                emailVerifiedAt,
+                pendingEmail,
+                user.deletionRequestedAt(),
+                country);
     }
 }

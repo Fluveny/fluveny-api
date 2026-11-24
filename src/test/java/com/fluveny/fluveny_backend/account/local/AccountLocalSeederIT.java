@@ -110,4 +110,50 @@ class AccountLocalSeederIT {
         // O seed não publica eventos: STUDENT_REGISTERED é só do cadastro.
         assertThat(this.mongo.getCollection("events").countDocuments()).isZero();
     }
+
+    /** História 2.9: o seed de novo desfaz a troca de e-mail pendente e volta o país. */
+    @Test
+    void reseedingUndoesThePendingEmailChangeAndRestoresTheCountry() {
+        this.seeder.seed();
+        Document user =
+                this.mongo
+                        .getCollection("users")
+                        .find(new Document("email", AccountLocalSeeder.WITH_PRONOUNS))
+                        .first();
+        this.mongo
+                .getCollection("users")
+                .updateOne(
+                        new Document("_id", user.get("_id")),
+                        new Document(
+                                "$set",
+                                new Document("pendingEmail", "nova@example.com")
+                                        .append("country", "Chile")));
+        this.mongo
+                .getCollection("one_time_tokens")
+                .insertOne(
+                        new Document("tokenHash", "seed-it-hash")
+                                .append("userId", user.get("_id"))
+                                .append("purpose", "EMAIL_CHANGE")
+                                .append("email", "nova@example.com")
+                                .append("createdAt", new java.util.Date())
+                                .append(
+                                        "expiresAt",
+                                        java.util.Date.from(
+                                                Instant.now().plus(Duration.ofDays(1)))));
+
+        this.seeder.seed();
+
+        Document after =
+                this.mongo
+                        .getCollection("users")
+                        .find(new Document("email", AccountLocalSeeder.WITH_PRONOUNS))
+                        .first();
+        assertThat(after.get("pendingEmail")).isNull();
+        assertThat(after.getString("country")).isEqualTo(AccountLocalSeeder.COUNTRY);
+        assertThat(
+                        this.mongo
+                                .getCollection("one_time_tokens")
+                                .countDocuments(new Document("purpose", "EMAIL_CHANGE")))
+                .isZero();
+    }
 }

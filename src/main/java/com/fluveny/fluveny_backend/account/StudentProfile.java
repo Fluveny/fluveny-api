@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
  * @param emailConfirmed se o Aluno já confirmou o e-mail (história 2.2)
  * @param emailConfirmationOverdue se o e-mail segue sem confirmar 7 dias depois do cadastro: o App
  *     mostra a faixa "Confirme seu e-mail para poder recuperar a senha." (história 2.8)
+ * @param pendingEmail o e-mail novo da troca ainda não confirmada (história 2.9); nulo sem troca
  */
 @Schema(name = "StudentProfile")
 public record StudentProfile(
@@ -44,7 +45,14 @@ public record StudentProfile(
                                         + " mostra a faixa \"Confirme seu e-mail para poder"
                                         + " recuperar a senha.\" com o Reenviar; até confirmar,"
                                         + " a recuperação de senha não envia nada.")
-                boolean emailConfirmationOverdue) {
+                boolean emailConfirmationOverdue,
+        @Schema(
+                        requiredMode = RequiredMode.NOT_REQUIRED,
+                        nullable = true,
+                        description =
+                                "O e-mail novo pedido na troca de e-mail, até o Aluno abrir o"
+                                        + " link enviado a ele. Nulo sem troca pendente.")
+                String pendingEmail) {
 
     /** Sem o e-mail, o nome nem o país. */
     @Override

@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.account.infrastructure;
 
 import com.fluveny.fluveny_backend.account.AccountStatus;
+import com.fluveny.fluveny_backend.account.ProfileChange;
 import com.fluveny.fluveny_backend.account.PronounSet;
 import com.fluveny.fluveny_backend.platform.security.Role;
 import java.time.Instant;
@@ -72,22 +73,6 @@ class MongoUserStore implements UserStore {
     }
 
     @Override
-    public boolean updatePronounSet(String id, PronounSet pronounSet) {
-        if (id == null || !ObjectId.isValid(id)) {
-            return false;
-        }
-        return this.mongo
-                        .updateFirst(
-                                Query.query(Criteria.where("_id").is(new ObjectId(id))),
-                                Update.update(
-                                        "pronounSet",
-                                        (pronounSet == null) ? null : pronounSet.name()),
-                                COLLECTION)
-                        .getMatchedCount()
-                > 0;
-    }
-
-    @Override
     public boolean markEmailVerified(String id, String email, Instant verifiedAt) {
         if (id == null || !ObjectId.isValid(id)) {
             return false;
@@ -130,6 +115,122 @@ class MongoUserStore implements UserStore {
     }
 
     @Override
+    public boolean updateProfile(String id, ProfileChange change) {
+        if (id == null || !ObjectId.isValid(id) || change == null || change.isEmpty()) {
+            return false;
+        }
+        Update update = new Update();
+        if (change.name() != null) {
+            if (change.name().value() == null) {
+                update.unset("name");
+            } else {
+                update.set("name", change.name().value());
+            }
+        }
+        if (change.country() != null) {
+            if (change.country().value() == null) {
+                update.unset("country");
+            } else {
+                update.set("country", change.country().value());
+            }
+        }
+        if (change.pronounSet() != null) {
+            update.set("pronounSet", name(change.pronounSet().value()));
+        }
+        Query activeStudent =
+                Query.query(
+                        Criteria.where("_id")
+                                .is(new ObjectId(id))
+                                .and("status")
+                                .is(AccountStatus.ACTIVE.name())
+                                .and("role")
+                                .is(Role.STUDENT.name()));
+        return this.mongo.updateFirst(activeStudent, update, COLLECTION).getMatchedCount() > 0;
+    }
+
+    @Override
+    public boolean replacePasswordHash(String id, String currentHash, String newHash) {
+        if (id == null || !ObjectId.isValid(id) || currentHash == null) {
+            return false;
+        }
+        return this.mongo
+                        .updateFirst(
+                                Query.query(
+                                        Criteria.where("_id")
+                                                .is(new ObjectId(id))
+                                                .and("status")
+                                                .is(AccountStatus.ACTIVE.name())
+                                                .and("passwordHash")
+                                                .is(currentHash)),
+                                Update.update("passwordHash", newHash),
+                                COLLECTION)
+                        .getMatchedCount()
+                > 0;
+    }
+
+    @Override
+    public boolean setPendingEmail(String id, String pendingEmail) {
+        if (id == null || !ObjectId.isValid(id)) {
+            return false;
+        }
+        return this.mongo
+                        .updateFirst(
+                                Query.query(
+                                        Criteria.where("_id")
+                                                .is(new ObjectId(id))
+                                                .and("status")
+                                                .is(AccountStatus.ACTIVE.name())),
+                                Update.update("pendingEmail", pendingEmail),
+                                COLLECTION)
+                        .getMatchedCount()
+                > 0;
+    }
+
+    @Override
+    public PromotionResult promotePendingEmail(String id, String pendingEmail, Instant verifiedAt) {
+        if (id == null || !ObjectId.isValid(id) || pendingEmail == null) {
+            return PromotionResult.NOT_PENDING;
+        }
+        try {
+            long matched =
+                    this.mongo
+                            .updateFirst(
+                                    Query.query(
+                                            Criteria.where("_id")
+                                                    .is(new ObjectId(id))
+                                                    .and("pendingEmail")
+                                                    .is(pendingEmail)
+                                                    .and("status")
+                                                    .is(AccountStatus.ACTIVE.name())),
+                                    new Update()
+                                            .set("email", pendingEmail)
+                                            .set("pendingEmail", null)
+                                            .set("emailVerifiedAt", Date.from(verifiedAt)),
+                                    COLLECTION)
+                            .getMatchedCount();
+            return (matched > 0) ? PromotionResult.PROMOTED : PromotionResult.NOT_PENDING;
+        } catch (DuplicateKeyException ex) {
+            // Sem a exceção: a mensagem do driver traz o e-mail (dado pessoal).
+            return PromotionResult.TAKEN;
+        }
+    }
+
+    @Override
+    public void clearPendingEmail(String id, String pendingEmail) {
+        if (id == null || !ObjectId.isValid(id) || pendingEmail == null) {
+            return;
+        }
+        this.mongo.updateFirst(
+                Query.query(
+                        Criteria.where("_id")
+                                .is(new ObjectId(id))
+                                .and("pendingEmail")
+                                .is(pendingEmail)),
+                Update.update("pendingEmail", null),
+                COLLECTION);
+    }
+
+    @Override
     public void upsertByEmail(User user) {
         Update update =
                 new Update()
@@ -142,11 +243,16 @@ class MongoUserStore implements UserStore {
                         .set("termsVersion", user.termsVersion())
                         .set("privacyVersion", user.privacyVersion())
                         .set("emailVerifiedAt", date(user.emailVerifiedAt()))
+                        .set("pendingEmail", null)
                         .setOnInsert("metricsId", user.metricsId().toString())
                         .setOnInsert("termsAcceptedAt", date(user.termsAcceptedAt()))
                         .setOnInsert("createdAt", date(user.createdAt()))
-                        .setOnInsert("pendingEmail", null)
                         .setOnInsert("deletionRequestedAt", null);
+        if (user.country() == null) {
+            update.unset("country");
+        } else {
+            update.set("country", user.country());
+        }
         this.mongo.upsert(
                 Query.query(Criteria.where("email").is(user.email())), update, COLLECTION);
     }

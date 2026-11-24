@@ -11,11 +11,9 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
-import java.util.Locale;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,8 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 @PublicRoute
 @RequestMapping("/api/v1/auth")
 class LoginController {
-
-    private static final String BEARER = "bearer ";
 
     private final Login login;
 
@@ -76,8 +72,8 @@ class LoginController {
         Login.LoggedIn loggedIn =
                 this.login.login(body.email(), body.password(), request.getRemoteAddr());
         // A sessão que a requisição já trazia não fica órfã por 30 dias: sai como no logout.
-        this.sessions.revoke(bearer(request));
-        this.sessions.revoke(cookie(request));
+        this.sessions.revoke(RequestTokens.bearer(request));
+        this.sessions.revoke(RequestTokens.cookie(request));
         return SessionResponses.deliver(client, loggedIn.profile(), loggedIn.session(), response);
     }
 
@@ -104,32 +100,11 @@ class LoginController {
             HttpServletRequest request,
             HttpServletResponse response) {
         ClientHeader client = SessionResponses.requireClient(clientHeader);
-        this.sessions.revoke(bearer(request));
-        this.sessions.revoke(cookie(request));
+        this.sessions.revoke(RequestTokens.bearer(request));
+        this.sessions.revoke(RequestTokens.cookie(request));
         if (client == ClientHeader.WEB) {
             // setHeader, não addHeader: troca o cookie renovado que o filtro possa ter posto.
             response.setHeader(HttpHeaders.SET_COOKIE, SessionCookie.clearHeader());
         }
-    }
-
-    private static String bearer(HttpServletRequest request) {
-        String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (header != null && header.toLowerCase(Locale.ROOT).startsWith(BEARER)) {
-            return header.substring(BEARER.length()).strip();
-        }
-        return null;
-    }
-
-    private static String cookie(HttpServletRequest request) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies == null) {
-            return null;
-        }
-        for (Cookie cookie : cookies) {
-            if (SessionCookie.NAME.equals(cookie.getName())) {
-                return cookie.getValue();
-            }
-        }
-        return null;
     }
 }

@@ -30,7 +30,14 @@ class AccountLocalSeederTest {
 
     private final AccountLocalSeeder seeder =
             new AccountLocalSeeder(
-                    this.indexes, this.users, new Passwords(), this.password, Clock.systemUTC());
+                    this.indexes,
+                    this.users,
+                    mock(
+                            com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore
+                                    .class),
+                    new Passwords(),
+                    this.password,
+                    Clock.systemUTC());
 
     @Test
     void withoutThePasswordNothingIsStoredAndNothingIsThrown() {

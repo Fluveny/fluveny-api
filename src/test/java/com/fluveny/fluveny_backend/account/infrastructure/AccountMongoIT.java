@@ -149,15 +149,15 @@ class AccountMongoIT {
                     assertThat(user.birthDate()).isEqualTo(LocalDate.of(1995, 5, 20));
                     assertThat(user.pronounSet()).isNull();
                 });
-        assertThat(this.users.updatePronounSet(id, PronounSet.SHE)).isTrue();
+        assertThat(this.users.updateProfile(id, pronouns(PronounSet.SHE))).isTrue();
         assertThat(this.users.findById(id))
                 .get()
                 .extracting(User::pronounSet)
                 .isEqualTo(PronounSet.SHE);
-        assertThat(this.users.updatePronounSet(id, null)).isTrue();
+        assertThat(this.users.updateProfile(id, pronouns(null))).isTrue();
         assertThat(this.users.findById(id)).get().extracting(User::pronounSet).isNull();
         assertThat(this.users.findById("nao-e-id")).isEmpty();
-        assertThat(this.users.updatePronounSet("0".repeat(24), PronounSet.HE)).isFalse();
+        assertThat(this.users.updateProfile("0".repeat(24), pronouns(PronounSet.HE))).isFalse();
     }
 
     @Test
@@ -213,5 +213,10 @@ class AccountMongoIT {
         assertThat(conflicts).isEqualTo(threads - 1);
         assertThat(documents()).hasSize(1);
         assertThat(this.mongo.getCollection("sessions").countDocuments()).isEqualTo(1);
+    }
+
+    private static com.fluveny.fluveny_backend.account.ProfileChange pronouns(PronounSet value) {
+        return new com.fluveny.fluveny_backend.account.ProfileChange(
+                null, null, com.fluveny.fluveny_backend.account.ProfileChange.Value.of(value));
     }
 }
