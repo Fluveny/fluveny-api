@@ -18,4 +18,7 @@ public interface OneTimeTokenStore {
 
     /** Apaga os tokens da conta com o propósito (o reenvio invalida o link anterior). */
     void deleteByUser(String userId, TokenPurpose purpose);
+
+    /** Apaga todos os tokens da conta, de qualquer propósito (a exclusão, história 2.10). */
+    void deleteAllFor(String userId);
 }

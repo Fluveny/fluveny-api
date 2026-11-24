@@ -37,10 +37,19 @@ class PasswordResetTextTest {
     private final List<MailPriority> priorities = new ArrayList<>();
 
     private final MailSender mail =
-            (to, subject, text, priority) -> {
-                this.subjects.add(subject);
-                this.texts.add(text);
-                this.priorities.add(priority);
+            new MailSender() {
+                @Override
+                public void enqueue(String to, String subject, String text, MailPriority priority) {
+                    PasswordResetTextTest.this.subjects.add(subject);
+                    PasswordResetTextTest.this.texts.add(text);
+                    PasswordResetTextTest.this.priorities.add(priority);
+                }
+
+                @Override
+                public void enqueuePurgedOnSend(
+                        String to, String subject, String text, MailPriority priority) {
+                    enqueue(to, subject, text, priority);
+                }
             };
 
     private void request(String appUrl, String name) {

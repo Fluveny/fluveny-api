@@ -27,4 +27,7 @@ public interface ActivityResultStore {
 
     /** Todos os registros do Aluno, pela ordem de gravação. */
     List<ActivityResult> findByUser(String userId);
+
+    /** Apaga todos os registros do Aluno (a exclusão da conta, história 2.10). */
+    void deleteAllFor(String userId);
 }

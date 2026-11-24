@@ -11,6 +11,7 @@ import com.fluveny.fluveny_backend.account.NewStudent;
 import com.fluveny.fluveny_backend.account.PreparedStudent;
 import com.fluveny.fluveny_backend.account.RegisterStudent;
 import com.fluveny.fluveny_backend.account.RegisteredStudent;
+import com.fluveny.fluveny_backend.platform.events.TransientTransactions;
 import com.fluveny.fluveny_backend.platform.security.Role;
 import com.mongodb.MongoException;
 import java.time.Instant;
@@ -78,7 +79,7 @@ class SignupRetryTest {
 
         assertThatThrownBy(() -> this.signup.signup(STUDENT))
                 .isInstanceOf(DataIntegrityViolationException.class);
-        verify(this.register, times(Signup.ATTEMPTS)).register(this.prepared);
+        verify(this.register, times(TransientTransactions.ATTEMPTS)).register(this.prepared);
     }
 
     @Test
@@ -88,7 +89,7 @@ class SignupRetryTest {
         assertThatThrownBy(() -> this.signup.signup(STUDENT))
                 .isInstanceOf(IllegalStateException.class);
         verify(this.register, times(1)).register(this.prepared);
-        assertThat(Signup.isTransient(new MongoException("sem rótulo"))).isFalse();
+        assertThat(TransientTransactions.isTransient(new MongoException("sem rótulo"))).isFalse();
     }
 
     @Test
@@ -97,6 +98,6 @@ class SignupRetryTest {
         RuntimeException second = new RuntimeException("b", first);
         first.initCause(second);
 
-        assertThat(Signup.isTransient(first)).isFalse();
+        assertThat(TransientTransactions.isTransient(first)).isFalse();
     }
 }

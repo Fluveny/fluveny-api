@@ -5,6 +5,7 @@ import static org.mockito.Mockito.mock;
 
 import com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore;
 import com.fluveny.fluveny_backend.account.infrastructure.UserStore;
+import com.fluveny.fluveny_backend.mail.MailPriority;
 import com.fluveny.fluveny_backend.mail.MailSender;
 import java.time.Clock;
 import java.time.Instant;
@@ -23,7 +24,19 @@ class EmailConfirmationTextTest {
 
     private final List<String> texts = new ArrayList<>();
 
-    private final MailSender mail = (to, subject, text, priority) -> this.texts.add(text);
+    private final MailSender mail =
+            new MailSender() {
+                @Override
+                public void enqueue(String to, String subject, String text, MailPriority priority) {
+                    EmailConfirmationTextTest.this.texts.add(text);
+                }
+
+                @Override
+                public void enqueuePurgedOnSend(
+                        String to, String subject, String text, MailPriority priority) {
+                    EmailConfirmationTextTest.this.texts.add(text);
+                }
+            };
 
     private EmailConfirmation confirmation(String appUrl) {
         return new EmailConfirmation(

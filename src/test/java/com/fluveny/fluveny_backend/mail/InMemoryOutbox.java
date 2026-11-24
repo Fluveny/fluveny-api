@@ -5,6 +5,7 @@ import com.fluveny.fluveny_backend.mail.infrastructure.OutboxMail;
 import com.fluveny.fluveny_backend.mail.infrastructure.OutboxStore;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -121,6 +122,11 @@ public class InMemoryOutbox implements OutboxStore {
         return all.stream().limit(limit).toList();
     }
 
+    @Override
+    public synchronized void deleteAllTo(Collection<String> addresses) {
+        this.mails.values().removeIf(mail -> addresses.contains(mail.to()));
+    }
+
     private void update(String id, UnaryOperator<OutboxMail> change) {
         this.mails.computeIfPresent(id, (key, mail) -> change.apply(mail));
     }
@@ -144,6 +150,7 @@ public class InMemoryOutbox implements OutboxStore {
                 nextAttemptAt,
                 mail.createdAt(),
                 sentAt,
-                purgeAt);
+                purgeAt,
+                mail.purgeOnSend());
     }
 }

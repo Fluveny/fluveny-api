@@ -500,6 +500,14 @@ abstract class StudentLearningTestSupport {
                     found.sort(Comparator.comparing(ActivityResult::createdAt));
                     return found;
                 }
+
+                @Override
+                public void deleteAllFor(String userId) {
+                    InMemoryLearning.this
+                            .results
+                            .values()
+                            .removeIf(result -> result.userId().equals(userId));
+                }
             };
         }
 
@@ -524,6 +532,14 @@ abstract class StudentLearningTestSupport {
                                             new UnitProgress.StageCompletion(
                                                     versionId, completedAt))
                             == null;
+                }
+
+                @Override
+                public void deleteAllFor(String userId) {
+                    InMemoryLearning.this
+                            .progress
+                            .keySet()
+                            .removeIf(key -> key.startsWith(userId + "|"));
                 }
 
                 @Override

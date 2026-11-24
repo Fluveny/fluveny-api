@@ -20,4 +20,7 @@ public interface UnitProgressStore {
 
     /** Todas as Unidades do Aluno com alguma conclusão. */
     List<UnitProgress> findByUser(String userId);
+
+    /** Apaga todos os registros do Aluno (a exclusão da conta, história 2.10). */
+    void deleteAllFor(String userId);
 }

@@ -137,6 +137,11 @@ class MongoActivityResultStore implements ActivityResultStore {
                 toInstant(document.getDate("createdAt")));
     }
 
+    @Override
+    public void deleteAllFor(String userId) {
+        this.mongo.remove(Query.query(Criteria.where("userId").is(userId)), COLLECTION);
+    }
+
     private static Instant toInstant(Date date) {
         return (date == null) ? null : date.toInstant();
     }

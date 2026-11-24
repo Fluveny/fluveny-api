@@ -2,6 +2,7 @@ package com.fluveny.fluveny_backend.mail.infrastructure;
 
 import com.fluveny.fluveny_backend.mail.MailPriority;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -45,7 +46,8 @@ class MongoOutboxStore implements OutboxStore {
                         .append("nextAttemptAt", date(mail.nextAttemptAt()))
                         .append("createdAt", date(mail.createdAt()))
                         .append("sentAt", date(mail.sentAt()))
-                        .append("purgeAt", date(mail.purgeAt())),
+                        .append("purgeAt", date(mail.purgeAt()))
+                        .append("purgeOnSend", mail.purgeOnSend()),
                 COLLECTION);
         return id.toHexString();
     }
@@ -131,6 +133,14 @@ class MongoOutboxStore implements OutboxStore {
                 .toList();
     }
 
+    @Override
+    public void deleteAllTo(Collection<String> addresses) {
+        if (addresses.isEmpty()) {
+            return;
+        }
+        this.mongo.remove(Query.query(Criteria.where("to").in(addresses)), COLLECTION);
+    }
+
     private static Query byId(String id) {
         return Query.query(Criteria.where("_id").is(new ObjectId(id)));
     }
@@ -147,7 +157,8 @@ class MongoOutboxStore implements OutboxStore {
                 instant(document.getDate("nextAttemptAt")),
                 instant(document.getDate("createdAt")),
                 instant(document.getDate("sentAt")),
-                instant(document.getDate("purgeAt")));
+                instant(document.getDate("purgeAt")),
+                document.getBoolean("purgeOnSend", false));
     }
 
     private static Date date(Instant instant) {

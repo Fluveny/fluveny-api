@@ -46,7 +46,8 @@ class MongoLoginThrottleStore implements LoginThrottleStore {
     }
 
     @Override
-    public void recordFailure(String keyHash, String kind, Instant now, Instant expiresAt) {
+    public void recordFailure(
+            String keyHash, String kind, String accountKeyHash, Instant now, Instant expiresAt) {
         // O vencido conta como zero: o TTL do Mongo roda só a cada minuto.
         this.mongo.remove(
                 Query.query(
@@ -58,6 +59,9 @@ class MongoLoginThrottleStore implements LoginThrottleStore {
                         .set("lastFailureAt", Date.from(now))
                         .set("expiresAt", Date.from(expiresAt))
                         .setOnInsert("kind", kind);
+        if (accountKeyHash != null) {
+            update.set("accountKeyHash", accountKeyHash);
+        }
         Query query = Query.query(Criteria.where("keyHash").is(keyHash));
         try {
             this.mongo.upsert(query, update, COLLECTION);
@@ -70,6 +74,20 @@ class MongoLoginThrottleStore implements LoginThrottleStore {
     @Override
     public void delete(Collection<String> keyHashes) {
         this.mongo.remove(Query.query(Criteria.where("keyHash").in(keyHashes)), COLLECTION);
+    }
+
+    @Override
+    public void deleteByAccount(Collection<String> accountKeyHashes) {
+        if (accountKeyHashes.isEmpty()) {
+            return;
+        }
+        this.mongo.remove(
+                Query.query(
+                        new Criteria()
+                                .orOperator(
+                                        Criteria.where("keyHash").in(accountKeyHashes),
+                                        Criteria.where("accountKeyHash").in(accountKeyHashes))),
+                COLLECTION);
     }
 
     private static Instant instant(Date date) {

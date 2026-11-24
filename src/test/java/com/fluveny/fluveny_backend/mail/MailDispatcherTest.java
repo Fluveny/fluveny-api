@@ -116,6 +116,50 @@ class MailDispatcherTest {
         assertThat(this.transport.sent).hasSize(1);
     }
 
+    /** A confirmação da exclusão da conta (2.10): some no envio, e em até 7 dias se falhar. */
+    @Test
+    void aMailPurgedOnSendIsPurgedAtTheSendingOrWithinSevenDays() {
+        this.sender.enqueuePurgedOnSend("ana@example.com", "Assunto", "Texto", MailPriority.HIGH);
+        OutboxMail pending = only();
+        assertThat(pending.purgeOnSend()).isTrue();
+        assertThat(pending.purgeAt()).isEqualTo(NOW.plus(Duration.ofDays(7)));
+        this.clock.advance(Duration.ofSeconds(30));
+
+        assertThat(dispatcher(300).dispatch()).isEqualTo(1);
+
+        OutboxMail sent = only();
+        assertThat(sent.status()).isEqualTo(MailStatus.SENT);
+        assertThat(sent.purgeAt()).isEqualTo(sent.sentAt());
+
+        this.outbox.deleteAllTo(List.of("ana@example.com"));
+        this.transport.failing = true;
+        this.sender.enqueuePurgedOnSend("ana@example.com", "Assunto", "Texto", MailPriority.HIGH);
+        MailDispatcher dispatcher = dispatcher(300);
+        for (int attempt = 1; attempt <= MailDispatcher.MAX_ATTEMPTS; attempt++) {
+            this.clock.set(only().nextAttemptAt());
+            dispatcher.dispatch();
+        }
+        OutboxMail failed = only();
+        assertThat(failed.status()).isEqualTo(MailStatus.FAILED);
+        assertThat(failed.purgeAt()).isEqualTo(failed.createdAt().plus(Duration.ofDays(7)));
+
+        // Falhou depois dos 7 dias (o SMTP ficou parado): o TTL apaga já.
+        this.outbox.deleteAllTo(List.of("ana@example.com"));
+        this.sender.enqueuePurgedOnSend("ana@example.com", "Assunto", "Texto", MailPriority.HIGH);
+        Instant created = only().createdAt();
+        for (int attempt = 1; attempt <= MailDispatcher.MAX_ATTEMPTS; attempt++) {
+            Instant due = only().nextAttemptAt();
+            this.clock.set(
+                    attempt == MailDispatcher.MAX_ATTEMPTS
+                            ? created.plus(Duration.ofDays(8))
+                            : due);
+            dispatcher.dispatch();
+        }
+        OutboxMail late = only();
+        assertThat(late.status()).isEqualTo(MailStatus.FAILED);
+        assertThat(late.purgeAt()).isEqualTo(this.clock.instant());
+    }
+
     @Test
     void withoutTransportNothingIsClaimedAndTheMailStaysPending() {
         this.transport.configured = false;

@@ -71,6 +71,11 @@ class MongoUnitProgressStore implements UnitProgressStore {
         return found;
     }
 
+    @Override
+    public void deleteAllFor(String userId) {
+        this.mongo.remove(Query.query(Criteria.where("userId").is(userId)), COLLECTION);
+    }
+
     private static UnitProgress toProgress(Document document) {
         Map<String, UnitProgress.StageCompletion> stages = new LinkedHashMap<>();
         Document stored = document.get("stages", Document.class);

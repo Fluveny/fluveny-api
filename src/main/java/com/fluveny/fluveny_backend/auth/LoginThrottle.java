@@ -9,9 +9,11 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import org.springframework.stereotype.Service;
 
 /**
@@ -97,15 +99,31 @@ public class LoginThrottle {
         Keys keys = Keys.of(email, ip);
         Instant now = now();
         Instant expiresAt = now.plus(RETENTION);
-        this.store.recordFailure(keys.origin, "ip", now, expiresAt);
-        this.store.recordFailure(keys.accountOrigin, "account_ip", now, expiresAt);
-        this.store.recordFailure(keys.account, "account", now, expiresAt);
+        this.store.recordFailure(keys.origin, "ip", null, now, expiresAt);
+        this.store.recordFailure(keys.accountOrigin, "account_ip", keys.account, now, expiresAt);
+        this.store.recordFailure(keys.account, "account", keys.account, now, expiresAt);
     }
 
     /** O sucesso zera conta + origem e conta; a origem continua. */
     public void recordSuccess(String email, String ip) {
         Keys keys = Keys.of(email, ip);
         this.store.delete(List.of(keys.accountOrigin, keys.account));
+    }
+
+    /**
+     * Apaga as chaves {@code account} e {@code account_ip} dos e-mails (a exclusão da conta,
+     * história 2.10). A chave {@code ip} fica: ela não identifica a conta. Documentos de antes da
+     * 2.10 sem o {@code accountKeyHash} somem pelo TTL de 1 h.
+     *
+     * @param emails os e-mails normalizados; nulos são ignorados
+     */
+    public void forget(String... emails) {
+        if (emails == null) {
+            return;
+        }
+        List<String> accounts =
+                Arrays.stream(emails).filter(Objects::nonNull).map(Keys::account).toList();
+        this.store.deleteByAccount(accounts);
     }
 
     /**
@@ -157,9 +175,11 @@ public class LoginThrottle {
         static Keys of(String email, String ip) {
             String origin = LoginThrottle.origin(ip);
             return new Keys(
-                    hash("ip", origin),
-                    hash("account_ip", email + "\n" + origin),
-                    hash("account", email));
+                    hash("ip", origin), hash("account_ip", email + "\n" + origin), account(email));
+        }
+
+        static String account(String email) {
+            return hash("account", email);
         }
 
         List<String> all() {

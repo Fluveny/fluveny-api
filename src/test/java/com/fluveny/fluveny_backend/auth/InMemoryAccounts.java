@@ -16,6 +16,7 @@ import com.fluveny.fluveny_backend.mail.InMemoryOutbox;
 import com.fluveny.fluveny_backend.mail.infrastructure.OutboxStore;
 import com.fluveny.fluveny_backend.metrics.infrastructure.Event;
 import com.fluveny.fluveny_backend.metrics.infrastructure.EventStore;
+import com.fluveny.fluveny_backend.platform.security.Role;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -66,6 +67,9 @@ public class InMemoryAccounts {
     /** {@code login_throttle} por {@code keyHash} (história 2.3). */
     public final Map<String, ThrottleEntry> throttle = new ConcurrentHashMap<>();
 
+    /** O {@code accountKeyHash} de cada chave do throttle, como no Mongo (história 2.10). */
+    public final Map<String, String> throttleAccounts = new ConcurrentHashMap<>();
+
     /** {@code mail_outbox}. */
     public final InMemoryOutbox outbox = new InMemoryOutbox();
 
@@ -75,6 +79,7 @@ public class InMemoryAccounts {
     public void clear() {
         this.users.clear();
         this.idsByEmail.clear();
+        this.throttleAccounts.clear();
         this.sessions.clear();
         this.throttle.clear();
         this.events.clear();
@@ -158,8 +163,7 @@ public class InMemoryAccounts {
                 User found = InMemoryAccounts.this.users.get(id);
                 if (found == null
                         || found.status() != AccountStatus.ACTIVE
-                        || found.role()
-                                != com.fluveny.fluveny_backend.platform.security.Role.STUDENT) {
+                        || found.role() != Role.STUDENT) {
                     return false;
                 }
                 return InMemoryAccounts.this.users.computeIfPresent(
@@ -253,6 +257,51 @@ public class InMemoryAccounts {
                                 null,
                                 u.country()));
                 return PromotionResult.PROMOTED;
+            }
+
+            @Override
+            public boolean markDeletionRequested(String id, Instant requestedAt) {
+                if (id == null) {
+                    return false;
+                }
+                boolean[] marked = {false};
+                InMemoryAccounts.this.users.computeIfPresent(
+                        id,
+                        (key, u) -> {
+                            if (u.deletionRequestedAt() != null
+                                    || u.status() != AccountStatus.ACTIVE
+                                    || u.role() != Role.STUDENT) {
+                                return u;
+                            }
+                            marked[0] = true;
+                            return new User(
+                                    u.id(),
+                                    u.email(),
+                                    u.passwordHash(),
+                                    u.birthDate(),
+                                    u.role(),
+                                    u.status(),
+                                    u.metricsId(),
+                                    u.name(),
+                                    u.pronounSet(),
+                                    u.termsVersion(),
+                                    u.privacyVersion(),
+                                    u.termsAcceptedAt(),
+                                    u.createdAt(),
+                                    u.emailVerifiedAt(),
+                                    u.pendingEmail(),
+                                    requestedAt,
+                                    u.country());
+                        });
+                return marked[0];
+            }
+
+            @Override
+            public void delete(String id) {
+                User removed = InMemoryAccounts.this.users.remove(id);
+                if (removed != null) {
+                    InMemoryAccounts.this.idsByEmail.remove(removed.email());
+                }
             }
 
             @Override
@@ -351,7 +400,15 @@ public class InMemoryAccounts {
             }
 
             @Override
-            public void recordFailure(String keyHash, String kind, Instant now, Instant expiresAt) {
+            public void recordFailure(
+                    String keyHash,
+                    String kind,
+                    String accountKeyHash,
+                    Instant now,
+                    Instant expiresAt) {
+                if (accountKeyHash != null) {
+                    InMemoryAccounts.this.throttleAccounts.put(keyHash, accountKeyHash);
+                }
                 InMemoryAccounts.this.throttle.compute(
                         keyHash,
                         (hash, current) ->
@@ -367,6 +424,22 @@ public class InMemoryAccounts {
             @Override
             public void delete(Collection<String> keyHashes) {
                 keyHashes.forEach(InMemoryAccounts.this.throttle::remove);
+                keyHashes.forEach(InMemoryAccounts.this.throttleAccounts::remove);
+            }
+
+            @Override
+            public void deleteByAccount(Collection<String> accountKeyHashes) {
+                InMemoryAccounts.this
+                        .throttle
+                        .keySet()
+                        .removeIf(key ->
+                                accountKeyHashes.contains(key)
+                                        || accountKeyHashes.contains(
+                                                InMemoryAccounts.this.throttleAccounts.get(key)));
+                InMemoryAccounts.this
+                        .throttleAccounts
+                        .keySet()
+                        .removeIf(key -> !InMemoryAccounts.this.throttle.containsKey(key));
             }
         };
     }
@@ -396,6 +469,14 @@ public class InMemoryAccounts {
                             return token;
                         });
                 return Optional.ofNullable(consumed[0]);
+            }
+
+            @Override
+            public void deleteAllFor(String userId) {
+                InMemoryAccounts.this
+                        .tokens
+                        .values()
+                        .removeIf(token -> token.userId().equals(userId));
             }
 
             @Override
