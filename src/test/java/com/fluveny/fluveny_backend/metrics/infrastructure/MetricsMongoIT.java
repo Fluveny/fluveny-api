@@ -150,9 +150,22 @@ class MetricsMongoIT {
                         true,
                         false,
                         800));
+        // O refazer (2.7): outro ACTIVITY_COMPLETED, com firstAttempt false.
+        this.publisher.activityCompleted(
+                new MetricsPublisher.ActivityCompleted(
+                        metricsId,
+                        "unit-1",
+                        VERSION,
+                        "s1-greetings",
+                        "GRADED",
+                        "choice",
+                        100,
+                        false,
+                        false,
+                        900));
 
         List<Document> events = events();
-        assertThat(events).hasSize(3);
+        assertThat(events).hasSize(4);
         assertThat(events.get(0).keySet())
                 .containsExactlyInAnyOrder(
                         "_id",
@@ -187,6 +200,10 @@ class MetricsMongoIT {
         assertThat(((Number) events.get(1).get("studyTimeMs")).longValue()).isEqualTo(1200L);
         assertThat(events.get(2).containsKey("resultPct")).isFalse();
         assertThat(events.get(2).getString("outcome")).isEqualTo("VIEWED");
+        assertThat(events.get(2).getBoolean("firstAttempt")).isTrue();
+        assertThat(events.get(3).getBoolean("firstAttempt")).isFalse();
+        assertThat(events.get(3).getInteger("resultPct")).isEqualTo(100);
+        assertThat(((Number) events.get(3).get("studyTimeMs")).longValue()).isEqualTo(900L);
     }
 
     @Test

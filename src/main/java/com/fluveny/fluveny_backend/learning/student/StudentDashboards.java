@@ -119,9 +119,11 @@ class StudentDashboards {
         return null;
     }
 
-    /** A média arredondada dos {@code GRADED} da versão publicada; nula sem nenhum. */
-    private static Integer average(
-            List<ActivityResult> all, String unitKey, Set<String> published) {
+    /**
+     * A média arredondada dos {@code GRADED} da Unidade cujas {@code activityKey}s estão em {@code
+     * published}; nula sem nenhum. A mesma do resumo do Estágio (2.7).
+     */
+    static Integer average(List<ActivityResult> all, String unitKey, Set<String> published) {
         long sum = 0;
         int count = 0;
         for (ActivityResult result : all) {

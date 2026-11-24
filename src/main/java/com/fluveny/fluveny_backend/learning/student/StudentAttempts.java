@@ -39,8 +39,9 @@ import org.springframework.stereotype.Service;
  * com o XP dela, e publica o {@code ACTIVITY_COMPLETED} ({@code firstAttempt: true}). Reenviar o
  * mesmo {@code attemptId} com o mesmo {@code outcome} e {@code resultPct} devolve o XP gravado;
  * outro {@code attemptId} ("Tentar de novo", refazer) ou outro corpo devolve o Feedback normal com
- * XP 0, sem gravar nem publicar. Duas primeiras ao mesmo tempo esbarram no índice único, e só a que
- * gravou publica e confere a conclusão do Estágio.
+ * XP 0, sem gravar. Só o refazer ({@code replay: true}, outro {@code attemptId}) publica o {@code
+ * ACTIVITY_COMPLETED} com {@code firstAttempt: false} (2.7). Duas primeiras ao mesmo tempo esbarram
+ * no índice único, e só a que gravou publica e confere a conclusão do Estágio.
  *
  * <p>Sem transação (na 2.6, só o cadastro abre uma): uma falha ao publicar vai para o log e o
  * Sentry e não muda a resposta nem desfaz a gravação. Cada escrita conta no limite por {@code
@@ -101,7 +102,8 @@ class StudentAttempts {
                         Outcome.GRADED,
                         result.resultPct(),
                         result.xpAwarded(),
-                        attempt.studyTimeMs());
+                        attempt.studyTimeMs(),
+                        attempt.isReplay());
         return AttemptGrading.toResult(found, result, result.isCorrect(), xp, null);
     }
 
@@ -155,7 +157,8 @@ class StudentAttempts {
                 outcome,
                 null,
                 0,
-                completion.studyTimeMs());
+                completion.studyTimeMs(),
+                completion.isReplay());
         if (found.activity() instanceof FreeActivity free) {
             return new CompletionResult(outcome, 0, null, free.modelAnswer());
         }
@@ -192,10 +195,25 @@ class StudentAttempts {
             Outcome outcome,
             Integer resultPct,
             int xpAwarded,
-            long studyTimeMs) {
+            long studyTimeMs,
+            boolean replay) {
         String activityKey = found.activity().activityKey();
         Optional<ActivityResult> existing = this.store.find(userId, found.unitKey(), activityKey);
         if (existing.isPresent()) {
+            if (replay && !existing.get().attemptId().equals(attemptId)) {
+                // Refazer (2.7): só o evento, com os dados desta resposta; nada é gravado.
+                publish(
+                        identity,
+                        found.unitKey(),
+                        found.versionId(),
+                        activityKey,
+                        outcome,
+                        found.activity().type(),
+                        resultPct,
+                        false,
+                        outcome == Outcome.GRADED && AttemptGrading.isExtraHelp(found),
+                        studyTimeMs);
+            }
             return xpIfSame(existing.get(), attemptId, outcome, resultPct);
         }
         ActivityResult first =
@@ -240,19 +258,43 @@ class StudentAttempts {
     }
 
     private void publishCompleted(StudentIdentity identity, ActivityResult result) {
+        publish(
+                identity,
+                result.unitKey(),
+                result.versionId(),
+                result.activityKey(),
+                result.outcome(),
+                result.activityType(),
+                result.resultPct(),
+                true,
+                result.extraHelp(),
+                result.studyTimeMs());
+    }
+
+    private void publish(
+            StudentIdentity identity,
+            String unitKey,
+            String versionId,
+            String activityKey,
+            Outcome outcome,
+            String activityType,
+            Integer resultPct,
+            boolean firstAttempt,
+            boolean extraHelp,
+            long studyTimeMs) {
         try {
             this.metrics.activityCompleted(
                     new MetricsPublisher.ActivityCompleted(
                             identity.metricsId(),
-                            result.unitKey(),
-                            result.versionId(),
-                            result.activityKey(),
-                            result.outcome().name(),
-                            result.activityType(),
-                            result.resultPct(),
-                            true,
-                            result.extraHelp(),
-                            result.studyTimeMs()));
+                            unitKey,
+                            versionId,
+                            activityKey,
+                            outcome.name(),
+                            activityType,
+                            resultPct,
+                            firstAttempt,
+                            extraHelp,
+                            studyTimeMs));
         } catch (RuntimeException ex) {
             log.error("Falha ao publicar ACTIVITY_COMPLETED", ex);
             Sentry.captureException(ex);
