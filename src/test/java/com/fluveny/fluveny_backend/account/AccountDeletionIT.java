@@ -334,6 +334,127 @@ class AccountDeletionIT {
                 .isPositive();
     }
 
+    private String teen(String email, String guardian) throws Exception {
+        String body =
+                MAPPER.createObjectNode()
+                        .put("email", email)
+                        .put("password", "senha123")
+                        .put("birthDate", java.time.LocalDate.now().minusYears(15).toString())
+                        .put("name", NAME)
+                        .put("guardianEmail", guardian)
+                        .put("acceptedTermsVersion", "0.1")
+                        .put("acceptedPrivacyVersion", "0.2")
+                        .toString();
+        return token(
+                this.mvc
+                        .perform(
+                                post("/api/v1/auth/signup")
+                                        .header("X-Fluveny-Client", "android")
+                                        .contentType(MediaType.APPLICATION_JSON)
+                                        .content(body))
+                        .andExpect(status().isCreated()));
+    }
+
+    private String guardianToken(String guardian) {
+        String text =
+                all("mail_outbox").stream()
+                        .filter(mail -> guardian.equals(mail.getString("to")))
+                        .reduce((a, b) -> b)
+                        .orElseThrow()
+                        .getString("text");
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("consentimento\\?token=([A-Za-z0-9_-]{43})")
+                        .matcher(text);
+        assertThat(matcher.find()).isTrue();
+        return matcher.group(1);
+    }
+
+    /** História 2.11: adolescente confirmado e pendente; nada do responsável sobra. */
+    @Test
+    void theDeletionOfTeensLeavesNothingOfTheGuardian() throws Exception {
+        String confirmedGuardian = "mae@example.com";
+        String pendingGuardian = "pai@example.com";
+        String confirmed = teen("teen1@example.com", confirmedGuardian);
+        String link = guardianToken(confirmedGuardian);
+        // O envio: o e-mail do responsável some do outbox (purgeOnSend).
+        this.mongo
+                .getCollection("mail_outbox")
+                .deleteMany(new Document("to", confirmedGuardian).append("purgeOnSend", true));
+        this.mvc
+                .perform(
+                        post("/api/v1/account/guardian-consent/confirm")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(MAPPER.createObjectNode().put("token", link).toString()))
+                .andExpect(status().isOk());
+        String pending = teen("teen2@example.com", pendingGuardian);
+        String confirmedId = user("teen1@example.com").getObjectId("_id").toHexString();
+        String pendingId = user("teen2@example.com").getObjectId("_id").toHexString();
+        assertThat(all("guardian_consents")).hasSize(1);
+        assertThat(user("teen2@example.com").getString("guardianEmail")).isEqualTo(pendingGuardian);
+
+        deleteWith(confirmed, "senha123").andExpect(status().isNoContent());
+        deleteWith(pending, "senha123").andExpect(status().isNoContent());
+
+        for (String collection : this.mongo.getCollectionNames()) {
+            if (collection.startsWith("system.")) {
+                continue;
+            }
+            assertThat(AccountDeletionInventory.BY_COLLECTION).containsKey(collection);
+            for (Document document : all(collection)) {
+                if (collection.equals("mail_outbox")
+                        && AccountDeletion.SUBJECT.equals(document.getString("subject"))) {
+                    continue;
+                }
+                assertThat(document.toJson())
+                        .as("dado pessoal em %s", collection)
+                        .doesNotContain(
+                                confirmedId,
+                                pendingId,
+                                confirmedGuardian,
+                                pendingGuardian,
+                                "teen1@example.com",
+                                "teen2@example.com");
+            }
+        }
+        assertThat(all("guardian_consents")).isEmpty();
+        assertThat(all("users")).isEmpty();
+    }
+
+    /** História 2.11: o responsável com conta própria só perde os e-mails de consentimento. */
+    @Test
+    void aGuardianWithAnAccountKeepsOnlyTheirOwnMails() throws Exception {
+        signup("bia@example.com");
+        long biaOwn =
+                this.mongo
+                        .getCollection("mail_outbox")
+                        .countDocuments(new Document("to", "bia@example.com"));
+        assertThat(biaOwn).isPositive();
+        String teen = teen("teen@example.com", "bia@example.com");
+        assertThat(
+                        this.mongo
+                                .getCollection("mail_outbox")
+                                .countDocuments(
+                                        new Document("to", "bia@example.com")
+                                                .append("subject", GuardianConsent.SUBJECT)))
+                .isEqualTo(1);
+
+        deleteWith(teen, "senha123").andExpect(status().isNoContent());
+
+        assertThat(
+                        this.mongo
+                                .getCollection("mail_outbox")
+                                .countDocuments(
+                                        new Document("to", "bia@example.com")
+                                                .append("subject", GuardianConsent.SUBJECT)))
+                .isZero();
+        assertThat(
+                        this.mongo
+                                .getCollection("mail_outbox")
+                                .countDocuments(new Document("to", "bia@example.com")))
+                .isEqualTo(biaOwn);
+        assertThat(user("bia@example.com")).isNotNull();
+    }
+
     @Test
     void afterTheDeletionSessionsLoginAndSignupBehaveAsForANewEmail() throws Exception {
         String email = "ana@example.com";

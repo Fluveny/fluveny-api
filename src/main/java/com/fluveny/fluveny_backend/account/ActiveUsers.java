@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 
 /**
  * Consulta de {@code auth} a cada requisição com sessão (AD-12): a conta existe e está {@code
- * ACTIVE}?
+ * ACTIVE} ou à espera do responsável ({@code PENDING_GUARDIAN_CONSENT}, história 2.11)?
  */
 @Service
 public class ActiveUsers {
@@ -18,14 +18,25 @@ public class ActiveUsers {
         this.users = users;
     }
 
-    /** A conta ativa do id, com o papel; vazio se não existe ou não está {@code ACTIVE}. */
+    /**
+     * A conta do id, com o papel; vazio se não existe ou não está {@code ACTIVE} nem {@code
+     * PENDING_GUARDIAN_CONSENT}.
+     */
     public Optional<ActiveUser> find(String userId) {
         return this.users
                 .findById(userId)
-                .filter(user -> user.status() == AccountStatus.ACTIVE)
-                .map(user -> new ActiveUser(user.id(), user.role()));
+                .filter(user -> AccountStatus.canManage(user.status()))
+                .map(user ->
+                        new ActiveUser(
+                                user.id(),
+                                user.role(),
+                                user.status() == AccountStatus.PENDING_GUARDIAN_CONSENT));
     }
 
-    /** Uma conta ativa. */
-    public record ActiveUser(String userId, Role role) {}
+    /**
+     * Uma conta que entra.
+     *
+     * @param guardianPending se espera o responsável: lê, mas não grava Progresso
+     */
+    public record ActiveUser(String userId, Role role, boolean guardianPending) {}
 }

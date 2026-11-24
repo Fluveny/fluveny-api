@@ -13,8 +13,9 @@ import java.util.Optional;
 public interface SessionAuthenticator {
 
     /**
-     * A sessão do token, se ela existe, não venceu e a conta está ativa. Uma sessão deslizante pode
-     * ser renovada aqui ({@link AuthenticatedSession#renewedUntil()}).
+     * A sessão do token, se ela existe, não venceu e a conta está ativa (ou à espera do
+     * responsável, história 2.11). Uma sessão deslizante pode ser renovada aqui ({@link
+     * AuthenticatedSession#renewedUntil()}).
      *
      * @param token o token como o cliente enviou (nunca vai para o log)
      * @return vazio se o token não é de ninguém, venceu ou a conta não está ativa
@@ -27,12 +28,20 @@ public interface SessionAuthenticator {
      * @param userId o id do usuário, a única fonte do {@code userId} nas rotas
      * @param role o papel do usuário
      * @param renewedUntil o novo vencimento, se a sessão foi renovada agora; senão {@code null}
+     * @param guardianPending se a conta é de adolescente à espera do responsável (história 2.11):
+     *     entra e lê, mas não grava Progresso
      */
-    record AuthenticatedSession(String userId, Role role, Instant renewedUntil) {
+    record AuthenticatedSession(
+            String userId, Role role, Instant renewedUntil, boolean guardianPending) {
 
         public AuthenticatedSession {
             Objects.requireNonNull(userId, "userId");
             Objects.requireNonNull(role, "role");
+        }
+
+        /** Uma sessão de conta {@code ACTIVE}. */
+        public AuthenticatedSession(String userId, Role role, Instant renewedUntil) {
+            this(userId, role, renewedUntil, false);
         }
     }
 }

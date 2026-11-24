@@ -397,6 +397,34 @@ class VisitorMigrationTest extends StudentLearningTestSupport {
         assertMigrated(user(secondEmail), 0);
     }
 
+    /** História 2.11: a migração de uma conta que já tem o registro da Atividade. */
+    @Test
+    void aReceiptForAnActivityTheAccountAlreadyHasIsDiscardedWithoutConsuming() throws Exception {
+        UUID ownAttempt = UUID.randomUUID();
+        send(
+                        "/api/v1/students/me/completions",
+                        MAPPER.createObjectNode()
+                                .put("attemptId", ownAttempt.toString())
+                                .put("versionId", this.versionId)
+                                .put("activityKey", DIALOGUE)
+                                .put("outcome", "VIEWED")
+                                .put("studyTimeMs", 1000))
+                .andExpect(status().isOk());
+        String receipt = receipt(VISITOR_COMPLETIONS, completion(DIALOGUE, "VIEWED"));
+        ObjectNode body = MAPPER.createObjectNode().put("deviceId", this.deviceId.toString());
+        body.putArray("receipts").add(receipt);
+
+        send("/api/v1/students/me/visitor-migration", body)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.migrated").value(0))
+                .andExpect(jsonPath("$.data.discarded").value(1));
+
+        assertThat(results(this.userId))
+                .singleElement()
+                .satisfies(result -> assertThat(result.attemptId()).isEqualTo(ownAttempt));
+        assertThat(this.learning.consumed).isEmpty();
+    }
+
     @Test
     void receiptsOfAnotherDeviceAreDiscarded() throws Exception {
         List<String> receipts = stageOneReceipts().subList(0, 2);

@@ -17,9 +17,17 @@ import java.util.UUID;
  * @param email o e-mail da conta
  * @param pendingEmail o e-mail novo de uma troca pendente (história 2.9); nulo se não há ou se ele
  *     já é o e-mail de outra conta
+ * @param guardianEmail o e-mail do responsável da conta ainda pendente (história 2.11); nulo se não
+ *     há ou se ele já é o e-mail de outra conta
  */
 public record AccountDeletionRequested(
-        String userId, UUID metricsId, String email, String pendingEmail) {
+        String userId, UUID metricsId, String email, String pendingEmail, String guardianEmail) {
+
+    /** Uma exclusão sem responsável pendente. */
+    public AccountDeletionRequested(
+            String userId, UUID metricsId, String email, String pendingEmail) {
+        this(userId, metricsId, email, pendingEmail, null);
+    }
 
     /** A ordem dos tratadores dos módulos ({@code @Order}). */
     public static final int HANDLER_ORDER = 100;

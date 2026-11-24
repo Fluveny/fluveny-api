@@ -12,12 +12,19 @@ import org.springframework.security.core.context.SecurityContextHolder;
  *
  * @param userId o id do usuário
  * @param role o papel do usuário
+ * @param guardianPending se a conta é de adolescente à espera do responsável (história 2.11): lê,
+ *     mas as escritas de Progresso respondem {@code 403 GUARDIAN_CONSENT_PENDING}
  */
-public record SessionPrincipal(String userId, Role role) {
+public record SessionPrincipal(String userId, Role role, boolean guardianPending) {
 
     public SessionPrincipal {
         Objects.requireNonNull(userId, "userId");
         Objects.requireNonNull(role, "role");
+    }
+
+    /** O usuário de uma conta {@code ACTIVE}. */
+    public SessionPrincipal(String userId, Role role) {
+        this(userId, role, false);
     }
 
     /**
@@ -34,7 +41,7 @@ public record SessionPrincipal(String userId, Role role) {
     /**
      * O usuário da sessão da requisição atual, se houver: para rota {@code @PublicRoute} que muda
      * com a sessão (o {@code getStage}, história 2.4). Vazio sem sessão, com sessão vencida ou de
-     * conta fora de {@code ACTIVE} e com o token de deploy.
+     * conta fora de {@code ACTIVE} e {@code PENDING_GUARDIAN_CONSENT} e com o token de deploy.
      */
     public static Optional<SessionPrincipal> find() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -47,6 +54,10 @@ public record SessionPrincipal(String userId, Role role) {
     /** Nunca o id inteiro no log. */
     @Override
     public String toString() {
-        return "SessionPrincipal[role=" + this.role + "]";
+        return "SessionPrincipal[role="
+                + this.role
+                + ", guardianPending="
+                + this.guardianPending
+                + "]";
     }
 }
