@@ -73,4 +73,13 @@ class MongoOneTimeTokenStore implements OneTimeTokenStore {
                                 .is(purpose.name())),
                 COLLECTION);
     }
+
+    @Override
+    public void deleteAllFor(String userId) {
+        if (userId == null || !ObjectId.isValid(userId)) {
+            return;
+        }
+        this.mongo.remove(
+                Query.query(Criteria.where("userId").is(new ObjectId(userId))), COLLECTION);
+    }
 }

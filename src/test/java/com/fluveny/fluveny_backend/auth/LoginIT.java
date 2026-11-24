@@ -110,9 +110,21 @@ class LoginIT {
         List<Document> documents = throttle();
         assertThat(documents).hasSize(3);
         for (Document document : documents) {
-            assertThat(document.keySet())
-                    .containsExactlyInAnyOrder(
-                            "_id", "keyHash", "kind", "failures", "lastFailureAt", "expiresAt");
+            // A chave ip não leva o accountKeyHash (2.10): ela não identifica a conta.
+            List<String> fields =
+                    new ArrayList<>(
+                            List.of(
+                                    "_id",
+                                    "keyHash",
+                                    "kind",
+                                    "failures",
+                                    "lastFailureAt",
+                                    "expiresAt"));
+            if (!"ip".equals(document.getString("kind"))) {
+                fields.add("accountKeyHash");
+                assertThat(document.getString("accountKeyHash")).matches("[0-9a-f]{64}");
+            }
+            assertThat(document.keySet()).containsExactlyInAnyOrderElementsOf(fields);
             assertThat(document.getString("keyHash")).matches("[0-9a-f]{64}");
             assertThat(document.toJson())
                     .doesNotContainIgnoringCase("ana")
@@ -155,6 +167,13 @@ class LoginIT {
                         .orElseThrow(() -> new AssertionError("Índice TTL ausente"));
         assertThat(ttl.get("key", Document.class).keySet()).containsExactly("expiresAt");
         assertThat(((Number) ttl.get("expireAfterSeconds")).longValue()).isZero();
+        // A busca da exclusão da conta (2.10).
+        Document account =
+                indexes.stream()
+                        .filter(i -> "accountKeyHash".equals(i.getString("name")))
+                        .findFirst()
+                        .orElseThrow(() -> new AssertionError("Índice accountKeyHash ausente"));
+        assertThat(account.get("key", Document.class).keySet()).containsExactly("accountKeyHash");
     }
 
     @Test

@@ -10,6 +10,7 @@ import com.fluveny.fluveny_backend.account.RegisterStudent;
 import com.fluveny.fluveny_backend.account.RegisteredStudent;
 import com.fluveny.fluveny_backend.auth.Signup;
 import com.fluveny.fluveny_backend.platform.web.ApiException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -158,6 +159,26 @@ class AccountMongoIT {
         assertThat(this.users.findById(id)).get().extracting(User::pronounSet).isNull();
         assertThat(this.users.findById("nao-e-id")).isEmpty();
         assertThat(this.users.updateProfile("0".repeat(24), pronouns(PronounSet.HE))).isFalse();
+    }
+
+    /** A marca da exclusão (2.10): só uma vez, e só em Aluno ativo. */
+    @Test
+    void theDeletionMarkIsWrittenOnlyOnce() {
+        String id = this.register.register(student("ana@example.com")).userId();
+        Instant at = Instant.parse("2026-11-24T12:00:00Z");
+        assertThat(this.users.markDeletionRequested(id, at)).isTrue();
+        assertThat(this.users.findById(id))
+                .get()
+                .extracting(User::deletionRequestedAt)
+                .isEqualTo(at);
+        assertThat(this.users.markDeletionRequested(id, at.plusSeconds(1))).isFalse();
+        assertThat(this.users.findById(id))
+                .get()
+                .extracting(User::deletionRequestedAt)
+                .isEqualTo(at);
+        this.users.delete(id);
+        assertThat(this.users.findById(id)).isEmpty();
+        assertThat(this.users.markDeletionRequested(id, at)).isFalse();
     }
 
     @Test

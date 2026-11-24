@@ -231,6 +231,36 @@ class MongoUserStore implements UserStore {
     }
 
     @Override
+    public boolean markDeletionRequested(String id, Instant requestedAt) {
+        if (id == null || !ObjectId.isValid(id)) {
+            return false;
+        }
+        return this.mongo
+                        .updateFirst(
+                                Query.query(
+                                        Criteria.where("_id")
+                                                .is(new ObjectId(id))
+                                                .and("deletionRequestedAt")
+                                                .is(null)
+                                                .and("status")
+                                                .is(AccountStatus.ACTIVE.name())
+                                                .and("role")
+                                                .is(Role.STUDENT.name())),
+                                Update.update("deletionRequestedAt", Date.from(requestedAt)),
+                                COLLECTION)
+                        .getMatchedCount()
+                > 0;
+    }
+
+    @Override
+    public void delete(String id) {
+        if (id == null || !ObjectId.isValid(id)) {
+            return;
+        }
+        this.mongo.remove(Query.query(Criteria.where("_id").is(new ObjectId(id))), COLLECTION);
+    }
+
+    @Override
     public void upsertByEmail(User user) {
         Update update =
                 new Update()

@@ -1,6 +1,7 @@
 package com.fluveny.fluveny_backend.mail.infrastructure;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,4 +35,10 @@ public interface OutboxStore {
 
     /** Os últimos e-mails, do mais novo ao mais antigo (só o perfil {@code local} usa). */
     List<OutboxMail> latest(int limit);
+
+    /**
+     * Apaga todo e-mail para um dos endereços, em qualquer {@code status} (a exclusão da conta,
+     * história 2.10).
+     */
+    void deleteAllTo(Collection<String> addresses);
 }

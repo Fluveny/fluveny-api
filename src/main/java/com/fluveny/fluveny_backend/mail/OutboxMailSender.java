@@ -27,6 +27,16 @@ class OutboxMailSender implements MailSender {
 
     @Override
     public void enqueue(String to, String subject, String text, MailPriority priority) {
+        insert(to, subject, text, priority, false);
+    }
+
+    @Override
+    public void enqueuePurgedOnSend(String to, String subject, String text, MailPriority priority) {
+        insert(to, subject, text, priority, true);
+    }
+
+    private void insert(
+            String to, String subject, String text, MailPriority priority, boolean purgeOnSend) {
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
         this.store.insert(
                 new OutboxMail(
@@ -40,7 +50,11 @@ class OutboxMailSender implements MailSender {
                         now,
                         now,
                         null,
-                        now.plus(MailDispatcher.RETENTION)));
+                        now.plus(
+                                purgeOnSend
+                                        ? MailDispatcher.PURGED_ON_SEND_MAX_RETENTION
+                                        : MailDispatcher.RETENTION),
+                        purgeOnSend));
     }
 
     private static String requireText(String value, String name) {

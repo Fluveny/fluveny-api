@@ -32,6 +32,9 @@ public class AuthIndexes {
 
     static final String SESSION_USER_INDEX = "userId";
 
+    /** A busca da exclusão da conta (história 2.10). */
+    static final String THROTTLE_ACCOUNT_INDEX = "accountKeyHash";
+
     private final MongoTemplate mongo;
 
     AuthIndexes(MongoTemplate mongo) {
@@ -45,6 +48,9 @@ public class AuthIndexes {
                 MongoSessionStore.COLLECTION,
                 new Index().on("userId", Sort.Direction.ASC).named(SESSION_USER_INDEX));
         ensure(MongoLoginThrottleStore.COLLECTION, "keyHash", THROTTLE_KEY_INDEX);
+        ensure(
+                MongoLoginThrottleStore.COLLECTION,
+                new Index().on("accountKeyHash", Sort.Direction.ASC).named(THROTTLE_ACCOUNT_INDEX));
     }
 
     private void ensure(String collection, String key, String keyIndex) {

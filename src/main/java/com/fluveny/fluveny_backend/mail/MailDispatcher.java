@@ -45,6 +45,12 @@ class MailDispatcher {
     /** Quanto tempo o e-mail {@code SENT} ou {@code FAILED} fica no outbox. */
     static final Duration RETENTION = Duration.ofDays(30);
 
+    /**
+     * Quanto tempo, no máximo, fica o e-mail que some no envio ({@link OutboxMail#purgeOnSend()})
+     * se o envio não sair.
+     */
+    static final Duration PURGED_ON_SEND_MAX_RETENTION = Duration.ofDays(7);
+
     /** O máximo de e-mails por rodada. */
     static final int BATCH = 50;
 
@@ -129,7 +135,7 @@ class MailDispatcher {
         } catch (RuntimeException ex) {
             Instant now = now();
             if (attempts >= MAX_ATTEMPTS) {
-                this.store.markFailed(mail.id(), attempts, now.plus(RETENTION));
+                this.store.markFailed(mail.id(), attempts, failedPurgeAt(mail, now));
                 log.error(
                         "E-mail {} FAILED após {} tentativas ({}).",
                         mail.id(),
@@ -147,8 +153,18 @@ class MailDispatcher {
             return Delivery.RETRY;
         }
         Instant sentAt = now();
-        this.store.markSent(mail.id(), attempts, sentAt, sentAt.plus(RETENTION));
+        this.store.markSent(
+                mail.id(), attempts, sentAt, mail.purgeOnSend() ? sentAt : sentAt.plus(RETENTION));
         return Delivery.SENT;
+    }
+
+    /** O {@code purgeAt} do {@code FAILED}: 30 dias, ou o prazo de 7 dias do enqueue. */
+    private static Instant failedPurgeAt(OutboxMail mail, Instant now) {
+        if (mail.purgeOnSend()) {
+            Instant limit = mail.createdAt().plus(PURGED_ON_SEND_MAX_RETENTION);
+            return now.isAfter(limit) ? now : limit;
+        }
+        return now.plus(RETENTION);
     }
 
     /** A espera depois da tentativa {@code attempts}: 1, 2, 4… minutos, até 1 h. */

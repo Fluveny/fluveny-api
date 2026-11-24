@@ -16,9 +16,19 @@ public interface LoginThrottleStore {
      *
      * @param kind o tipo da chave ({@code ip}, {@code account_ip}, {@code account}), sem dado
      *     pessoal
+     * @param accountKeyHash a chave {@code account} da conta, gravada nos documentos {@code
+     *     account} e {@code account_ip} para a exclusão da conta achá-los (história 2.10); nulo na
+     *     chave {@code ip}, que não identifica a conta
      */
-    void recordFailure(String keyHash, String kind, Instant now, Instant expiresAt);
+    void recordFailure(
+            String keyHash, String kind, String accountKeyHash, Instant now, Instant expiresAt);
 
     /** Zera as chaves (o sucesso). */
     void delete(Collection<String> keyHashes);
+
+    /**
+     * Apaga os documentos {@code account} e {@code account_ip} das contas (a exclusão, história
+     * 2.10): os de chave igual a uma delas e os que a guardam em {@code accountKeyHash}.
+     */
+    void deleteByAccount(Collection<String> accountKeyHashes);
 }

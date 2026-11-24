@@ -62,7 +62,8 @@ class MailOutboxMongoIT {
                         createdAt,
                         createdAt,
                         null,
-                        null));
+                        null,
+                        false));
     }
 
     @Test
@@ -100,7 +101,8 @@ class MailOutboxMongoIT {
                         "nextAttemptAt",
                         "createdAt",
                         "sentAt",
-                        "purgeAt");
+                        "purgeAt",
+                        "purgeOnSend");
         assertThat(document.getString("status")).isEqualTo("PENDING");
         assertThat(document.getString("priority")).isEqualTo("NORMAL");
         assertThat(document.get("purgeAt")).isNull();

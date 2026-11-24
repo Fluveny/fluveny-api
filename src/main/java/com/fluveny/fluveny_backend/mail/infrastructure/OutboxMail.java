@@ -15,6 +15,9 @@ import java.time.Instant;
  * @param sentAt nulo até {@code SENT}
  * @param purgeAt quando o TTL apaga: 30 dias depois do enqueue, regravado no {@code SENT} e no
  *     {@code FAILED}
+ * @param purgeOnSend o e-mail some assim que sai (a confirmação da exclusão da conta, história
+ *     2.10): {@code purgeAt} igual ao {@code sentAt}, e no máximo 7 dias depois do enqueue se o
+ *     envio falhar
  */
 public record OutboxMail(
         String id,
@@ -27,7 +30,8 @@ public record OutboxMail(
         Instant nextAttemptAt,
         Instant createdAt,
         Instant sentAt,
-        Instant purgeAt) {
+        Instant purgeAt,
+        boolean purgeOnSend) {
 
     /** Sem endereço, assunto nem texto. */
     @Override

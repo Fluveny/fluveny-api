@@ -71,6 +71,18 @@ public interface UserStore {
     /** Zera o {@code pendingEmail}, se ele ainda é {@code pendingEmail}. */
     void clearPendingEmail(String id, String pendingEmail);
 
+    /**
+     * Grava o {@code deletionRequestedAt} (a exclusão, história 2.10), só se ele ainda é nulo e a
+     * conta é um Aluno {@code ACTIVE}.
+     *
+     * @return {@code true} se esta chamada marcou; {@code false} se a conta não existe, já estava
+     *     marcada (outra exclusão no meio) ou não é um Aluno ativo
+     */
+    boolean markDeletionRequested(String id, Instant requestedAt);
+
+    /** Apaga o documento da conta: perfil, Variáveis e o vínculo do {@code metricsId}. */
+    void delete(String id);
+
     /** O resultado de {@link #promotePendingEmail}. */
     enum PromotionResult {
         /** O e-mail novo é o da conta, já confirmado. */

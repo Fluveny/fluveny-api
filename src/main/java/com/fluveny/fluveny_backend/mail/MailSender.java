@@ -19,4 +19,10 @@ public interface MailSender {
      * @param priority {@link MailPriority#HIGH} sai antes de {@link MailPriority#NORMAL}
      */
     void enqueue(String to, String subject, String text, MailPriority priority);
+
+    /**
+     * Põe na fila um e-mail que some do outbox assim que sai, e no máximo 7 dias depois se o envio
+     * falhar (a confirmação da exclusão da conta, história 2.10). Sem link no texto.
+     */
+    void enqueuePurgedOnSend(String to, String subject, String text, MailPriority priority);
 }

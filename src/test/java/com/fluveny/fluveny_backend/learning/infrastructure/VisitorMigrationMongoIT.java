@@ -554,6 +554,11 @@ class VisitorMigrationMongoIT {
                 public List<ActivityResult> findByUser(String userId) {
                     return real.findByUser(userId);
                 }
+
+                @Override
+                public void deleteAllFor(String userId) {
+                    real.deleteAllFor(userId);
+                }
             };
         }
     }
