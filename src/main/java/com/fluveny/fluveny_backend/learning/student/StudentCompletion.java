@@ -18,6 +18,7 @@ import java.util.UUID;
  *
  * @param attemptId gerado pelo App; chave de idempotência, como na Tentativa
  * @param studyTimeMs tempo na Atividade, em milissegundos, até 24 h
+ * @param replay {@code true} no refazer (2.7); opcional, padrão {@code false}
  */
 @Schema(name = "StudentCompletion", additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
 public record StudentCompletion(
@@ -42,7 +43,28 @@ public record StudentCompletion(
                 @NotNull
                 @PositiveOrZero
                 @Max(StudentAttempt.MAX_STUDY_TIME_MS)
-                Long studyTimeMs) {
+                Long studyTimeMs,
+        @Schema(
+                        requiredMode = RequiredMode.NOT_REQUIRED,
+                        description =
+                                "true só na primeira resposta (e nos reenvios dela) de uma abertura"
+                                        + " de Atividade que já tinha registro: o refazer (2.7).")
+                Boolean replay) {
+
+    /** Sem o sinal de refazer. */
+    public StudentCompletion(
+            UUID attemptId,
+            String versionId,
+            String activityKey,
+            CompletionOutcome outcome,
+            Long studyTimeMs) {
+        this(attemptId, versionId, activityKey, outcome, studyTimeMs, null);
+    }
+
+    /** Se é o refazer de uma Atividade já concluída ({@code replay}, padrão {@code false}). */
+    boolean isReplay() {
+        return Boolean.TRUE.equals(this.replay);
+    }
 
     /** Campo desconhecido: a leitura falha, e a rota responde {@code 400 VALIDATION_FAILED}. */
     @JsonAnySetter

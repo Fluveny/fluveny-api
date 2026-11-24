@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -56,11 +57,17 @@ class StudentLearningController {
 
     private final StudentDashboards dashboards;
 
+    private final StudentStageSummaries summaries;
+
     StudentLearningController(
-            StudentAttempts attempts, StudentEvents events, StudentDashboards dashboards) {
+            StudentAttempts attempts,
+            StudentEvents events,
+            StudentDashboards dashboards,
+            StudentStageSummaries summaries) {
         this.attempts = attempts;
         this.events = events;
         this.dashboards = dashboards;
+        this.summaries = summaries;
     }
 
     @Operation(
@@ -70,7 +77,9 @@ class StudentLearningController {
                             + " expected e as justificativas só voltam no Acerto (100%). Reenviar o"
                             + " mesmo attemptId com o mesmo corpo devolve o XP gravado; outro"
                             + " attemptId (Tentar de novo, refazer) devolve o Feedback com xpAwarded"
-                            + " 0, sem gravar. Tipo divergente ou expositivo: 400 INVALID_ANSWER;"
+                            + " 0, sem gravar. replay: true (opcional) marca o refazer de uma"
+                            + " Atividade já concluída e publica o ACTIVITY_COMPLETED com"
+                            + " firstAttempt false; sem registro, conta como primeira. Tipo divergente ou expositivo: 400 INVALID_ANSWER;"
                             + " versão ou Atividade inexistente: 404. Campo desconhecido dá 400."
                             + LOCK
                             + WRITE)
@@ -102,7 +111,8 @@ class StudentLearningController {
                             + " os expositivos dialogue, cards, expression, grammar e free com"
                             + " VIEWED, e a speech pulada, com SKIPPED. Fora disso, 409"
                             + " COMPLETION_NOT_ALLOWED. A conclusão VIEWED de um free devolve a"
-                            + " modelAnswer. Versão ou Atividade inexistente: 404. Campo"
+                            + " modelAnswer. replay: true (opcional) marca o refazer, como em"
+                            + " /attempts. Versão ou Atividade inexistente: 404. Campo"
                             + " desconhecido dá 400."
                             + LOCK
                             + WRITE)
@@ -153,6 +163,24 @@ class StudentLearningController {
     @GetMapping("/dashboard")
     ApiResponse<StudentDashboard> dashboard() {
         return ApiResponse.of(this.dashboards.dashboard(userId()));
+    }
+
+    @Operation(
+            operationId = "getMyStageSummary",
+            description =
+                    "O resumo do Estágio concluído (Estágio: check!): a soma do XP, o Resultado"
+                            + " médio das Atividades corrigidas (ausente sem nenhuma), as puladas e"
+                            + " a soma do tempo de estudo, em milissegundos. Entram os registros das"
+                            + " Atividades do Estágio na versão publicada, gravados em qualquer"
+                            + " versão; os números são os da primeira conclusão, e refazer não muda"
+                            + " o resumo. A leitura reconcilia as conclusões da Unidade como o"
+                            + " /dashboard. Estágio não concluído: 409 STAGE_NOT_COMPLETED. Unidade"
+                            + " ou Estágio fora da versão publicada: 404 NOT_FOUND."
+                            + SESSION)
+    @GetMapping("/units/{unitKey}/stages/{stageKey}/summary")
+    ApiResponse<StudentStageSummary> stageSummary(
+            @PathVariable String unitKey, @PathVariable String stageKey) {
+        return ApiResponse.of(this.summaries.summary(userId(), unitKey, stageKey));
     }
 
     private static String userId() {

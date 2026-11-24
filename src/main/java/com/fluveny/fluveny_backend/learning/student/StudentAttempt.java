@@ -22,6 +22,7 @@ import java.util.UUID;
  * @param versionId a Versão de Unidade exibida, {@code sha256:<hex>}
  * @param type o Tipo da Atividade; precisa ser o mesmo da Atividade e do {@code answer}
  * @param studyTimeMs tempo na Atividade, em milissegundos, até 24 h
+ * @param replay {@code true} no refazer (2.7); opcional, padrão {@code false}
  */
 @Schema(name = "StudentAttempt", additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
 public record StudentAttempt(
@@ -47,7 +48,29 @@ public record StudentAttempt(
                 @NotNull
                 @PositiveOrZero
                 @Max(StudentAttempt.MAX_STUDY_TIME_MS)
-                Long studyTimeMs) {
+                Long studyTimeMs,
+        @Schema(
+                        requiredMode = RequiredMode.NOT_REQUIRED,
+                        description =
+                                "true só na primeira resposta (e nos reenvios dela) de uma abertura"
+                                        + " de Atividade que já tinha registro: o refazer (2.7).")
+                Boolean replay) {
+
+    /** Sem o sinal de refazer. */
+    public StudentAttempt(
+            UUID attemptId,
+            String versionId,
+            String activityKey,
+            String type,
+            Answer answer,
+            Long studyTimeMs) {
+        this(attemptId, versionId, activityKey, type, answer, studyTimeMs, null);
+    }
+
+    /** Se é o refazer de uma Atividade já concluída ({@code replay}, padrão {@code false}). */
+    boolean isReplay() {
+        return Boolean.TRUE.equals(this.replay);
+    }
 
     /** Teto do {@code studyTimeMs}: 24 h, contra valor absurdo. */
     public static final long MAX_STUDY_TIME_MS = 86_400_000L;
