@@ -1,11 +1,15 @@
-# Manter a homologação acordada (história 1.6, Decisão 1): o Render free dorme depois de ~15 min
-# sem requisição, e a partida a frio leva minutos. Das 8h às 23h de Brasília (UTC-3), a cada
-# 10 min, chama o health check GET /api/v1/meta, aberto sem o segredo de proxy. Fora desse
-# horário a API dorme. A URL é a variável de repositório FLUVENY_HOMOLOG_API_URL (a do Render),
+# Reserva para acordar a homologação (história 1.6; a Decisão 1 foi trocada pela spec do ping pelo
+# Worker, nov/2026): o Render free dorme depois de ~15 min sem requisição, e a partida a frio leva
+# minutos. Quem mantém a API acordada é o Cron Trigger do Worker `fluveny-homolog` (fluveny-app),
+# a cada 10 min, 24 h por dia. Com a API dormindo, o Render barra o Worker com o desafio do
+# Cloudflare (429), mas o runner do GitHub consegue acordá-la: por isso este workflow continua.
+# Das 8h às 23h de Brasília (UTC-3), a cada 10 min, chama o health check GET /api/v1/meta, aberto
+# sem o segredo de proxy. A URL é a variável de repositório FLUVENY_HOMOLOG_API_URL (a do Render),
 # sem Environment, para não criar um deployment a cada ping nem cair numa regra de proteção.
 #
-# O GitHub só agenda na branch padrão, pode atrasar alguns minutos e desliga agendamentos de
-# repositório sem atividade por 60 dias. workflow_dispatch serve para testar.
+# O GitHub só agenda na branch padrão, pode atrasar ou pular execuções (em nov/2026 rodou ~3 vezes por
+# dia) e desliga agendamentos de repositório sem atividade por 60 dias. workflow_dispatch serve
+# para testar ou para acordar a API à mão.
 name: Manter homologação acordada
 
 on:
