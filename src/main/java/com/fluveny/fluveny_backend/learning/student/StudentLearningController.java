@@ -13,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -40,7 +41,7 @@ class StudentLearningController {
             SESSION
                     + " Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403"
                     + " CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando"
-                    + " attempts, attempts/reveal, completions e events: 429 TOO_MANY_REQUESTS com"
+                    + " attempts, attempts/reveal, completions, events e dialogue-answers: 429 TOO_MANY_REQUESTS com"
                     + " Retry-After.";
 
     /** A sequência, nas três escritas de Progresso (história 2.5). */
@@ -59,15 +60,19 @@ class StudentLearningController {
 
     private final StudentStageSummaries summaries;
 
+    private final DialogueAnswers dialogueAnswers;
+
     StudentLearningController(
             StudentAttempts attempts,
             StudentEvents events,
             StudentDashboards dashboards,
-            StudentStageSummaries summaries) {
+            StudentStageSummaries summaries,
+            DialogueAnswers dialogueAnswers) {
         this.attempts = attempts;
         this.events = events;
         this.dashboards = dashboards;
         this.summaries = summaries;
+        this.dialogueAnswers = dialogueAnswers;
     }
 
     @Operation(
@@ -133,6 +138,23 @@ class StudentLearningController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     void record(@Valid @RequestBody StudentEvent event) {
         this.events.record(userId(), event);
+    }
+
+    @Operation(
+            operationId = "saveMyDialogueAnswers",
+            description =
+                    "Grava no perfil o nome e o país que o Aluno respondeu num Diálogo, os mesmos"
+                            + " que o GET /students/me devolve. Só vale o campo que o Diálogo"
+                            + " daquela versão pergunta (fala com ask); Atividade inexistente, que"
+                            + " não é Diálogo, sem a fala do campo, sem nenhum campo, país fora de"
+                            + " countries.json ou campo desconhecido: 400 VALIDATION_FAILED, sem"
+                            + " gravar nada. Responde 204 sem corpo. Conta no limite de escritas"
+                            + " do Aluno."
+                            + WRITE)
+    @PutMapping("/dialogue-answers")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    void dialogueAnswers(@Valid @RequestBody DialogueAnswer answer) {
+        this.dialogueAnswers.answer(userId(), answer);
     }
 
     @Operation(

@@ -440,7 +440,7 @@ class SignupTest {
 
     @ParameterizedTest
     @ValueSource(
-            strings = {"{\"pronounSet\":\"IT\"}", "{\"pronounSet\":\"HE\",\"name\":\"x\"}", "{}"})
+            strings = {"{\"pronounSet\":\"IT\"}", "{\"pronounSet\":\"HE\",\"foo\":\"x\"}", "{}"})
     void anInvalidPronounUpdateIs400(String json) throws Exception {
         String token = androidToken("ana@example.com");
         expectProblem(

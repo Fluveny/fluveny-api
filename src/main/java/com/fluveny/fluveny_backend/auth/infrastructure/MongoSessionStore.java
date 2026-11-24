@@ -72,6 +72,20 @@ class MongoSessionStore implements SessionStore {
                 Query.query(Criteria.where("userId").is(new ObjectId(userId))), COLLECTION);
     }
 
+    @Override
+    public void deleteByUserExcept(String userId, String keptTokenHash) {
+        if (userId == null || !ObjectId.isValid(userId) || keptTokenHash == null) {
+            return;
+        }
+        this.mongo.remove(
+                Query.query(
+                        Criteria.where("userId")
+                                .is(new ObjectId(userId))
+                                .and("tokenHash")
+                                .ne(keptTokenHash)),
+                COLLECTION);
+    }
+
     private static Query byHash(String tokenHash) {
         return Query.query(Criteria.where("tokenHash").is(tokenHash));
     }

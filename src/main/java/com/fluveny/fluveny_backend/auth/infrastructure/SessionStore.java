@@ -19,4 +19,7 @@ public interface SessionStore {
 
     /** Apaga todas as sessões da conta (a redefinição de senha, história 2.8). */
     void deleteByUser(String userId);
+
+    /** Apaga as sessões da conta, menos a do hash (a troca de senha, história 2.9). */
+    void deleteByUserExcept(String userId, String keptTokenHash);
 }
