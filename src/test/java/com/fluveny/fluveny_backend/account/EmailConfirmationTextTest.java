@@ -32,6 +32,9 @@ class EmailConfirmationTextTest {
                 }
 
                 @Override
+                public void discard(String to, String subject) {}
+
+                @Override
                 public void enqueuePurgedOnSend(
                         String to, String subject, String text, MailPriority priority) {
                     EmailConfirmationTextTest.this.texts.add(text);

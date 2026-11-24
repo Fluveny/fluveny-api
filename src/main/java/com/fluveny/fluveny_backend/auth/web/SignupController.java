@@ -47,8 +47,11 @@ class SignupController {
                             + " SameSite=Lax; Path=/api; 30 dias); no Android, só no"
                             + " sessionToken do corpo. Senha fora da regra, aceite vazio ou data"
                             + " de nascimento inválida dão 400 VALIDATION_FAILED; menor de 12,"
-                            + " 422 AGE_BELOW_MINIMUM; de 12 a 17, 422"
-                            + " GUARDIAN_CONSENT_REQUIRED; e-mail já cadastrado, 409"
+                            + " 422 AGE_BELOW_MINIMUM; de 12 a 17 sem guardianEmail, 422"
+                            + " GUARDIAN_CONSENT_REQUIRED (com guardianEmail, a conta nasce"
+                            + " PENDING_GUARDIAN_CONSENT, o responsável recebe o link e o bloco"
+                            + " visitor é ignorado); guardianEmail igual ao e-mail, 400"
+                            + " VALIDATION_FAILED; e-mail já cadastrado, 409"
                             + " EMAIL_ALREADY_REGISTERED. country fora de countries.json dá 400"
                             + " VALIDATION_FAILED no campo country. Vindo do convite do Visitante,"
                             + " visitor leva o deviceId e os recibos das rotas do Visitante: os"
@@ -87,7 +90,8 @@ class SignupController {
                                 body.acceptedTermsVersion(),
                                 body.acceptedPrivacyVersion(),
                                 body.country(),
-                                visitor));
+                                visitor,
+                                body.guardianEmail()));
         return SessionResponses.deliver(
                 client, registered.student().profile(), registered.session(), response);
     }

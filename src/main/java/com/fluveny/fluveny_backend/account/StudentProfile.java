@@ -16,6 +16,7 @@ import io.swagger.v3.oas.annotations.media.Schema.RequiredMode;
  * @param emailConfirmationOverdue se o e-mail segue sem confirmar 7 dias depois do cadastro: o App
  *     mostra a faixa "Confirme seu e-mail para poder recuperar a senha." (história 2.8)
  * @param pendingEmail o e-mail novo da troca ainda não confirmada (história 2.9); nulo sem troca
+ * @param status {@code ACTIVE} ou {@code PENDING_GUARDIAN_CONSENT} (história 2.11)
  */
 @Schema(name = "StudentProfile")
 public record StudentProfile(
@@ -52,7 +53,17 @@ public record StudentProfile(
                         description =
                                 "O e-mail novo pedido na troca de e-mail, até o Aluno abrir o"
                                         + " link enviado a ele. Nulo sem troca pendente.")
-                String pendingEmail) {
+                String pendingEmail,
+        @Schema(
+                        requiredMode = RequiredMode.REQUIRED,
+                        allowableValues = {"ACTIVE", "PENDING_GUARDIAN_CONSENT"},
+                        description =
+                                "PENDING_GUARDIAN_CONSENT: adolescente à espera do responsável."
+                                        + " Lê, mas as escritas de Progresso dão 403"
+                                        + " GUARDIAN_CONSENT_PENDING; o App mostra a faixa ouro."
+                                        + " Ao ver ACTIVE, o App migra os recibos pelo"
+                                        + " POST /students/me/visitor-migration.")
+                String status) {
 
     /** Sem o e-mail, o nome nem o país. */
     @Override

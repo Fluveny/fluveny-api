@@ -40,7 +40,7 @@ class AccountLocalSeederIT {
     }
 
     @Test
-    void seedingTwiceKeepsExactlyTheFourStudents() {
+    void seedingTwiceKeepsExactlyTheFiveStudents() {
         // Já rodou na partida; roda mais duas vezes.
         this.seeder.seed();
         Map<String, Object> metricsIds = new HashMap<>();
@@ -64,7 +64,16 @@ class AccountLocalSeederIT {
                         AccountLocalSeeder.WITH_PRONOUNS,
                         AccountLocalSeeder.WITHOUT_PRONOUNS,
                         AccountLocalSeeder.DEACTIVATED,
-                        AccountLocalSeeder.OVERDUE);
+                        AccountLocalSeeder.OVERDUE,
+                        AccountLocalSeeder.GUARDIAN_PENDING);
+        Document teen =
+                users.stream()
+                        .filter(u ->
+                                AccountLocalSeeder.GUARDIAN_PENDING.equals(u.getString("email")))
+                        .findFirst()
+                        .orElseThrow();
+        assertThat(teen.getString("status")).isEqualTo("PENDING_GUARDIAN_CONSENT");
+        assertThat(teen.getString("guardianEmail")).isEqualTo(AccountLocalSeeder.GUARDIAN);
         Document withPronouns =
                 users.stream()
                         .filter(u -> AccountLocalSeeder.WITH_PRONOUNS.equals(u.getString("email")))
@@ -95,9 +104,12 @@ class AccountLocalSeederIT {
             // História 2.3: um desativado, para o 403 ACCOUNT_DEACTIVATED do login.
             assertThat(user.getString("status"))
                     .isEqualTo(
-                            AccountLocalSeeder.DEACTIVATED.equals(user.getString("email"))
-                                    ? "DEACTIVATED"
-                                    : "ACTIVE");
+                            switch (user.getString("email")) {
+                                case AccountLocalSeeder.DEACTIVATED -> "DEACTIVATED";
+                                case AccountLocalSeeder.GUARDIAN_PENDING ->
+                                        "PENDING_GUARDIAN_CONSENT";
+                                default -> "ACTIVE";
+                            });
             assertThat(user.getString("role")).isEqualTo("STUDENT");
             assertThat(user.getString("metricsId")).isNotBlank();
             assertThat(

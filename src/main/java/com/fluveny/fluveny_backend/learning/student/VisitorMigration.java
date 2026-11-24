@@ -77,7 +77,8 @@ public class VisitorMigration {
     }
 
     /**
-     * Migra os recibos do aparelho para a conta, que é nova (não tem registro anterior).
+     * Migra os recibos do aparelho para a conta: a nova do cadastro ou, depois do consentimento
+     * (história 2.11), uma que já tem registros.
      *
      * @return quantos migraram e quantos foram descartados
      */
@@ -131,6 +132,11 @@ public class VisitorMigration {
             throw ex;
         }
         if (!found.unitKey().equals(payload.unitKey())) {
+            return Optional.empty();
+        }
+        // A conta pode já ter o registro da Atividade (a migração depois do consentimento,
+        // história 2.11): o dela fica, e o recibo é descartado sem consumir.
+        if (this.results.find(userId, found.unitKey(), payload.activityKey()).isPresent()) {
             return Optional.empty();
         }
         Optional<FirstAttempt> first = this.attempts.find(deviceId, payload.activityKey());

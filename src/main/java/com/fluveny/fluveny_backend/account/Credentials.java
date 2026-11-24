@@ -8,10 +8,11 @@ import org.springframework.stereotype.Service;
 
 /**
  * Conferência de e-mail e senha para o login de {@code auth} (história 2.3, FR-3). E-mail
- * desconhecido, senha errada, conta sem senha utilizável ({@code INVITED}) e, até a 2.11, conta
- * {@code PENDING_GUARDIAN_CONSENT} dão o mesmo {@link Outcome#INVALID}. O e-mail desconhecido roda
- * o BCrypt contra um hash fixo, para o tempo não revelar a conta. Só com a senha certa a conta
- * {@code DEACTIVATED} é revelada ({@link Outcome#DEACTIVATED}).
+ * desconhecido, senha errada e conta sem senha utilizável ({@code INVITED}) dão o mesmo {@link
+ * Outcome#INVALID}. O adolescente à espera do responsável ({@code PENDING_GUARDIAN_CONSENT}) entra
+ * como {@code ACTIVE} (história 2.11). O e-mail desconhecido roda o BCrypt contra um hash fixo,
+ * para o tempo não revelar a conta. Só com a senha certa a conta {@code DEACTIVATED} é revelada
+ * ({@link Outcome#DEACTIVATED}).
  *
  * <p>Nem o e-mail nem a senha vão para o log.
  */
@@ -55,21 +56,20 @@ public class Credentials {
             return Verification.INVALID;
         }
         return switch (user.status()) {
-            case ACTIVE ->
+            case ACTIVE, PENDING_GUARDIAN_CONSENT ->
                     new Verification(
                             Outcome.VERIFIED,
                             user.id(),
                             user.role(),
                             this.profiles.toProfile(user));
             case DEACTIVATED -> Verification.DEACTIVATED;
-            // O adolescente pendente entra na 2.11; até lá, o 401 genérico.
-            case PENDING_GUARDIAN_CONSENT, INVITED -> Verification.INVALID;
+            case INVITED -> Verification.INVALID;
         };
     }
 
     /** O resultado da conferência. */
     public enum Outcome {
-        /** Senha certa e conta {@code ACTIVE}. */
+        /** Senha certa e conta {@code ACTIVE} ou {@code PENDING_GUARDIAN_CONSENT}. */
         VERIFIED,
         /** Qualquer outra coisa sem a senha certa, inclusive e-mail desconhecido. */
         INVALID,

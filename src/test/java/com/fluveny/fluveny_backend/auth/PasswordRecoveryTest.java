@@ -318,7 +318,7 @@ class PasswordRecoveryTest {
         "DEACTIVATED, true",
         "INVITED, true",
         "INVITED, false",
-        "PENDING_GUARDIAN_CONSENT, true",
+        // O adolescente pendente confirmado recupera a senha (2.11); sem confirmar, não.
         "PENDING_GUARDIAN_CONSENT, false"
     })
     void anUnconfirmedOrInactiveAccountIsAcceptedAndNothingIsStored(

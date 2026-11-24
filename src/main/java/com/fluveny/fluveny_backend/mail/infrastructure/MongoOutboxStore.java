@@ -141,6 +141,13 @@ class MongoOutboxStore implements OutboxStore {
         this.mongo.remove(Query.query(Criteria.where("to").in(addresses)), COLLECTION);
     }
 
+    @Override
+    public void deleteAllTo(String address, String subject) {
+        this.mongo.remove(
+                Query.query(Criteria.where("to").is(address).and("subject").is(subject)),
+                COLLECTION);
+    }
+
     private static Query byId(String id) {
         return Query.query(Criteria.where("_id").is(new ObjectId(id)));
     }

@@ -87,7 +87,8 @@ public class StudentProfiles {
                 user.pronounSet(),
                 user.emailVerifiedAt() != null,
                 emailConfirmationOverdue(user, this.clock.instant()),
-                user.pendingEmail());
+                user.pendingEmail(),
+                user.status().name());
     }
 
     /**

@@ -27,11 +27,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Cadastro de Aluno adulto (histórias 2.1 e 2.6, FR-2, FR-7, AD-3, AD-10, AD-13). Confere senha,
+ * Cadastro de Aluno (histórias 2.1, 2.6 e 2.11, FR-2, FR-7, AD-3, AD-10, AD-13). Confere senha,
  * idade e país, grava a conta em {@code users} já {@code ACTIVE} e publica o evento {@link
  * StudentRegistered}, que {@code learning} trata na mesma thread e na mesma transação, migrando o
  * Progresso do Visitante. O e-mail repetido esbarra no índice único, inclusive em dois cadastros ao
- * mesmo tempo.
+ * mesmo tempo. De 12 a 17 anos, exige o e-mail do responsável: a conta nasce {@code
+ * PENDING_GUARDIAN_CONSENT}, o responsável recebe o link depois do commit e o bloco do Visitante é
+ * ignorado (história 2.11).
  *
  * <p>Roda numa transação ({@code REQUIRED}): quem chama ({@code auth}) abre a transação, que cobre
  * a conta, a migração e a sessão; qualquer falha desfaz tudo. O {@code STUDENT_REGISTERED} e a
@@ -64,6 +66,8 @@ public class RegisterStudent {
 
     private final StudentProfiles profiles;
 
+    private final GuardianConsent guardianConsent;
+
     private final Countries countries;
 
     private final ApplicationEventPublisher events;
@@ -76,6 +80,7 @@ public class RegisterStudent {
             MetricsPublisher metrics,
             EmailConfirmation confirmation,
             StudentProfiles profiles,
+            GuardianConsent guardianConsent,
             Countries countries,
             ApplicationEventPublisher events,
             Clock clock) {
@@ -84,6 +89,7 @@ public class RegisterStudent {
         this.metrics = metrics;
         this.confirmation = confirmation;
         this.profiles = profiles;
+        this.guardianConsent = guardianConsent;
         this.countries = countries;
         this.events = events;
         this.clock = clock;
@@ -117,13 +123,36 @@ public class RegisterStudent {
      * Confere senha, idade e país e calcula o hash da senha, sem gravar nada e fora de transação.
      *
      * @throws ApiException {@code 400 VALIDATION_FAILED} (senha, data de nascimento, país), {@code
-     *     422 AGE_BELOW_MINIMUM} ou {@code 422 GUARDIAN_CONSENT_REQUIRED}
+     *     422 AGE_BELOW_MINIMUM} ou {@code 422 GUARDIAN_CONSENT_REQUIRED} (de 12 a 17 anos sem o
+     *     {@code guardianEmail}); {@code guardianEmail} igual ao e-mail do adolescente dá {@code
+     *     400 VALIDATION_FAILED}
      */
     public PreparedStudent prepare(NewStudent student) {
         if (PasswordPolicy.violation(student.password()).isPresent()) {
             throw invalid("password", PasswordPolicy.MESSAGE);
         }
-        checkAge(student.birthDate());
+        boolean minor = checkAge(student.birthDate());
+        String guardianEmail = null;
+        if (minor) {
+            if (student.guardianEmail() == null || student.guardianEmail().isBlank()) {
+                throw new ApiException(
+                        HttpStatus.UNPROCESSABLE_CONTENT,
+                        "GUARDIAN_CONSENT_REQUIRED",
+                        "Quem tem menos de 18 anos precisa da autorização de um responsável.",
+                        Map.of(
+                                "errors",
+                                List.of(
+                                        Map.of(
+                                                "field",
+                                                "guardianEmail",
+                                                "message",
+                                                "Informe o e-mail do seu responsável."))));
+            }
+            guardianEmail = normalizeEmail(student.guardianEmail());
+            if (guardianEmail.equals(normalizeEmail(student.email()))) {
+                throw invalid("guardianEmail", "Use o e-mail do seu responsável.");
+            }
+        }
         String country = blankToNull(student.country());
         if (country != null && !this.countries.contains(country)) {
             throw invalid("country", "Escolha um país da lista.");
@@ -132,13 +161,16 @@ public class RegisterStudent {
                 student,
                 normalizeEmail(student.email()),
                 country,
-                this.passwords.hash(student.password()));
+                this.passwords.hash(student.password()),
+                guardianEmail);
     }
 
     private RegisteredStudent insert(PreparedStudent prepared) {
         NewStudent student = prepared.student();
         String email = prepared.email();
         String country = prepared.country();
+        String guardianEmail = prepared.guardianEmail();
+        boolean pending = guardianEmail != null;
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);
         User user =
                 new User(
@@ -147,7 +179,7 @@ public class RegisterStudent {
                         prepared.passwordHash(),
                         student.birthDate(),
                         Role.STUDENT,
-                        AccountStatus.ACTIVE,
+                        pending ? AccountStatus.PENDING_GUARDIAN_CONSENT : AccountStatus.ACTIVE,
                         UUID.randomUUID(),
                         blankToNull(student.name()),
                         null,
@@ -168,15 +200,23 @@ public class RegisterStudent {
                                         "EMAIL_ALREADY_REGISTERED",
                                         "Este e-mail já tem uma conta. Entre ou recupere a"
                                                 + " senha."));
-        boolean fromVisitor = student.visitor() != null;
+        if (pending && !this.users.setGuardianEmail(userId, guardianEmail)) {
+            // Desfaz o cadastro: conta pendente sem responsável não teria saída.
+            throw new IllegalStateException("Conta pendente sem o e-mail do responsável");
+        }
+        // O adolescente pendente não migra no cadastro: só depois do consentimento (2.11).
+        StudentRegistered.Visitor visitor = pending ? null : student.visitor();
+        boolean fromVisitor = visitor != null;
         // Os efeitos de fora da transação primeiro, para o STUDENT_REGISTERED sair antes do
         // VISITOR_MIGRATED que a migração registra depois do commit.
         AfterCommit.run(() -> {
             publishRegistered(user.metricsId(), fromVisitor);
             issueConfirmation(userId, email, user.name());
+            if (pending) {
+                issueGuardianConsent(userId, guardianEmail, user.name());
+            }
         });
-        this.events.publishEvent(
-                new StudentRegistered(userId, user.metricsId(), student.visitor()));
+        this.events.publishEvent(new StudentRegistered(userId, user.metricsId(), visitor));
         // A conta acabou de nascer: a faixa do e-mail não confirmado sai false.
         return new RegisteredStudent(userId, Role.STUDENT, this.profiles.toProfile(user));
     }
@@ -186,7 +226,8 @@ public class RegisterStudent {
         return email.strip().toLowerCase(Locale.ROOT);
     }
 
-    private void checkAge(LocalDate birthDate) {
+    /** Confere a idade; {@code true} de 12 a 17 anos. */
+    private boolean checkAge(LocalDate birthDate) {
         LocalDate today = LocalDate.now(this.clock.withZone(ZONE));
         if (birthDate == null) {
             throw invalid("birthDate", "Informe a data de nascimento.");
@@ -201,12 +242,7 @@ public class RegisterStudent {
                     "AGE_BELOW_MINIMUM",
                     "O Fluveny é para quem tem 12 anos ou mais.");
         }
-        if (age < ADULT_AGE) {
-            throw new ApiException(
-                    HttpStatus.UNPROCESSABLE_CONTENT,
-                    "GUARDIAN_CONSENT_REQUIRED",
-                    "Quem tem menos de 18 anos precisa da autorização de um responsável.");
-        }
+        return age < ADULT_AGE;
     }
 
     private void publishRegistered(UUID metricsId, boolean fromVisitor) {
@@ -215,6 +251,23 @@ public class RegisterStudent {
         } catch (RuntimeException ex) {
             log.error("Falha ao publicar STUDENT_REGISTERED", ex);
             Sentry.captureException(ex);
+        }
+    }
+
+    private void issueGuardianConsent(String userId, String guardianEmail, String name) {
+        try {
+            this.guardianConsent.issue(userId, guardianEmail, name);
+        } catch (RuntimeException ex) {
+            // Sem a mensagem original: ela pode trazer o e-mail. O adolescente pede o reenvio.
+            log.error(
+                    "Falha ao emitir o consentimento do responsável ({})", ex.getClass().getName());
+            IllegalStateException sanitized =
+                    new IllegalStateException(
+                            "Falha ao emitir o consentimento do responsável ("
+                                    + ex.getClass().getName()
+                                    + ")");
+            sanitized.setStackTrace(ex.getStackTrace());
+            Sentry.captureException(sanitized);
         }
     }
 

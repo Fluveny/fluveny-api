@@ -42,6 +42,7 @@ final class AccountDeletionInventory {
                                     "_id",
                                     "email",
                                     "pendingEmail",
+                                    "guardianEmail",
                                     "passwordHash",
                                     "birthDate",
                                     "name",
@@ -54,6 +55,12 @@ final class AccountDeletionInventory {
                             "account",
                             List.of("userId", "email", "tokenHash"),
                             Treatment.DELETED),
+                    // Só hashes, mas ligados ao userId (história 2.11).
+                    new Entry(
+                            "guardian_consents",
+                            "account",
+                            List.of("userId", "guardianEmailHash", "ipHash"),
+                            Treatment.DELETED),
                     new Entry(
                             "sessions", "auth", List.of("userId", "tokenHash"), Treatment.DELETED),
                     new Entry(
@@ -64,7 +71,7 @@ final class AccountDeletionInventory {
                     new Entry(
                             "mail_outbox",
                             "mail",
-                            List.of("to", "text"),
+                            List.of("to (inclusive o do responsável)", "text"),
                             // A confirmação da exclusão entra depois e some no envio.
                             Treatment.DELETED),
                     new Entry("activity_results", "learning", List.of("userId"), Treatment.DELETED),

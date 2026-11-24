@@ -325,6 +325,25 @@ public class InMemoryAccounts {
                                         : u);
             }
 
+            private final java.util.Map<String, String> guardianEmails =
+                    new java.util.concurrent.ConcurrentHashMap<>();
+
+            @Override
+            public boolean setGuardianEmail(String id, String guardianEmail) {
+                this.guardianEmails.put(id, guardianEmail);
+                return true;
+            }
+
+            @Override
+            public Optional<String> findGuardianEmail(String id) {
+                return Optional.ofNullable(this.guardianEmails.get(id));
+            }
+
+            @Override
+            public boolean activateGuardianConsent(String id, String guardianEmail) {
+                return guardianEmail != null && this.guardianEmails.remove(id, guardianEmail);
+            }
+
             @Override
             public void upsertByEmail(User user) {
                 String id =

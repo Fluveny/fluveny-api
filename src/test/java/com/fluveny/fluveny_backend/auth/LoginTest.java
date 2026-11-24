@@ -302,14 +302,19 @@ class LoginTest {
         assertThat(this.accounts.throttle).isEqualTo(before);
     }
 
-    @ParameterizedTest
-    @EnumSource(
-            value = AccountStatus.class,
-            names = {"INVITED", "PENDING_GUARDIAN_CONSENT"})
-    void anInvitedOrPendingAccountIsTheGeneric401(AccountStatus status) throws Exception {
-        student("ana@example.com", status);
+    @Test
+    void anInvitedAccountIsTheGeneric401() throws Exception {
+        student("ana@example.com", AccountStatus.INVITED);
         expectProblem(login("ana@example.com", PASSWORD), 401, "INVALID_CREDENTIALS");
         assertThat(this.accounts.sessions).isEmpty();
+    }
+
+    /** História 2.11: o adolescente à espera do responsável entra. */
+    @Test
+    void aPendingGuardianConsentAccountLogsIn() throws Exception {
+        student("ana@example.com", AccountStatus.PENDING_GUARDIAN_CONSENT);
+        login("ana@example.com", PASSWORD).andExpect(status().isOk());
+        assertThat(this.accounts.sessions).hasSize(1);
     }
 
     @ParameterizedTest

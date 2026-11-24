@@ -6,7 +6,9 @@ import com.fluveny.fluveny_backend.account.PronounSet;
 import com.fluveny.fluveny_backend.platform.security.Role;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.bson.Document;
@@ -23,12 +25,23 @@ import org.springframework.stereotype.Repository;
  * AccountIndexes}). A {@link DuplicateKeyException} do e-mail repetido vira um {@code Optional}
  * vazio aqui mesmo: a mensagem do driver traz o e-mail e nunca vai para o log, o Sentry ou a
  * resposta. A data de nascimento fica como texto ISO ({@code yyyy-MM-dd}), sem fuso; o {@code
- * metricsId}, como texto. O {@code country} (história 2.6) só existe quando o Aluno informou.
+ * metricsId}, como texto. O {@code country} (história 2.6) só existe quando o Aluno informou. O
+ * {@code guardianEmail} (história 2.11) só existe enquanto a conta espera o responsável.
  */
 @Repository
 class MongoUserStore implements UserStore {
 
     static final String COLLECTION = "users";
+
+    /**
+     * Os status que editam o perfil, trocam senha ou e-mail e se excluem: o ativo e o adolescente à
+     * espera do responsável (história 2.11).
+     */
+    private static final List<String> MANAGEABLE =
+            Arrays.stream(AccountStatus.values())
+                    .filter(AccountStatus::canManage)
+                    .map(Enum::name)
+                    .toList();
 
     private final MongoTemplate mongo;
 
@@ -105,7 +118,7 @@ class MongoUserStore implements UserStore {
                                                 .and("email")
                                                 .is(email)
                                                 .and("status")
-                                                .is(AccountStatus.ACTIVE.name())
+                                                .in(MANAGEABLE)
                                                 .and("emailVerifiedAt")
                                                 .ne(null)),
                                 Update.update("passwordHash", passwordHash),
@@ -142,7 +155,7 @@ class MongoUserStore implements UserStore {
                         Criteria.where("_id")
                                 .is(new ObjectId(id))
                                 .and("status")
-                                .is(AccountStatus.ACTIVE.name())
+                                .in(MANAGEABLE)
                                 .and("role")
                                 .is(Role.STUDENT.name()));
         return this.mongo.updateFirst(activeStudent, update, COLLECTION).getMatchedCount() > 0;
@@ -159,7 +172,7 @@ class MongoUserStore implements UserStore {
                                         Criteria.where("_id")
                                                 .is(new ObjectId(id))
                                                 .and("status")
-                                                .is(AccountStatus.ACTIVE.name())
+                                                .in(MANAGEABLE)
                                                 .and("passwordHash")
                                                 .is(currentHash)),
                                 Update.update("passwordHash", newHash),
@@ -179,7 +192,7 @@ class MongoUserStore implements UserStore {
                                         Criteria.where("_id")
                                                 .is(new ObjectId(id))
                                                 .and("status")
-                                                .is(AccountStatus.ACTIVE.name())),
+                                                .in(MANAGEABLE)),
                                 Update.update("pendingEmail", pendingEmail),
                                 COLLECTION)
                         .getMatchedCount()
@@ -201,7 +214,7 @@ class MongoUserStore implements UserStore {
                                                     .and("pendingEmail")
                                                     .is(pendingEmail)
                                                     .and("status")
-                                                    .is(AccountStatus.ACTIVE.name())),
+                                                    .in(MANAGEABLE)),
                                     new Update()
                                             .set("email", pendingEmail)
                                             .set("pendingEmail", null)
@@ -243,10 +256,63 @@ class MongoUserStore implements UserStore {
                                                 .and("deletionRequestedAt")
                                                 .is(null)
                                                 .and("status")
-                                                .is(AccountStatus.ACTIVE.name())
+                                                .in(MANAGEABLE)
                                                 .and("role")
                                                 .is(Role.STUDENT.name())),
                                 Update.update("deletionRequestedAt", Date.from(requestedAt)),
+                                COLLECTION)
+                        .getMatchedCount()
+                > 0;
+    }
+
+    @Override
+    public boolean setGuardianEmail(String id, String guardianEmail) {
+        if (id == null || !ObjectId.isValid(id) || guardianEmail == null) {
+            return false;
+        }
+        return this.mongo
+                        .updateFirst(
+                                Query.query(
+                                        Criteria.where("_id")
+                                                .is(new ObjectId(id))
+                                                .and("status")
+                                                .is(AccountStatus.PENDING_GUARDIAN_CONSENT.name())),
+                                Update.update("guardianEmail", guardianEmail),
+                                COLLECTION)
+                        .getMatchedCount()
+                > 0;
+    }
+
+    @Override
+    public Optional<String> findGuardianEmail(String id) {
+        if (id == null || !ObjectId.isValid(id)) {
+            return Optional.empty();
+        }
+        Query query = Query.query(Criteria.where("_id").is(new ObjectId(id)));
+        query.fields().include("guardianEmail");
+        return Optional.ofNullable(this.mongo.findOne(query, Document.class, COLLECTION))
+                .map(document -> document.getString("guardianEmail"));
+    }
+
+    @Override
+    public boolean activateGuardianConsent(String id, String guardianEmail) {
+        if (id == null || !ObjectId.isValid(id) || guardianEmail == null) {
+            return false;
+        }
+        return this.mongo
+                        .updateFirst(
+                                Query.query(
+                                        Criteria.where("_id")
+                                                .is(new ObjectId(id))
+                                                .and("status")
+                                                .is(AccountStatus.PENDING_GUARDIAN_CONSENT.name())
+                                                .and("guardianEmail")
+                                                .is(guardianEmail)
+                                                .and("deletionRequestedAt")
+                                                .is(null)),
+                                new Update()
+                                        .set("status", AccountStatus.ACTIVE.name())
+                                        .unset("guardianEmail"),
                                 COLLECTION)
                         .getMatchedCount()
                 > 0;

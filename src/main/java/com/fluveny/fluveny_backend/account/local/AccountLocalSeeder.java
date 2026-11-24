@@ -40,6 +40,9 @@ import org.springframework.stereotype.Component;
  *       #OVERDUE_DAYS} dias atrás, para a faixa {@code emailConfirmationOverdue} (história 2.8). O
  *       {@code createdAt} só é gravado na criação: nos {@code seed} seguintes, a conta fica mais
  *       velha, e a faixa continua.
+ *   <li>{@value #GUARDIAN_PENDING}, {@code PENDING_GUARDIAN_CONSENT}, com o responsável {@value
+ *       #GUARDIAN}, para a faixa ouro e o reenvio (história 2.11). A data de nascimento é a mesma
+ *       dos outros: o status é que conta.
  * </ul>
  *
  * <p>Cada {@code seed} desfaz a troca de e-mail pendente (história 2.9) e volta nome, país e
@@ -60,6 +63,10 @@ class AccountLocalSeeder implements LocalDataSeeder {
     static final String DEACTIVATED = "aluno.desativado@fluveny.local";
 
     static final String OVERDUE = "aluno.atrasado@fluveny.local";
+
+    static final String GUARDIAN_PENDING = "aluno.adolescente@fluveny.local";
+
+    static final String GUARDIAN = "responsavel@fluveny.local";
 
     static final int OVERDUE_DAYS = 8;
 
@@ -149,8 +156,20 @@ class AccountLocalSeeder implements LocalDataSeeder {
                         AccountStatus.ACTIVE,
                         Duration.ofDays(OVERDUE_DAYS),
                         null));
+        this.users.upsertByEmail(
+                student(
+                        GUARDIAN_PENDING,
+                        hash,
+                        "Duda",
+                        null,
+                        true,
+                        AccountStatus.PENDING_GUARDIAN_CONSENT));
+        this.users
+                .findByEmail(GUARDIAN_PENDING)
+                .ifPresent(user -> this.users.setGuardianEmail(user.id(), GUARDIAN));
         // A troca de e-mail pendente é desfeita: o link dela não vale mais.
-        for (String email : List.of(WITH_PRONOUNS, WITHOUT_PRONOUNS, DEACTIVATED, OVERDUE)) {
+        for (String email :
+                List.of(WITH_PRONOUNS, WITHOUT_PRONOUNS, DEACTIVATED, OVERDUE, GUARDIAN_PENDING)) {
             this.users
                     .findByEmail(email)
                     .ifPresent(

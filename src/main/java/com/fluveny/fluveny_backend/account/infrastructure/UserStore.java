@@ -4,7 +4,11 @@ import com.fluveny.fluveny_backend.account.ProfileChange;
 import java.time.Instant;
 import java.util.Optional;
 
-/** Coleção {@code users} (dona: {@code account}, AD-13). Só {@code account} chama. */
+/**
+ * Coleção {@code users} (dona: {@code account}, AD-13). Só {@code account} chama. Onde as escritas
+ * abaixo dizem {@code ACTIVE}, vale também {@code PENDING_GUARDIAN_CONSENT} desde a história 2.11
+ * ({@code AccountStatus.canManage}).
+ */
 public interface UserStore {
 
     /**
@@ -40,7 +44,7 @@ public interface UserStore {
 
     /**
      * Grava os campos presentes da troca de perfil (história 2.9), se a conta é um Aluno {@code
-     * ACTIVE}; nome e país nulos saem do documento.
+     * ACTIVE} ou {@code PENDING_GUARDIAN_CONSENT}; nome e país nulos saem do documento.
      *
      * @return {@code false} se a conta não existe ou não é um Aluno ativo
      */
@@ -79,6 +83,26 @@ public interface UserStore {
      *     marcada (outra exclusão no meio) ou não é um Aluno ativo
      */
     boolean markDeletionRequested(String id, Instant requestedAt);
+
+    /**
+     * Grava o e-mail do responsável, já normalizado (história 2.11), se a conta está {@code
+     * PENDING_GUARDIAN_CONSENT}. Ele fica em {@code users} só até a confirmação.
+     *
+     * @return {@code false} se a conta não existe ou não está pendente (nada gravado)
+     */
+    boolean setGuardianEmail(String id, String guardianEmail);
+
+    /** O e-mail do responsável da conta pendente; vazio se não há ou a conta não existe. */
+    Optional<String> findGuardianEmail(String id);
+
+    /**
+     * Numa só atualização condicional, ativa a conta que espera o responsável (história 2.11): só
+     * se ela está {@code PENDING_GUARDIAN_CONSENT}, com esse {@code guardianEmail} e sem pedido de
+     * exclusão. Passa a {@code ACTIVE} e apaga o {@code guardianEmail}.
+     *
+     * @return {@code true} se esta chamada ativou
+     */
+    boolean activateGuardianConsent(String id, String guardianEmail);
 
     /** Apaga o documento da conta: perfil, Variáveis e o vínculo do {@code metricsId}. */
     void delete(String id);
