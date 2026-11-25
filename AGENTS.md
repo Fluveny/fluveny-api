@@ -23,7 +23,7 @@ API do Fluveny: Java, Spring Boot e MongoDB, e o alvo é um monólito modular co
 
 ## Conventions that differ from defaults
 
-- Código, identificadores e chaves em inglês. Mensagens ao usuário em pt-BR.
+- Código, identificadores e chaves em inglês. Idioma (1.23): o que chega ao Aluno é em inglês (assunto e corpo dos e-mails, textos do Conteúdo Estruturado); o Painel da equipe é em pt-BR; o `detail` do problem+json, comentários e a documentação OpenAPI continuam em pt-BR (o App mostra texto próprio pelo `code`, AD-11). O texto jurídico (política e termos) vale em pt-BR.
 - Coleções Mongo em snake_case no plural, sem prefixo. Erros em RFC 9457 com `code` em SCREAMING_SNAKE.
 - Sucesso sai em `ApiResponse.of(data)` (`{data, message?}`). Erro de domínio é `throw new ApiException(status, "CODE", "detalhe em pt-BR")`; o `ProblemHandler` da `platform` faz o resto. Nunca devolva mensagem de exceção ao cliente.
 - Toda rota declara `@PublicRoute` ou `@RequiresRole(Role.X)` no método ou na classe (o método vence). Sem declaração a rota é negada e o `RouteDeclarationScanTest` falha o build. A hierarquia `ADMIN > CONTENT_CREATOR` mora só no `RoleHierarchyConfig`; `STUDENT` fica fora.

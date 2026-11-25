@@ -42,14 +42,14 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class AccountDeletion {
 
-    static final String SUBJECT = "Sua conta do Fluveny foi excluída";
+    static final String SUBJECT = "Your Fluveny account was deleted";
 
     static final String TEXT =
-            "Olá!\n\n"
-                    + "Sua conta do Fluveny foi excluída, como você pediu. Apagamos o seu"
-                    + " progresso e os seus dados pessoais.\n\n"
-                    + "Se quiser voltar a estudar, é só criar uma conta nova.\n\n"
-                    + "Equipe Fluveny\n";
+            "Hi!\n\n"
+                    + "Your Fluveny account was deleted, as you asked. We erased your"
+                    + " progress and your personal data.\n\n"
+                    + "If you want to study again, just create a new account.\n\n"
+                    + "The Fluveny team\n";
 
     private static final Logger log = LoggerFactory.getLogger(AccountDeletion.class);
 

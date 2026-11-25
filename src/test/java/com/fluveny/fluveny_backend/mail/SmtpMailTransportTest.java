@@ -55,14 +55,14 @@ class SmtpMailTransportTest {
                         provider(this.sender), " Fluveny <nao-responda@fluveny.test> ");
         assertThat(transport.configured()).isTrue();
 
-        transport.send("ana@example.com", "Confirme seu e-mail no Fluveny", "Olá!\n\nlink");
+        transport.send("ana@example.com", "Confirm your Fluveny email", "Hi!\n\nlink");
 
         ArgumentCaptor<SimpleMailMessage> message =
                 ArgumentCaptor.forClass(SimpleMailMessage.class);
         verify(this.sender).send(message.capture());
         assertThat(message.getValue().getFrom()).isEqualTo("Fluveny <nao-responda@fluveny.test>");
         assertThat(message.getValue().getTo()).containsExactly("ana@example.com");
-        assertThat(message.getValue().getSubject()).isEqualTo("Confirme seu e-mail no Fluveny");
-        assertThat(message.getValue().getText()).isEqualTo("Olá!\n\nlink");
+        assertThat(message.getValue().getSubject()).isEqualTo("Confirm your Fluveny email");
+        assertThat(message.getValue().getText()).isEqualTo("Hi!\n\nlink");
     }
 }

@@ -77,15 +77,15 @@ class EmailChangeTest extends AccountChangeTestSupport {
         List<OutboxMail> toNew = mails("nova@example.com");
         assertThat(toNew).hasSize(1);
         assertThat(toNew.getFirst().priority()).isEqualTo(MailPriority.HIGH);
-        assertThat(toNew.getFirst().subject()).isEqualTo("Confirme seu novo e-mail do Fluveny");
+        assertThat(toNew.getFirst().subject()).isEqualTo("Confirm your new Fluveny email");
         List<OutboxMail> toOld =
                 mails("ana@example.com").stream()
                         .filter(mail -> mail.priority() == MailPriority.HIGH)
                         .toList();
         assertThat(toOld).hasSize(1);
         assertThat(toOld.getFirst().text())
-                .contains("Pediram para trocar o e-mail da sua conta para n***@e***.")
-                .contains("Se não foi você, troque sua senha.")
+                .contains("Someone asked to change the email of your account to n***@e***.")
+                .contains("If it wasn't you, change your password.")
                 .doesNotContain("http")
                 .doesNotContain("nova@example.com");
         String link = lastLink("nova@example.com");
@@ -246,8 +246,7 @@ class EmailChangeTest extends AccountChangeTestSupport {
         confirm(lastLink("nova@example.com")).andExpect(status().isNoContent());
         List<OutboxMail> changed =
                 mails("ana@example.com").stream()
-                        .filter(mail ->
-                                mail.subject().equals("O e-mail da sua conta Fluveny foi trocado"))
+                        .filter(mail -> mail.subject().equals("Your Fluveny email was changed"))
                         .toList();
         assertThat(changed).hasSize(1);
         assertThat(changed.getFirst().priority()).isEqualTo(MailPriority.HIGH);

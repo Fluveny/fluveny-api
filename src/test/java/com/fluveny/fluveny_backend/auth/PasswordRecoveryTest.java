@@ -285,12 +285,13 @@ class PasswordRecoveryTest {
         assertThat(mails()).hasSize(1);
         OutboxMail mail = mails().getFirst();
         assertThat(mail.to()).isEqualTo("ana@example.com");
-        assertThat(mail.subject()).isEqualTo("Redefina sua senha do Fluveny");
+        assertThat(mail.subject()).isEqualTo("Reset your Fluveny password");
         assertThat(mail.priority()).isEqualTo(MailPriority.HIGH);
         assertThat(mail.text())
-                .startsWith("Olá, Ana!\n")
-                .contains("O link vale por 1 hora e só funciona uma vez.")
-                .contains("Se você não pediu, ignore este e-mail. Sua senha continua a mesma.")
+                .startsWith("Hi, Ana!\n")
+                .contains("The link works for 1 hour and only once.")
+                .contains(
+                        "If you didn't ask for this, you can ignore this email. Your password stays the same.")
                 .doesNotContain("<");
 
         String token = lastToken();
