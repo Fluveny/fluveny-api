@@ -8,6 +8,7 @@ import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.test.context.ActiveProfiles;
@@ -24,6 +25,8 @@ import org.springframework.test.context.ActiveProfiles;
 class ApplicationIT {
 
     @Autowired private MongoTemplate mongo;
+
+    @Autowired private ApplicationContext context;
 
     @Test
     void contextLoads() {}
@@ -71,6 +74,15 @@ class ApplicationIT {
         Document unique = byName(indexes, "stageCompletionKey_unique");
         assertThat(unique.getBoolean("unique")).isTrue();
         assertThat(unique.get("partialFilterExpression")).isNotNull();
+    }
+
+    /** A limpeza da 2.11 (história 2.12) roda na partida com as propriedades padrão. */
+    @Test
+    void registersTheGuardianConsentCleanupOnStartup() throws Exception {
+        Class<?> onStartup =
+                Class.forName(
+                        "com.fluveny.fluveny_backend.account.GuardianConsentCleanup$OnStartup");
+        assertThat(this.context.getBeanNamesForType(onStartup)).hasSize(1);
     }
 
     private static Document byName(List<Document> indexes, String name) {

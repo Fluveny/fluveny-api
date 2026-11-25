@@ -50,9 +50,6 @@ class AccountDeletionTest {
                     this.password,
                     this.users,
                     mock(OneTimeTokenStore.class),
-                    mock(
-                            com.fluveny.fluveny_backend.account.infrastructure.GuardianConsentStore
-                                    .class),
                     this.mail,
                     mock(ApplicationEventPublisher.class),
                     mock(PlatformTransactionManager.class),

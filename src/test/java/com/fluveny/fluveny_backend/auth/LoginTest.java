@@ -309,14 +309,6 @@ class LoginTest {
         assertThat(this.accounts.sessions).isEmpty();
     }
 
-    /** História 2.11: o adolescente à espera do responsável entra. */
-    @Test
-    void aPendingGuardianConsentAccountLogsIn() throws Exception {
-        student("ana@example.com", AccountStatus.PENDING_GUARDIAN_CONSENT);
-        login("ana@example.com", PASSWORD).andExpect(status().isOk());
-        assertThat(this.accounts.sessions).hasSize(1);
-    }
-
     @ParameterizedTest
     @ValueSource(strings = {"", "ios"})
     void withoutAKnownClientIs400(String client) throws Exception {

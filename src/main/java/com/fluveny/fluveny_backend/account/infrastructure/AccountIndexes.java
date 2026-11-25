@@ -14,8 +14,7 @@ import org.springframework.stereotype.Component;
  * users}, o único do {@code email} (decide o e-mail repetido, inclusive em cadastros simultâneos) e
  * o único do {@code metricsId} (história 2.1); em {@code one_time_tokens}, o único do {@code
  * tokenHash}, o do {@code userId} (o reenvio apaga os anteriores) e o TTL do {@code expiresAt}
- * (história 2.2); em {@code guardian_consents}, o do {@code userId} (história 2.11). A conferência
- * do vencimento não depende do TTL, que roda a cada minuto.
+ * (história 2.2). A conferência do vencimento não depende do TTL, que roda a cada minuto.
  *
  * <p>Testes {@code @SpringBootTest} sem Mongo desligam com {@code
  * fluveny.mongo.indexes-on-startup=false}; o carregador local chama {@link #ensure()} de novo,
@@ -33,8 +32,6 @@ public class AccountIndexes {
     static final String TOKEN_USER_INDEX = "userId_purpose";
 
     static final String TOKEN_TTL_INDEX = "expiresAt_ttl";
-
-    static final String CONSENT_USER_INDEX = "userId";
 
     private final MongoTemplate mongo;
 
@@ -60,18 +57,6 @@ public class AccountIndexes {
                                 .unique()
                                 .named(METRICS_ID_INDEX));
         ensureTokens();
-        ensureConsents();
-    }
-
-    private void ensureConsents() {
-        String collection = MongoGuardianConsentStore.COLLECTION;
-        if (!this.mongo.collectionExists(collection)) {
-            this.mongo.createCollection(collection);
-        }
-        this.mongo
-                .indexOps(collection)
-                .createIndex(
-                        new Index().on("userId", Sort.Direction.ASC).named(CONSENT_USER_INDEX));
     }
 
     private void ensureTokens() {

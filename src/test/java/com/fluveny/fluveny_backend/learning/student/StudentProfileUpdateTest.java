@@ -155,8 +155,7 @@ class StudentProfileUpdateTest extends StudentLearningTestSupport {
                                 PronounSet.SHE,
                                 true,
                                 false,
-                                "nova@example.com",
-                                "ACTIVE")
+                                "nova@example.com")
                         .toString();
         assertThat(text).doesNotContain("Ana", "ana@example.com", "Brazil", "nova@example.com");
     }

@@ -85,7 +85,7 @@ public class AccountPassword {
                 this.users
                         .findById(userId)
                         .filter(found ->
-                                AccountStatus.canManage(found.status())
+                                found.status() == AccountStatus.ACTIVE
                                         && found.role() == Role.STUDENT)
                         .orElseThrow(() ->
                                 new ApiException(

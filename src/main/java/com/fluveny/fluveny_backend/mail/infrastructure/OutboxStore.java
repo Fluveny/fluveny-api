@@ -41,7 +41,4 @@ public interface OutboxStore {
      * história 2.10).
      */
     void deleteAllTo(Collection<String> addresses);
-
-    /** Apaga os e-mails para o endereço com esse assunto, em qualquer {@code status}. */
-    void deleteAllTo(String address, String subject);
 }

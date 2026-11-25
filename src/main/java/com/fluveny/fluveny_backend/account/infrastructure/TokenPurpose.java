@@ -7,7 +7,5 @@ public enum TokenPurpose {
     /** O link de redefinição de senha (história 2.8). */
     PASSWORD_RESET,
     /** O link de confirmação do e-mail novo, na troca de e-mail (história 2.9). */
-    EMAIL_CHANGE,
-    /** O link do consentimento do responsável pelo adolescente (história 2.11). */
-    GUARDIAN_CONSENT
+    EMAIL_CHANGE
 }

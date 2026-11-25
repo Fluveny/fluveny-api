@@ -105,8 +105,7 @@ final class SessionAuthenticationFilter extends OncePerRequestFilter {
         SecurityContext context = this.contexts.createEmptyContext();
         context.setAuthentication(
                 UsernamePasswordAuthenticationToken.authenticated(
-                        new SessionPrincipal(
-                                session.userId(), session.role(), session.guardianPending()),
+                        new SessionPrincipal(session.userId(), session.role()),
                         null,
                         List.of(new SimpleGrantedAuthority(session.role().authority()))));
         this.contexts.setContext(context);

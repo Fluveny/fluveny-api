@@ -1,6 +1,5 @@
 package com.fluveny.fluveny_backend.account;
 
-import com.fluveny.fluveny_backend.account.infrastructure.GuardianConsentStore;
 import com.fluveny.fluveny_backend.account.infrastructure.OneTimeTokenStore;
 import com.fluveny.fluveny_backend.account.infrastructure.User;
 import com.fluveny.fluveny_backend.account.infrastructure.UserStore;
@@ -29,9 +28,8 @@ import org.springframework.transaction.support.TransactionTemplate;
  * da troca de senha) e, numa só transação Mongo: (1) marca o {@code deletionRequestedAt}, só se
  * ainda é nulo; (2) publica o {@link AccountDeletionRequested}, que {@code auth}, {@code mail} e
  * {@code learning} tratam na mesma transação, apagando os próprios dados; (3) apaga os tokens de
- * uso único e os consentimentos do responsável ({@code guardian_consents}, história 2.11); (4)
- * apaga o documento de {@code users}, o único elo entre o {@code metricsId} e a pessoa. Os
- * documentos de {@code events} ficam, agregados e sem dado pessoal.
+ * uso único; (4) apaga o documento de {@code users}, o único elo entre o {@code metricsId} e a
+ * pessoa. Os documentos de {@code events} ficam, agregados e sem dado pessoal.
  *
  * <p>Qualquer falha desfaz tudo e dá {@code 503 ACCOUNT_DELETION_FAILED}: a conta continua intacta
  * e o Aluno tenta de novo; se a conta já não existe depois da falha (commit de resultado
@@ -61,8 +59,6 @@ public class AccountDeletion {
 
     private final OneTimeTokenStore tokens;
 
-    private final GuardianConsentStore consents;
-
     private final MailSender mail;
 
     private final ApplicationEventPublisher events;
@@ -75,7 +71,6 @@ public class AccountDeletion {
             AccountPassword password,
             UserStore users,
             OneTimeTokenStore tokens,
-            GuardianConsentStore consents,
             MailSender mail,
             ApplicationEventPublisher events,
             PlatformTransactionManager transactionManager,
@@ -83,7 +78,6 @@ public class AccountDeletion {
         this.password = password;
         this.users = users;
         this.tokens = tokens;
-        this.consents = consents;
         this.mail = mail;
         this.events = events;
         this.transaction = new TransactionTemplate(transactionManager);
@@ -139,18 +133,10 @@ public class AccountDeletion {
             // O e-mail pendente já é de outra conta: nada dele é desta.
             pendingEmail = null;
         }
-        String guardianEmail = this.users.findGuardianEmail(user.id()).orElse(null);
-        if (guardianEmail != null && this.users.findByEmail(guardianEmail).isPresent()) {
-            // O responsável tem conta própria: só os e-mails de consentimento saem; os outros
-            // dele não são desta conta.
-            this.mail.discard(guardianEmail, GuardianConsent.SUBJECT);
-            guardianEmail = null;
-        }
         this.events.publishEvent(
                 new AccountDeletionRequested(
-                        user.id(), user.metricsId(), user.email(), pendingEmail, guardianEmail));
+                        user.id(), user.metricsId(), user.email(), pendingEmail));
         this.tokens.deleteAllFor(user.id());
-        this.consents.deleteAllFor(user.id());
         this.users.delete(user.id());
         return null;
     }

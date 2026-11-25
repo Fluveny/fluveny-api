@@ -27,7 +27,6 @@ import java.util.UUID;
  * @param acceptedPrivacyVersion a versão da política de privacidade aceita
  * @param country opcional: o {@code name} em inglês de um país de {@code countries.json}
  * @param visitor opcional: o Progresso do Visitante, só vindo do convite
- * @param guardianEmail o e-mail do responsável, de 12 a 17 anos (história 2.11)
  */
 @Schema(name = "SignupRequest", additionalProperties = Schema.AdditionalPropertiesValue.FALSE)
 record SignupRequest(
@@ -71,19 +70,7 @@ record SignupRequest(
                                 "Só vindo do convite do Visitante: o aparelho e os recibos das"
                                         + " rotas do Visitante, para migrar o Progresso e o XP.")
                 @Valid
-                Visitor visitor,
-        @Schema(
-                        requiredMode = RequiredMode.NOT_REQUIRED,
-                        maxLength = 254,
-                        format = "email",
-                        description =
-                                "O e-mail do responsável, exigido de 12 a 17 anos (senão 422"
-                                        + " GUARDIAN_CONSENT_REQUIRED). Igual ao e-mail do"
-                                        + " adolescente: 400 VALIDATION_FAILED. Ignorado com 18"
-                                        + " anos ou mais.")
-                @Email
-                @Size(max = 254)
-                String guardianEmail) {
+                Visitor visitor) {
 
     /** Recibos aceitos por cadastro, no máximo. */
     static final int MAX_RECEIPTS = 200;
@@ -95,7 +82,6 @@ record SignupRequest(
         email = (email == null) ? null : email.strip();
         name = (name == null) ? null : name.strip();
         country = (country == null) ? null : country.strip();
-        guardianEmail = (guardianEmail == null) ? null : guardianEmail.strip();
     }
 
     /** Campo desconhecido: a leitura falha, e a rota responde {@code 400 VALIDATION_FAILED}. */

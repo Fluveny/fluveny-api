@@ -5,7 +5,6 @@ import com.fluveny.fluveny_backend.learning.visitor.CompletionResult;
 import com.fluveny.fluveny_backend.platform.security.RequiresRole;
 import com.fluveny.fluveny_backend.platform.security.Role;
 import com.fluveny.fluveny_backend.platform.security.SessionPrincipal;
-import com.fluveny.fluveny_backend.platform.web.ApiException;
 import com.fluveny.fluveny_backend.platform.web.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -43,8 +42,7 @@ class StudentLearningController {
                     + " Com a sessão do navegador (cookie), exige X-Fluveny-Client, senão 403"
                     + " CLIENT_HEADER_REQUIRED. Mais de 60 escritas por minuto do Aluno, somando"
                     + " attempts, attempts/reveal, completions, events e dialogue-answers: 429 TOO_MANY_REQUESTS com"
-                    + " Retry-After. Adolescente à espera do responsável: 403"
-                    + " GUARDIAN_CONSENT_PENDING, sem gravar nada.";
+                    + " Retry-After.";
 
     /** A sequência, nas três escritas de Progresso (história 2.5). */
     private static final String LOCK =
@@ -64,21 +62,17 @@ class StudentLearningController {
 
     private final DialogueAnswers dialogueAnswers;
 
-    private final StudentVisitorMigrations migrations;
-
     StudentLearningController(
             StudentAttempts attempts,
             StudentEvents events,
             StudentDashboards dashboards,
             StudentStageSummaries summaries,
-            DialogueAnswers dialogueAnswers,
-            StudentVisitorMigrations migrations) {
+            DialogueAnswers dialogueAnswers) {
         this.attempts = attempts;
         this.events = events;
         this.dashboards = dashboards;
         this.summaries = summaries;
         this.dialogueAnswers = dialogueAnswers;
-        this.migrations = migrations;
     }
 
     @Operation(
@@ -96,7 +90,7 @@ class StudentLearningController {
                             + WRITE)
     @PostMapping("/attempts")
     ApiResponse<AttemptResult> attempt(@Valid @RequestBody StudentAttempt attempt) {
-        return ApiResponse.of(this.attempts.attempt(writerId(), attempt));
+        return ApiResponse.of(this.attempts.attempt(userId(), attempt));
     }
 
     @Operation(
@@ -112,7 +106,7 @@ class StudentLearningController {
                             + WRITE)
     @PostMapping("/attempts/reveal")
     ApiResponse<AttemptResult> reveal(@Valid @RequestBody StudentAttempt attempt) {
-        return ApiResponse.of(this.attempts.reveal(writerId(), attempt));
+        return ApiResponse.of(this.attempts.reveal(userId(), attempt));
     }
 
     @Operation(
@@ -129,7 +123,7 @@ class StudentLearningController {
                             + WRITE)
     @PostMapping("/completions")
     ApiResponse<CompletionResult> complete(@Valid @RequestBody StudentCompletion completion) {
-        return ApiResponse.of(this.attempts.complete(writerId(), completion));
+        return ApiResponse.of(this.attempts.complete(userId(), completion));
     }
 
     @Operation(
@@ -143,7 +137,7 @@ class StudentLearningController {
     @PostMapping("/events")
     @ResponseStatus(HttpStatus.ACCEPTED)
     void record(@Valid @RequestBody StudentEvent event) {
-        this.events.record(writerId(), event);
+        this.events.record(userId(), event);
     }
 
     @Operation(
@@ -160,7 +154,7 @@ class StudentLearningController {
     @PutMapping("/dialogue-answers")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void dialogueAnswers(@Valid @RequestBody DialogueAnswer answer) {
-        this.dialogueAnswers.answer(writerId(), answer);
+        this.dialogueAnswers.answer(userId(), answer);
     }
 
     @Operation(
@@ -209,41 +203,6 @@ class StudentLearningController {
     ApiResponse<StudentStageSummary> stageSummary(
             @PathVariable String unitKey, @PathVariable String stageKey) {
         return ApiResponse.of(this.summaries.summary(userId(), unitKey, stageKey));
-    }
-
-    @Operation(
-            operationId = "migrateMyVisitorProgress",
-            description =
-                    "Migra o Progresso do Visitante para a conta da sessão, com o mesmo bloco"
-                            + " visitor do cadastro (deviceId e recibos): o App chama ao ver a conta"
-                            + " ACTIVE depois do consentimento do responsável (história 2.11), e"
-                            + " limpa a loja local depois do 200. Valida e migra como no cadastro,"
-                            + " numa só transação; recibo inválido, já consumido ou de Atividade"
-                            + " já registrada na conta é descartado sem erro. Repetir dá migrated"
-                            + " 0. Campo desconhecido dá 400."
-                            + WRITE)
-    @PostMapping("/visitor-migration")
-    ApiResponse<VisitorMigration.Result> migrateVisitor(
-            @Valid @RequestBody VisitorMigrationRequest body) {
-        return ApiResponse.of(
-                this.migrations.migrate(writerId(), body.deviceId(), body.receipts()));
-    }
-
-    /**
-     * O único ponto das escritas de Progresso (história 2.11, NFR2): o adolescente à espera do
-     * responsável lê, mas não grava.
-     *
-     * @throws ApiException {@code 403 GUARDIAN_CONSENT_PENDING}
-     */
-    private static String writerId() {
-        SessionPrincipal principal = SessionPrincipal.current();
-        if (principal.guardianPending()) {
-            throw new ApiException(
-                    HttpStatus.FORBIDDEN,
-                    "GUARDIAN_CONSENT_PENDING",
-                    "Seu progresso fica só neste aparelho até seu responsável confirmar.");
-        }
-        return principal.userId();
     }
 
     private static String userId() {

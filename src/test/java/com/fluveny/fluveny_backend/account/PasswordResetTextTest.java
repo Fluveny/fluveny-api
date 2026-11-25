@@ -50,9 +50,6 @@ class PasswordResetTextTest {
                         String to, String subject, String text, MailPriority priority) {
                     enqueue(to, subject, text, priority);
                 }
-
-                @Override
-                public void discard(String to, String subject) {}
             };
 
     private void request(String appUrl, String name) {

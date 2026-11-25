@@ -115,11 +115,7 @@ public class Sessions implements SessionAuthenticator {
             this.store.renew(tokenHash, renewedUntil);
         }
         return Optional.of(
-                new AuthenticatedSession(
-                        user.get().userId(),
-                        user.get().role(),
-                        renewedUntil,
-                        user.get().guardianPending()));
+                new AuthenticatedSession(user.get().userId(), user.get().role(), renewedUntil));
     }
 
     private Instant now() {
