@@ -173,7 +173,7 @@ class EmailConfirmationTest {
         assertThat(mails).hasSize(1);
         OutboxMail mail = mails.getFirst();
         assertThat(mail.to()).isEqualTo("ana@example.com");
-        assertThat(mail.subject()).isEqualTo("Confirme seu e-mail no Fluveny");
+        assertThat(mail.subject()).isEqualTo("Confirm your Fluveny email");
         assertThat(mail.priority()).isEqualTo(MailPriority.NORMAL);
         assertThat(mail.status()).isEqualTo(MailStatus.PENDING);
         assertThat(mail.attempts()).isZero();
@@ -183,9 +183,9 @@ class EmailConfirmationTest {
         // Sem SMTP, o PENDING não fica para sempre.
         assertThat(mail.purgeAt()).isEqualTo(NOW.plus(Duration.ofDays(30)));
         assertThat(mail.text())
-                .startsWith("Olá, Ana!\n")
-                .contains("O link vale por 7 dias.")
-                .contains("Se você não criou uma conta, ignore este e-mail.")
+                .startsWith("Hi, Ana!\n")
+                .contains("The link works for 7 days.")
+                .contains("If you didn't create an account, you can ignore this email.")
                 .doesNotContain("<");
 
         String token = lastToken();
@@ -202,7 +202,7 @@ class EmailConfirmationTest {
     @Test
     void withoutANameTheGreetingIsJustOla() throws Exception {
         signup("ana@example.com", null);
-        assertThat(this.accounts.outbox.all().getFirst().text()).startsWith("Olá!\n");
+        assertThat(this.accounts.outbox.all().getFirst().text()).startsWith("Hi!\n");
     }
 
     @Test

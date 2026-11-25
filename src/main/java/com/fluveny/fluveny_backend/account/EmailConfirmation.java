@@ -34,7 +34,7 @@ public class EmailConfirmation {
     /** Quanto vale o link {@code [ASSUMPTION]}. */
     static final Duration VALIDITY = Duration.ofDays(7);
 
-    static final String SUBJECT = "Confirme seu e-mail no Fluveny";
+    static final String SUBJECT = "Confirm your Fluveny email";
 
     static final String PATH = "/confirmar-email?token=";
 
@@ -77,7 +77,7 @@ public class EmailConfirmation {
     /**
      * Cria o token e enfileira o e-mail (o cadastro chama logo depois de gravar a conta).
      *
-     * @param name o nome para a saudação; nulo vira "Olá!"
+     * @param name o nome para a saudação; nulo vira "Hi!"
      */
     void issue(String userId, String email, String name) {
         Instant now = now();
@@ -145,17 +145,17 @@ public class EmailConfirmation {
     }
 
     private String text(String name, String token) {
-        String greeting = isPlainName(name) ? "Olá, " + name.strip() + "!" : "Olá!";
+        String greeting = isPlainName(name) ? "Hi, " + name.strip() + "!" : "Hi!";
         return greeting
                 + "\n\n"
-                + "Para confirmar seu e-mail no Fluveny, abra o link abaixo:\n\n"
+                + "To confirm your Fluveny email, open the link below:\n\n"
                 + this.appUrl
                 + PATH
                 + token
                 + "\n\n"
-                + "O link vale por 7 dias.\n\n"
-                + "Se você não criou uma conta, ignore este e-mail.\n\n"
-                + "Equipe Fluveny\n";
+                + "The link works for 7 days.\n\n"
+                + "If you didn't create an account, you can ignore this email.\n\n"
+                + "The Fluveny team\n";
     }
 
     /**

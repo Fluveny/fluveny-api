@@ -35,7 +35,7 @@ public class PasswordReset {
     /** Quanto vale o link. */
     static final Duration VALIDITY = Duration.ofHours(1);
 
-    static final String SUBJECT = "Redefina sua senha do Fluveny";
+    static final String SUBJECT = "Reset your Fluveny password";
 
     static final String PATH = "/redefinir-senha?token=";
 
@@ -143,18 +143,17 @@ public class PasswordReset {
     }
 
     private String text(String name, String token) {
-        String greeting =
-                EmailConfirmation.isPlainName(name) ? "Olá, " + name.strip() + "!" : "Olá!";
+        String greeting = EmailConfirmation.isPlainName(name) ? "Hi, " + name.strip() + "!" : "Hi!";
         return greeting
                 + "\n\n"
-                + "Para redefinir sua senha do Fluveny, abra o link abaixo:\n\n"
+                + "To reset your Fluveny password, open the link below:\n\n"
                 + this.appUrl
                 + PATH
                 + token
                 + "\n\n"
-                + "O link vale por 1 hora e só funciona uma vez.\n\n"
-                + "Se você não pediu, ignore este e-mail. Sua senha continua a mesma.\n\n"
-                + "Equipe Fluveny\n";
+                + "The link works for 1 hour and only once.\n\n"
+                + "If you didn't ask for this, you can ignore this email. Your password stays the same.\n\n"
+                + "The Fluveny team\n";
     }
 
     private Instant now() {

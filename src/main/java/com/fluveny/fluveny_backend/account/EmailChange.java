@@ -36,9 +36,9 @@ public class EmailChange {
 
     static final Duration VALIDITY = Duration.ofHours(24);
 
-    static final String SUBJECT = "Confirme seu novo e-mail do Fluveny";
+    static final String SUBJECT = "Confirm your new Fluveny email";
 
-    static final String NOTICE_SUBJECT = "Pedido de troca do e-mail da sua conta Fluveny";
+    static final String NOTICE_SUBJECT = "Someone asked to change your Fluveny email";
 
     static final String PATH = "/confirmar-novo-email?token=";
 
@@ -69,7 +69,7 @@ public class EmailChange {
 
     static final int REQUESTS_PER_DAY = 5;
 
-    static final String CHANGED_SUBJECT = "O e-mail da sua conta Fluveny foi trocado";
+    static final String CHANGED_SUBJECT = "Your Fluveny email was changed";
 
     EmailChange(
             UserStore users,
@@ -190,29 +190,29 @@ public class EmailChange {
     }
 
     private static String greeting(String name) {
-        return EmailConfirmation.isPlainName(name) ? "Olá, " + name.strip() + "!" : "Olá!";
+        return EmailConfirmation.isPlainName(name) ? "Hi, " + name.strip() + "!" : "Hi!";
     }
 
     private String confirmationText(String name, String token) {
         return greeting(name)
                 + "\n\n"
-                + "Para usar este e-mail na sua conta do Fluveny, abra o link abaixo:\n\n"
+                + "To use this email for your Fluveny account, open the link below:\n\n"
                 + this.appUrl
                 + PATH
                 + token
                 + "\n\n"
-                + "O link vale por 24 horas e só funciona uma vez.\n\n"
-                + "Se você não pediu, ignore este e-mail.\n\n"
-                + "Equipe Fluveny\n";
+                + "The link works for 24 hours and only once.\n\n"
+                + "If you didn't ask for this, you can ignore this email.\n\n"
+                + "The Fluveny team\n";
     }
 
     private static String noticeText(String name, String newEmail) {
         return greeting(name)
                 + "\n\n"
-                + "Pediram para trocar o e-mail da sua conta para "
+                + "Someone asked to change the email of your account to "
                 + mask(newEmail)
-                + ". Se não foi você, troque sua senha.\n\n"
-                + "Equipe Fluveny\n";
+                + ". If it wasn't you, change your password.\n\n"
+                + "The Fluveny team\n";
     }
 
     /** O aviso ao endereço antigo; a troca já valeu, então a falha só vai para o log. */
@@ -232,11 +232,11 @@ public class EmailChange {
     private static String changedText(String name, String newEmail) {
         return greeting(name)
                 + "\n\n"
-                + "O e-mail da sua conta do Fluveny foi trocado para "
+                + "The email of your Fluveny account was changed to "
                 + mask(newEmail)
-                + ". Este endereço não recebe mais os e-mails da conta.\n\n"
-                + "Se não foi você, fale com a equipe Fluveny.\n\n"
-                + "Equipe Fluveny\n";
+                + ". This address won't get the account emails anymore.\n\n"
+                + "If it wasn't you, contact the Fluveny team.\n\n"
+                + "The Fluveny team\n";
     }
 
     private Instant now() {

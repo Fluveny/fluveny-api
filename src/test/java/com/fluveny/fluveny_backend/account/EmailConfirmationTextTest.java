@@ -60,7 +60,7 @@ class EmailConfirmationTextTest {
     @ValueSource(strings = {"Ana", "Ana Lúcia", "D'Ávila", "Jean-Pierre", "  Zoë  "})
     void aPlainNameIsGreeted(String name) {
         confirmation("https://app.fluveny.test").issue("0".repeat(24), "a@example.com", name);
-        assertThat(this.texts.getFirst()).startsWith("Olá, " + name.strip() + "!\n");
+        assertThat(this.texts.getFirst()).startsWith("Hi, " + name.strip() + "!\n");
     }
 
     @ParameterizedTest
@@ -75,12 +75,12 @@ class EmailConfirmationTextTest {
             })
     void anythingElseIsJustOla(String name) {
         confirmation("https://app.fluveny.test").issue("0".repeat(24), "a@example.com", name);
-        assertThat(this.texts.getFirst()).startsWith("Olá!\n").doesNotContain(name.strip() + "!");
+        assertThat(this.texts.getFirst()).startsWith("Hi!\n").doesNotContain(name.strip() + "!");
     }
 
     @Test
     void withoutANameItIsJustOla() {
         confirmation("https://app.fluveny.test").issue("0".repeat(24), "a@example.com", null);
-        assertThat(this.texts.getFirst()).startsWith("Olá!\n");
+        assertThat(this.texts.getFirst()).startsWith("Hi!\n");
     }
 }

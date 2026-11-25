@@ -1,13 +1,18 @@
 {
   "stageKey": "stage-1",
   "title": "Meet & Greet",
-  "completion": "Você já sabe se apresentar, cumprimentar e dizer de onde é, {name}.",
+  "completion": "You can now say hello, introduce yourself and say where you're from, {name}.",
   "activities": [
     {
       "activityKey": "s1-whats-your-name",
       "type": "dialogue",
       "title": "Meet Alex",
       "lines": [
+        {
+          "lineKey": "welcome",
+          "speaker": "Alex",
+          "text": "Hey! Welcome to campus. You're the new international student, right?"
+        },
         {
           "lineKey": "new-here",
           "speaker": "Alex",
@@ -95,7 +100,7 @@
       "activityKey": "s1-introduce-yourself",
       "type": "speech",
       "title": "It's your turn",
-      "prompt": "Segure o microfone e se apresente para o Alex.",
+      "prompt": "Tap the mic and introduce yourself to Alex.",
       "target": "Hi Alex, I'm {name}.",
       "xp": 10
     },
@@ -103,7 +108,7 @@
       "activityKey": "s1-speech-bubbles",
       "type": "match",
       "title": "Match the Speech Bubbles",
-      "prompt": "Ligue cada fala do Alex à melhor resposta.",
+      "prompt": "Match each of Alex's lines to the best answer.",
       "items": [
         {
           "itemKey": "s1-speech-bubbles-new-here",
@@ -157,7 +162,7 @@
         {
           "lineKey": "where-from",
           "speaker": "Alex",
-          "text": "I'm from Brazil. Where are you from?",
+          "text": "I'm from the United States. Where are you from?",
           "ask": "country"
         }
       ]
@@ -169,7 +174,7 @@
       "prompt": "Where are you from?",
       "modelAnswer": "I'm from {country}. Nice to meet you!",
       "extraHelp": {
-        "prompt": "Complete a resposta com as palavras do banco.",
+        "prompt": "Complete the answer with the words below.",
         "lines": [
           "I'm ___ {country}. Nice to ___ you!"
         ],
@@ -203,7 +208,7 @@
       "activityKey": "s1-say-your-country",
       "type": "speech",
       "title": "It's your turn",
-      "prompt": "Responda ao Alex em voz alta.",
+      "prompt": "Answer Alex out loud.",
       "target": "I am from {country}.",
       "xp": 10
     },
@@ -215,7 +220,7 @@
         {
           "sentenceKey": "am",
           "form": "am",
-          "sentence": "I'**m** from Brazil. → I **am** from Brazil."
+          "sentence": "I'**m** from the United States. → I **am** from the United States."
         },
         {
           "sentenceKey": "is",
@@ -303,7 +308,7 @@
       "examples": [
         {
           "exampleKey": "hey-im-alex",
-          "text": "Hey, **I'm** Alex, **I'm** from Brazil. This is **my** friend."
+          "text": "Hey, **I'm** Alex, **I'm** from the United States. This is **my** friend."
         },
         {
           "exampleKey": "her-name",
@@ -327,7 +332,7 @@
       "activityKey": "s1-vocab-mode",
       "type": "choice",
       "title": "What does it mean?",
-      "prompt": "Escolha o significado certo.",
+      "prompt": "Choose the right meaning.",
       "items": [
         {
           "itemKey": "s1-vocab-mode-roommates",
@@ -360,13 +365,13 @@
       "activityKey": "s1-complete-gaps",
       "type": "gaps",
       "title": "Complete the sentences",
-      "prompt": "Complete as frases com as palavras do banco.",
+      "prompt": "Complete the sentences with the words below.",
       "mode": "bank",
       "lines": [
         "Hello! My name is Alex. Nice to ___ you.",
         "Hi! I'm new here. What's ___ name?",
         "Nice to meet ___ too!",
-        "I am from Brazil. Where ___ you from?"
+        "I am from the United States. Where ___ you from?"
       ],
       "items": [
         {

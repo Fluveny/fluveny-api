@@ -87,14 +87,15 @@ class PasswordResetTextTest {
     @Test
     void theMailIsPlainTextHighPriorityWithTheLink() {
         request("https://app.fluveny.test", "Ana");
-        assertThat(this.subjects).containsExactly("Redefina sua senha do Fluveny");
+        assertThat(this.subjects).containsExactly("Reset your Fluveny password");
         assertThat(this.priorities).containsExactly(MailPriority.HIGH);
         assertThat(this.texts.getFirst())
-                .startsWith("Olá, Ana!\n")
+                .startsWith("Hi, Ana!\n")
                 .containsPattern(
                         "\nhttps://app\\.fluveny\\.test/redefinir-senha\\?token=[A-Za-z0-9_-]{43}\n")
-                .contains("O link vale por 1 hora e só funciona uma vez.")
-                .contains("Se você não pediu, ignore este e-mail. Sua senha continua a mesma.")
+                .contains("The link works for 1 hour and only once.")
+                .contains(
+                        "If you didn't ask for this, you can ignore this email. Your password stays the same.")
                 .doesNotContain("<");
     }
 
@@ -111,12 +112,12 @@ class PasswordResetTextTest {
     @ValueSource(strings = {"Clique em site.com", "https://golpe.example", "Ana2", "Ana <b>"})
     void aNameThatIsNotPlainIsJustOla(String name) {
         request("https://app.fluveny.test", name);
-        assertThat(this.texts.getFirst()).startsWith("Olá!\n").doesNotContain(name.strip() + "!");
+        assertThat(this.texts.getFirst()).startsWith("Hi!\n").doesNotContain(name.strip() + "!");
     }
 
     @Test
     void withoutANameItIsJustOla() {
         request("https://app.fluveny.test", null);
-        assertThat(this.texts.getFirst()).startsWith("Olá!\n");
+        assertThat(this.texts.getFirst()).startsWith("Hi!\n");
     }
 }
