@@ -127,13 +127,6 @@ public class InMemoryOutbox implements OutboxStore {
         this.mails.values().removeIf(mail -> addresses.contains(mail.to()));
     }
 
-    @Override
-    public synchronized void deleteAllTo(String address, String subject) {
-        this.mails
-                .values()
-                .removeIf(mail -> mail.to().equals(address) && mail.subject().equals(subject));
-    }
-
     private void update(String id, UnaryOperator<OutboxMail> change) {
         this.mails.computeIfPresent(id, (key, mail) -> change.apply(mail));
     }

@@ -15,24 +15,11 @@ public final class PreparedStudent {
 
     private final String passwordHash;
 
-    private final String guardianEmail;
-
-    PreparedStudent(
-            NewStudent student,
-            String email,
-            String country,
-            String passwordHash,
-            String guardianEmail) {
+    PreparedStudent(NewStudent student, String email, String country, String passwordHash) {
         this.student = student;
         this.email = email;
         this.country = country;
         this.passwordHash = passwordHash;
-        this.guardianEmail = guardianEmail;
-    }
-
-    /** O e-mail normalizado do responsável; nulo para quem tem 18 anos ou mais (história 2.11). */
-    String guardianEmail() {
-        return this.guardianEmail;
     }
 
     NewStudent student() {

@@ -25,11 +25,4 @@ public interface MailSender {
      * falhar (a confirmação da exclusão da conta, história 2.10). Sem link no texto.
      */
     void enqueuePurgedOnSend(String to, String subject, String text, MailPriority priority);
-
-    /**
-     * Tira do outbox os e-mails para {@code to} com esse {@code subject}, em qualquer status (o
-     * consentimento do responsável de uma conta excluída, história 2.11). Os outros e-mails do
-     * endereço ficam.
-     */
-    void discard(String to, String subject);
 }

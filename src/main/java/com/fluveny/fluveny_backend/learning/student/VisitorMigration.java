@@ -28,8 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
  * A migração do Progresso do Visitante para a conta (história 2.6, FR-2, FR-7, AD-9, AD-10): cada
  * recibo válido vira um {@link ActivityResult} da conta e consome o {@code nonce} em {@code
  * visitor_attempts}; as conclusões de Estágio cobertas vão para {@code unit_progress}. Exige a
- * transação de quem chama (o cadastro; na 2.11, a confirmação do responsável): qualquer falha de
- * gravação desfaz tudo, inclusive os consumos.
+ * transação de quem chama (o cadastro): qualquer falha de gravação desfaz tudo, inclusive os
+ * consumos.
  *
  * <p>Um recibo é descartado, sem lançar, se o {@link ReceiptVerifier} o recusa (formato, HMAC ou
  * JSON); se o {@code deviceId} dele não é o do bloco; se o {@code issuedAt} passou de 90 dias (o
@@ -77,8 +77,7 @@ public class VisitorMigration {
     }
 
     /**
-     * Migra os recibos do aparelho para a conta: a nova do cadastro ou, depois do consentimento
-     * (história 2.11), uma que já tem registros.
+     * Migra os recibos do aparelho para a conta, que é nova (não tem registro anterior).
      *
      * @return quantos migraram e quantos foram descartados
      */
@@ -132,11 +131,6 @@ public class VisitorMigration {
             throw ex;
         }
         if (!found.unitKey().equals(payload.unitKey())) {
-            return Optional.empty();
-        }
-        // A conta pode já ter o registro da Atividade (a migração depois do consentimento,
-        // história 2.11): o dela fica, e o recibo é descartado sem consumir.
-        if (this.results.find(userId, found.unitKey(), payload.activityKey()).isPresent()) {
             return Optional.empty();
         }
         Optional<FirstAttempt> first = this.attempts.find(deviceId, payload.activityKey());

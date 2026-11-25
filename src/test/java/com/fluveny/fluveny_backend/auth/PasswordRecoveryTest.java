@@ -313,14 +313,7 @@ class PasswordRecoveryTest {
     }
 
     @ParameterizedTest
-    @CsvSource({
-        "ACTIVE, false",
-        "DEACTIVATED, true",
-        "INVITED, true",
-        "INVITED, false",
-        // O adolescente pendente confirmado recupera a senha (2.11); sem confirmar, não.
-        "PENDING_GUARDIAN_CONSENT, false"
-    })
+    @CsvSource({"ACTIVE, false", "DEACTIVATED, true", "INVITED, true", "INVITED, false"})
     void anUnconfirmedOrInactiveAccountIsAcceptedAndNothingIsStored(
             AccountStatus status, boolean confirmed) throws Exception {
         student("ana@example.com", status, confirmed);

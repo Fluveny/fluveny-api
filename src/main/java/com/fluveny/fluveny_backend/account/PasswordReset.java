@@ -89,7 +89,7 @@ public class PasswordReset {
             return;
         }
         User user = found.get();
-        if (!AccountStatus.canManage(user.status()) || user.emailVerifiedAt() == null) {
+        if (user.status() != AccountStatus.ACTIVE || user.emailVerifiedAt() == null) {
             return;
         }
         Instant now = now();

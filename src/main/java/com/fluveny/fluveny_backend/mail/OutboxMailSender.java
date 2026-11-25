@@ -35,11 +35,6 @@ class OutboxMailSender implements MailSender {
         insert(to, subject, text, priority, true);
     }
 
-    @Override
-    public void discard(String to, String subject) {
-        this.store.deleteAllTo(to, subject);
-    }
-
     private void insert(
             String to, String subject, String text, MailPriority priority, boolean purgeOnSend) {
         Instant now = this.clock.instant().truncatedTo(ChronoUnit.MILLIS);

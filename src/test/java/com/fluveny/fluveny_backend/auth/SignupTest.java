@@ -307,20 +307,23 @@ class SignupTest {
 
     // Idade.
 
-    @Test
-    void elevenYearsAnd364DaysIsBelowTheMinimum() throws Exception {
+    /** Faz 18 amanhã, o antigo adolescente de 15 e a antiga criança de 11. */
+    @ParameterizedTest
+    @ValueSource(strings = {"2008-11-19", "2011-06-01", "2014-11-19"})
+    void underEighteenIsBelowTheMinimum(String birthDate) throws Exception {
         ObjectNode body = body("ana@example.com");
-        body.put("birthDate", "2014-11-19");
+        body.put("birthDate", birthDate);
         expectProblem(signup(body, "web"), 422, "AGE_BELOW_MINIMUM");
         assertNothingStored();
     }
 
-    @ParameterizedTest
-    @ValueSource(strings = {"2014-11-18", "2010-01-01", "2008-11-19"})
-    void twelveToSeventeenNeedsTheGuardian(String birthDate) throws Exception {
+    /** O App antigo, da 2.11, que ainda manda o e-mail do responsável. */
+    @Test
+    void theOldGuardianEmailFieldIs400() throws Exception {
         ObjectNode body = body("ana@example.com");
-        body.put("birthDate", birthDate);
-        expectProblem(signup(body, "web"), 422, "GUARDIAN_CONSENT_REQUIRED");
+        body.put("birthDate", "2011-06-01");
+        body.put("guardianEmail", "mae@example.com");
+        expectProblem(signup(body, "web"), 400, "VALIDATION_FAILED");
         assertNothingStored();
     }
 
@@ -337,7 +340,7 @@ class SignupTest {
         this.clock.set(Instant.parse("2026-11-19T01:00:00Z"));
         ObjectNode body = body("ana@example.com");
         body.put("birthDate", "2008-11-19");
-        expectProblem(signup(body, "web"), 422, "GUARDIAN_CONSENT_REQUIRED");
+        expectProblem(signup(body, "web"), 422, "AGE_BELOW_MINIMUM");
     }
 
     @ParameterizedTest

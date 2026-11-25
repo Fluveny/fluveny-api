@@ -16,6 +16,8 @@ import io.sentry.Sentry;
 import jakarta.servlet.RequestDispatcher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
@@ -62,6 +64,25 @@ class ProblemFormatTest {
     @Test
     void unknownRouteIsNotFound() throws Exception {
         expectProblem(this.mvc.perform(get("/api/v1/nada")), 404, "NOT_FOUND");
+    }
+
+    /** As rotas do consentimento do responsável saíram na história 2.12. */
+    @ParameterizedTest
+    @ValueSource(
+            strings = {
+                "/api/v1/account/guardian-consent/confirm",
+                "/api/v1/students/me/guardian-consent/resend",
+                "/api/v1/students/me/visitor-migration"
+            })
+    void retiredRoutesAreNotFound(String path) throws Exception {
+        expectProblem(
+                this.mvc.perform(
+                        post(path)
+                                .header("X-Fluveny-Client", "web")
+                                .contentType("application/json")
+                                .content("{}")),
+                404,
+                "NOT_FOUND");
     }
 
     @Test
